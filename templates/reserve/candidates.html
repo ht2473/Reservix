@@ -1,0 +1,132 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Подбор кандидатов на должность. #}
+
+{% block title %}{% translate "Подбор кандидатов" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=form.position %}
+      {% include "components/field.html" with field=form.department %}
+      {% include "components/field.html" with field=form.min_match %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Подобрать" %}</button>
+      {% if position %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'reserve:candidates' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if position %}
+    {% if bench %}
+      <section class="section section--tight">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Уже в резерве на эту должность" %}</h2>
+          <p class="section__lead">
+            {% translate "Отобранные кандидаты в подбор не попадают: подбор отвечает на вопрос «кого ещё рассмотреть»" %}
+          </p>
+        </div>
+        <div class="table-wrap">
+          <table class="table table--compact">
+            <thead>
+              <tr>
+                <th class="text-right">{% translate "Ранг" %}</th>
+                <th>{% translate "Резервист" %}</th>
+                <th class="text-right">{% translate "Индекс" %}</th>
+                <th>{% translate "Готовность" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in bench %}
+                <tr>
+                  <td class="text-right tabular">{{ entry.rank|default:"—" }}</td>
+                  {# Ссылка — только на записи в пределах области видимости. #}
+                  <td>
+                    {% if entry.can_open %}
+                      <a href="{{ entry.get_absolute_url }}">{{ entry.employee.short_name }}</a>
+                    {% else %}
+                      {{ entry.employee.short_name }}
+                    {% endif %}
+                  </td>
+                  <td class="text-right tabular">
+                    {% if entry.readiness_index is not None %}{{ entry.readiness_index|score:1 }}{% else %}—{% endif %}
+                  </td>
+                  <td>{% readiness_badge entry.readiness_level %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    {% endif %}
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">
+          {% blocktranslate with name=position.name %}Кандидаты на должность «{{ name }}»{% endblocktranslate %}
+        </h2>
+        <p class="section__lead">
+          {% translate "Соответствие рассчитано по модели компетенций целевой должности; покрытие показывает, какая доля требований подтверждена оценкой" %}
+        </p>
+      </div>
+
+      {% if candidates %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Сотрудник" %}</th>
+                <th>{% translate "Текущая должность" %}</th>
+                <th class="text-right">{% translate "Соответствие" %}</th>
+                <th class="text-right">{% translate "Покрытие" %}</th>
+                <th>{% translate "Критичные требования" %}</th>
+                <th class="text-right">{% translate "Действие" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for candidate in candidates %}
+                <tr>
+                  <td class="table__primary">
+                    <a href="{% url 'competencies:employee_profile' candidate.employee.public_id %}">
+                      {{ candidate.employee.short_name }}
+                    </a>
+                    <div class="table__secondary">{{ candidate.employee.department.name|default:"—" }}</div>
+                  </td>
+                  <td class="text-sm">{{ candidate.employee.position_title|default:"—" }}</td>
+                  <td class="text-right tabular">{{ candidate.match_score|percent:1 }}</td>
+                  <td class="text-right tabular text-muted">{{ candidate.coverage|percent:0 }}</td>
+                  <td>
+                    {% if candidate.is_blocked %}
+                      <span class="badge badge--risk">{% translate "есть недобор" %}</span>
+                    {% else %}
+                      <span class="badge badge--ready">{% translate "выполнены" %}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-right">
+                    <a class="btn btn--ghost btn--sm"
+                       href="{% url 'reserve:nomination_create' %}?employee={{ candidate.employee.pk }}&amp;target_position={{ position.pk }}">
+                      {% translate "Выдвинуть" %}
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-sm text-muted mt-3">
+          {% translate "Соответствие — расчётная величина, а не решение. Кандидат попадает в резерв только через заявку с обоснованием и согласованием." %}
+        </p>
+      {% else %}
+        {% include "components/empty_state.html" with icon="search" title=_("Подходящих кандидатов не найдено") text=_("Снизьте порог соответствия либо расширьте круг подразделением") %}
+      {% endif %}
+    </section>
+  {% else %}
+    {% include "components/empty_state.html" with icon="search" title=_("Выберите целевую должность") text=_("Подбор сравнивает сотрудников с требованиями конкретной роли: без должности сравнивать не с чем") %}
+  {% endif %}
+
+{% endblock %}

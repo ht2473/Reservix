@@ -1,0 +1,58 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Очередь пересмотра состава резерва. #}
+
+{% block title %}{% translate "Пересмотр состава резерва" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <section class="section">
+    {% if entries %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Резервист" %}</th>
+              <th>{% translate "Целевая должность" %}</th>
+              <th>{% translate "В резерве" %}</th>
+              <th class="text-right">{% translate "Индекс" %}</th>
+              <th>{% translate "Срок пересмотра" %}</th>
+              <th class="text-right">{% translate "Действие" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in entries %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ entry.get_absolute_url }}">{{ entry.employee.short_name }}</a>
+                  <div class="table__secondary">{{ entry.employee.department.name|default:"—" }}</div>
+                </td>
+                <td class="text-sm">{{ entry.target_position.name }}</td>
+                <td class="text-sm">{{ entry.months_in_reserve|tenure }}</td>
+                <td class="text-right tabular">
+                  {% if entry.readiness_index is not None %}{{ entry.readiness_index|score:1 }}{% else %}—{% endif %}
+                </td>
+                <td class="text-sm">{{ entry.review_date|deadline }}</td>
+                <td class="text-right">
+                  <form method="post" action="{% url 'reserve:entry_review' entry.public_id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% url 'reserve:reviews' %}">
+                    <button class="btn btn--ghost btn--sm" type="submit">
+                      {% translate "Отложить на 24 месяца" %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="check" title=_("Пересматривать нечего") text=_("Все записи резерва пересмотрены в срок") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

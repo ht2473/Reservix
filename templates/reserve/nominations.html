@@ -1,0 +1,92 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Заявки на выдвижение в кадровый резерв. #}
+
+{% block title %}{% translate "Заявки на выдвижение" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="cluster cluster--between mb-4">
+    <a class="btn btn--primary btn--sm" href="{% url 'reserve:nomination_create' %}">
+      {% translate "Выдвинуть кандидата" %}
+    </a>
+    {% if pending_count %}
+      <a class="btn btn--secondary btn--sm" href="{% url 'reserve:approvals' %}">
+        {% translate "Ждут вашего решения" %}
+        <span class="badge badge--accent badge--pill">{{ pending_count }}</span>
+      </a>
+    {% endif %}
+  </div>
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.kind %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'reserve:nominations' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if nominations %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Кандидат" %}</th>
+              <th>{% translate "Целевая должность" %}</th>
+              <th>{% translate "Вид" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th class="text-right">{% translate "Ожидает" %}</th>
+              <th>{% translate "Инициатор" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for nomination in nominations %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ nomination.get_absolute_url }}">{{ nomination.employee.short_name }}</a>
+                  <div class="table__secondary">{{ nomination.employee.department.name|default:"—" }}</div>
+                </td>
+                <td class="text-sm">{{ nomination.target_position.name }}</td>
+                <td class="text-sm">{{ nomination.get_kind_display }}</td>
+                <td>
+                  {% if nomination.is_pending %}
+                    <span class="badge badge--develop">{{ nomination.get_status_display }}</span>
+                  {% elif nomination.status == "approved" %}
+                    <span class="badge badge--ready">{{ nomination.get_status_display }}</span>
+                  {% elif nomination.status == "rejected" %}
+                    <span class="badge badge--risk">{{ nomination.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ nomination.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">
+                  {% if nomination.is_pending %}
+                    {{ nomination.waiting_days|counted:_("день,дня,дней") }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-sm">
+                  {{ nomination.nominated_by|person }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="mail" title=_("Заявок нет") text=_("Выдвижение начинается с заявки: она хранит обоснование и решения согласующих") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

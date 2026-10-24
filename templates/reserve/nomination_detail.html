@@ -1,0 +1,271 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка заявки на выдвижение. #}
+
+{% block title %}
+  {% blocktranslate with name=nomination.employee.short_name %}Заявка: {{ name }}{% endblocktranslate %}
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{{ nomination.employee.full_name }}</p>
+        <p class="card__subtitle">{{ nomination.employee.position_title|default:"—" }}</p>
+        <dl class="definition-list mt-3">
+          <dt>{% translate "Подразделение" %}</dt>
+          <dd>{{ nomination.employee.department.name|default:"—" }}</dd>
+          <dt>{% translate "Стаж" %}</dt>
+          <dd>{{ nomination.employee.tenure_months|tenure }}</dd>
+          <dt>{% translate "Целевая должность" %}</dt>
+          <dd>{{ nomination.target_position.name }}</dd>
+          <dt>{% translate "Программа подготовки" %}</dt>
+          <dd>{{ nomination.reserve_group.name|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Соответствие должности" %}</p>
+        {% if profile %}
+          <p class="metric__value">{{ profile.match_score|percent:1 }}</p>
+          <p class="text-sm text-muted">
+            {% blocktranslate with coverage=profile.coverage|percent:0 %}
+              подтверждено оценкой {{ coverage }} требований
+            {% endblocktranslate %}
+          </p>
+          <p class="text-xs text-muted mt-3">
+            {% translate "Соответствие сорок процентов при покрытии тридцать означает не слабого кандидата, а незавершённую оценку" %}
+          </p>
+        {% else %}
+          <p class="text-sm text-muted mt-2">
+            {% translate "Для целевой должности не задана модель компетенций: соответствие не вычисляется" %}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Ход согласования" %}</p>
+        <ol class="timeline mt-2">
+          <li class="timeline__item">
+            <span class="timeline__dot timeline__dot--accent"></span>
+            <div class="timeline__body">
+              <p class="timeline__title">{% translate "Подана" %}</p>
+              <p class="timeline__time">
+                {{ nomination.submitted_at|date_ru:"d.m.Y H:i"|default:"—" }}
+                {% if nomination.nominated_by %}· {{ nomination.nominated_by|person }}{% endif %}
+              </p>
+            </div>
+          </li>
+          <li class="timeline__item">
+            <span class="timeline__dot {% if nomination.manager_decision_at %}timeline__dot--ready{% endif %}"></span>
+            <div class="timeline__body">
+              <p class="timeline__title">{% translate "Руководитель" %}</p>
+              <p class="timeline__time">
+                {% if nomination.manager_decision_at %}
+                  {{ nomination.manager_decision_at|date_ru:"d.m.Y H:i" }}
+                {% else %}
+                  {% translate "решение не принято" %}
+                {% endif %}
+              </p>
+              {% if nomination.manager_comment %}
+                <p class="text-sm">{{ nomination.manager_comment }}</p>
+              {% endif %}
+            </div>
+          </li>
+          <li class="timeline__item">
+            <span class="timeline__dot {% if nomination.hr_decision_at %}timeline__dot--ready{% endif %}"></span>
+            <div class="timeline__body">
+              <p class="timeline__title">{% translate "Кадровая служба" %}</p>
+              <p class="timeline__time">
+                {% if nomination.hr_decision_at %}
+                  {{ nomination.hr_decision_at|date_ru:"d.m.Y H:i" }}
+                {% else %}
+                  {% translate "решение не принято" %}
+                {% endif %}
+              </p>
+              {% if nomination.hr_comment %}<p class="text-sm">{{ nomination.hr_comment }}</p>{% endif %}
+            </div>
+          </li>
+        </ol>
+
+        {% if can_open_entry %}
+          <p class="text-sm mt-3">
+            <a href="{{ nomination.entry.get_absolute_url }}">{% translate "Созданная запись резерва" %}</a>
+          </p>
+        {% elif nomination.entry %}
+          {# Запись создана, но раздел резерва этой роли недоступен. #}
+          <p class="text-sm text-muted mt-3">{% translate "Запись резерва создана" %}</p>
+        {% endif %}
+        {% if nomination.rejection_reason %}
+          <p class="text-sm text-risk mt-3">{{ nomination.rejection_reason }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# --- Обоснование --------------------------------------------------------- #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Обоснование выдвижения" %}</h2>
+    </div>
+    <div class="card">
+      <div class="card__body">
+        <p>{{ nomination.justification|linebreaksbr }}</p>
+        {% if nomination.achievements %}
+          <h3 class="card__title mt-4">{% translate "Достижения кандидата" %}</h3>
+          <p class="text-sm">{{ nomination.achievements|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  {# --- Пригодность ---------------------------------------------------------- #}
+  {% if eligibility.issues %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Замечания к кандидатуре" %}</h2>
+        <p class="section__lead">
+          {% translate "Препятствия не позволяют принять заявку; предупреждения согласующий обязан увидеть, но решение остаётся за ним" %}
+        </p>
+      </div>
+
+      {% if eligibility.blockers %}
+        <div class="alert alert--error mb-3">
+          <p class="alert__title">{% translate "Препятствия" %}</p>
+          <ul>
+            {% for issue in eligibility.blockers %}<li>{{ issue.message }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if eligibility.warnings %}
+        <div class="alert alert--warning">
+          <p class="alert__title">{% translate "Предупреждения" %}</p>
+          <ul>
+            {% for issue in eligibility.warnings %}<li>{{ issue.message }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {# --- Разрывы -------------------------------------------------------------- #}
+  {% if priorities %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Что предстоит развить" %}</h2>
+        <p class="section__lead">
+          {% translate "Разрывы в порядке стоимости: упорядочены по потере соответствия, а не по величине недобора" %}
+        </p>
+      </div>
+      <div class="stack stack--sm">
+        {% for gap in priorities %}
+          {% include "components/gap_row.html" with gap=gap %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# --- Конкуренты ------------------------------------------------------------ #}
+  {% if bench %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Уже в резерве на эту должность" %}</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th class="text-right">{% translate "Ранг" %}</th>
+              <th>{% translate "Кандидат" %}</th>
+              <th class="text-right">{% translate "Индекс" %}</th>
+              <th>{% translate "Готовность" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rival in bench %}
+              <tr>
+                <td class="text-right tabular">{{ rival.rank|default:"—" }}</td>
+                {% comment %}
+                  Фамилия становится ссылкой только при праве открыть запись: очередь на должность
+                  показана целиком, а карточка доступна в пределах области видимости.
+                {% endcomment %}
+                <td>
+                  {% if rival.can_open %}
+                    <a href="{{ rival.get_absolute_url }}">{{ rival.employee.short_name }}</a>
+                  {% else %}
+                    {{ rival.employee.short_name }}
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">
+                  {% if rival.readiness_index is not None %}{{ rival.readiness_index|score:1 }}{% else %}—{% endif %}
+                </td>
+                <td>{% readiness_badge rival.readiness_level %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {# --- Решение --------------------------------------------------------------- #}
+  {% if decision_stage %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">
+          {% if decision_stage == "manager" %}
+            {% translate "Ваше решение как руководителя" %}
+          {% else %}
+            {% translate "Решение кадровой службы" %}
+          {% endif %}
+        </h2>
+        <p class="section__lead">
+          {% if decision_stage == "manager" %}
+            {% translate "Согласие означает готовность отпустить сотрудника и подтверждение обоснованности выдвижения" %}
+          {% else %}
+            {% translate "Одобрение создаёт запись резерва в той же операции: одобренной заявки без записи в системе не бывает" %}
+          {% endif %}
+        </p>
+      </div>
+
+      <form method="post" action="{% url 'reserve:nomination_decide' nomination.public_id %}"
+            class="card" novalidate>
+        {% csrf_token %}
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="form-grid__full">
+              {% include "components/field.html" with field=decision_form.decision %}
+            </div>
+            {% if decision_stage == "hr" %}
+              {% include "components/field.html" with field=decision_form.reserve_group %}
+              {% include "components/field.html" with field=decision_form.review_months %}
+            {% endif %}
+            <div class="form-grid__full">
+              {% include "components/field.html" with field=decision_form.comment %}
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{% translate "Сохранить решение" %}</button>
+          </div>
+        </div>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if can_withdraw %}
+    <form method="post" action="{% url 'reserve:nomination_withdraw' nomination.public_id %}"
+          class="mt-4">
+      {% csrf_token %}
+      <button class="btn btn--danger-soft btn--sm" type="submit">{% translate "Отозвать заявку" %}</button>
+    </form>
+  {% endif %}
+
+{% endblock %}

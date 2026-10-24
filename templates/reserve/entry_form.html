@@ -1,0 +1,55 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Изменение записи кадрового резерва. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Подготовка" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Программа подготовки задаёт горизонт и содержание работы с резервистом. Плановая готовность — дата, к которой кандидат должен быть способен принять должность." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.reserve_group %}
+        {% include "components/field.html" with field=form.expected_ready_date %}
+        {% include "components/field.html" with field=form.review_date %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Обоснование и примечания" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Обоснование переносится из заявки на выдвижение и отвечает на вопрос, почему сотрудник состоит в резерве. Примечания — рабочие пометки куратора." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.justification %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.notes %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{{ object.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

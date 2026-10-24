@@ -1,0 +1,110 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Состав и правила одной программы подготовки. #}
+
+{% block title %}{{ group.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Участников" %}</span>
+      <span class="metric__value">{{ memberships|length }}</span>
+      <span class="metric__footer">
+        {% if group.capacity %}
+          {% blocktranslate with capacity=group.capacity %}предел — {{ capacity }}{% endblocktranslate %}
+        {% else %}
+          {% translate "без ограничения численности" %}
+        {% endif %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Горизонт подготовки" %}</span>
+      <span class="metric__value">{{ group.horizon_months }}</span>
+      <span class="metric__unit">{% translate "мес." %}</span>
+      <span class="metric__footer">{{ group.get_kind_display }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Минимальный стаж" %}</span>
+      <span class="metric__value">{{ group.min_tenure_months }}</span>
+      <span class="metric__unit">{% translate "мес." %}</span>
+      <span class="metric__footer">{% translate "требование зачисления" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Порог индекса" %}</span>
+      <span class="metric__value">{{ group.min_readiness_index }}</span>
+      <span class="metric__footer">
+        {% if group.max_age %}
+          {% blocktranslate with age=group.max_age %}возраст до {{ age }}{% endblocktranslate %}
+        {% else %}
+          {% translate "возраст не ограничен" %}
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  {% if group.description %}
+    <div class="card mb-6">
+      <div class="card__body">
+        <p>{{ group.description|linebreaksbr }}</p>
+      </div>
+    </div>
+  {% endif %}
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Состав программы" %}</h2>
+      <p class="section__lead">
+        {% translate "Участие в программе подготовки и запись резерва на должность — разные вещи: сроки у них не совпадают" %}
+      </p>
+    </div>
+
+    {% if memberships %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Участник" %}</th>
+              <th>{% translate "Подразделение" %}</th>
+              <th>{% translate "Целевая должность" %}</th>
+              <th>{% translate "Зачислен" %}</th>
+              <th>{% translate "Подтверждено куратором" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for membership in memberships %}
+              <tr>
+                <td class="table__primary">{{ membership.employee.short_name }}</td>
+                <td class="text-sm">{{ membership.employee.department.name|default:"—" }}</td>
+                <td class="text-sm">
+                  {% if membership.can_open_entry %}
+                    <a href="{{ membership.entry.get_absolute_url }}">
+                      {{ membership.entry.target_position.name }}
+                    </a>
+                  {% elif membership.entry %}
+                    {# Запись вне области видимости: должность видна, карточка — нет. #}
+                    {{ membership.entry.target_position.name }}
+                  {% else %}
+                    <span class="text-muted">{% translate "без привязки к должности" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ membership.joined_at|date_ru }}</td>
+                <td>
+                  {% if membership.is_curator_approved %}
+                    <span class="badge badge--ready">{% translate "да" %}</span>
+                  {% else %}
+                    <span class="badge badge--develop">{% translate "ожидает" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="users" title=_("В программе нет участников") text=_("Участие возникает при одобрении заявки с указанной программой подготовки") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

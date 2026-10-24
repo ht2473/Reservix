@@ -1,0 +1,70 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Программы подготовки резерва. #}
+
+{% block title %}{% translate "Программы подготовки" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <section class="section">
+    {% if groups %}
+      <div class="grid grid--2">
+        {% for group in groups %}
+          <article class="card card--interactive">
+            <div class="card__body">
+              <div class="cluster cluster--between">
+                <div>
+                  <p class="card__title">
+                    <a href="{{ group.get_absolute_url }}">{{ group.name }}</a>
+                  </p>
+                  <p class="card__subtitle">{{ group.get_kind_display }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="metric__value">{{ group.members }}</span>
+                  <p class="text-xs text-muted">
+                    {% if group.capacity %}
+                      {% blocktranslate with capacity=group.capacity %}из {{ capacity }} мест{% endblocktranslate %}
+                    {% else %}
+                      {% translate "без ограничения" %}
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+
+              {% if group.description %}
+                <p class="text-sm text-muted mt-3 line-clamp-2">{{ group.description }}</p>
+              {% endif %}
+
+              <dl class="definition-list mt-3">
+                <dt>{% translate "Горизонт подготовки" %}</dt>
+                <dd>{{ group.horizon_months|counted:_("месяц,месяца,месяцев") }}</dd>
+                <dt>{% translate "Минимальный стаж" %}</dt>
+                <dd>{{ group.min_tenure_months|counted:_("месяц,месяца,месяцев") }}</dd>
+                {% if group.max_age %}
+                  <dt>{% translate "Предельный возраст" %}</dt>
+                  <dd>{{ group.max_age }}</dd>
+                {% endif %}
+                {% if group.min_readiness_index %}
+                  <dt>{% translate "Порог индекса" %}</dt>
+                  <dd>{{ group.min_readiness_index }}</dd>
+                {% endif %}
+                <dt>{% translate "Куратор" %}</dt>
+                <dd>{{ group.curator|person }}</dd>
+              </dl>
+
+              {% if group.capacity and group.members >= group.capacity %}
+                <p class="text-sm text-risk mt-3">
+                  {% translate "Группа заполнена: зачисление невозможно до пересмотра предела численности" %}
+                </p>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="layers" title=_("Программы подготовки не заданы") text=_("Вид резерва определяет горизонт подготовки и правила зачисления") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

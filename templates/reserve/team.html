@@ -1,0 +1,74 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Резервисты подразделения — рабочее место руководителя. #}
+
+{% block title %}{% translate "Мои резервисты" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Резервистов" %}</span>
+      <span class="metric__value">{{ summary.active }}</span>
+      <span class="metric__footer">{% translate "в вашей области видимости" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Готовы к назначению" %}</span>
+      <span class="metric__value">{{ summary.ready_now }}</span>
+      <span class="metric__footer">{{ summary.ready_share|percent:1 }} {% translate "от состава" %}</span>
+    </div>
+    <div class="metric {% if pending_nominations %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Ждут вашего решения" %}</span>
+      <span class="metric__value">{{ pending_nominations }}</span>
+      <span class="metric__footer">
+        <a href="{% url 'reserve:approvals' %}">{% translate "перейти к согласованию" %}</a>
+      </span>
+    </div>
+  </div>
+
+  <div class="cluster cluster--sm mb-4">
+    <a class="btn btn--primary btn--sm" href="{% url 'reserve:nomination_create' %}">
+      {% translate "Выдвинуть сотрудника" %}
+    </a>
+  </div>
+
+  <section class="section">
+    {% if entries %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Целевая должность" %}</th>
+              <th>{% translate "Готовность" %}</th>
+              <th class="text-right">{% translate "В резерве" %}</th>
+              <th>{% translate "Плановая готовность" %}</th>
+              <th>{% translate "Пересмотр" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in entries %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ entry.get_absolute_url }}">{{ entry.employee.short_name }}</a>
+                  <div class="table__secondary">{{ entry.employee.position_title|default:"—" }}</div>
+                </td>
+                <td class="text-sm">{{ entry.target_position.name }}</td>
+                <td>{% readiness_badge entry.readiness_level %}</td>
+                <td class="text-right text-sm">{{ entry.months_in_reserve|tenure }}</td>
+                <td class="text-sm">{{ entry.expected_ready_date|date_ru|default:"—" }}</td>
+                <td class="text-sm">{{ entry.review_date|deadline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="bookmark" title=_("В подразделении нет резервистов") text=_("Выдвиньте сотрудника: заявку рассмотрите вы и кадровая служба") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

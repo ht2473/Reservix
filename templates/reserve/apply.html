@@ -1,0 +1,139 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Самовыдвижение сотрудника. #}
+
+{% block title %}{% translate "Заявка в кадровый резерв" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if my_entries %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Вы состоите в резерве" %}</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Целевая должность" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th>{% translate "Готовность" %}</th>
+              <th>{% translate "В резерве с" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in my_entries %}
+              <tr>
+                <td class="table__primary">{{ entry.target_position.name }}</td>
+                <td class="text-sm">{{ entry.get_status_display }}</td>
+                <td>{% readiness_badge entry.readiness_level %}</td>
+                <td class="text-sm">{{ entry.inclusion_date|date_ru }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if my_nominations %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Ваши заявки" %}</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Подана" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th>{% translate "Комментарий" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for nomination in my_nominations %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ nomination.get_absolute_url }}">{{ nomination.target_position.name }}</a>
+                </td>
+                <td class="text-sm">{{ nomination.submitted_at|date_ru|default:"—" }}</td>
+                <td>
+                  {% if nomination.is_pending %}
+                    <span class="badge badge--develop">{{ nomination.get_status_display }}</span>
+                  {% elif nomination.status == "approved" %}
+                    <span class="badge badge--ready">{{ nomination.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ nomination.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ nomination.rejection_reason|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Подать заявку" %}</h2>
+      <p class="section__lead">
+        {% translate "Заявку рассмотрят ваш руководитель и кадровая служба. Прежде чем подавать, посмотрите свой профиль компетенций: он показывает, чего не хватает до требований выбранной роли" %}
+      </p>
+    </div>
+
+    <form method="post" class="stack stack--lg" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          <p class="form-errors__title">{% translate "Заявка не может быть подана" %}</p>
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      {% if form.warnings %}
+        <div class="alert alert--warning">
+          <p class="alert__title">{% translate "Обратите внимание" %}</p>
+          <ul>
+            {% for issue in form.warnings %}<li>{{ issue.message }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <section class="form-section">
+        <h2 class="form-section__title">{% translate "Целевая должность" %}</h2>
+        <div class="form-grid">
+          {% include "components/field.html" with field=form.target_position %}
+          {% include "components/field.html" with field=form.reserve_group %}
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2 class="form-section__title">{% translate "Обоснование" %}</h2>
+        <p class="form-section__hint">
+          {% translate "Опишите результаты и опыт, подтверждающие готовность к роли: именно этот текст читают согласующие." %}
+        </p>
+        <div class="form-grid">
+          <div class="form-grid__full">
+            {% include "components/field.html" with field=form.justification %}
+          </div>
+          <div class="form-grid__full">
+            {% include "components/field.html" with field=form.achievements %}
+          </div>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">{% translate "Подать заявку" %}</button>
+        <a class="btn btn--ghost" href="{% url 'competencies:my_profile' %}">
+          {% translate "Сначала посмотреть свой профиль" %}
+        </a>
+      </div>
+    </form>
+  </section>
+
+{% endblock %}

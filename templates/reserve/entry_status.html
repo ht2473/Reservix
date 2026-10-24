@@ -1,0 +1,73 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Смена состояния записи резерва. #}
+
+{% block title %}{% translate "Изменение состояния записи" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="card mb-6">
+    <div class="card__body">
+      <p class="card__title">{{ entry.employee.full_name }}</p>
+      <p class="card__subtitle">
+        {% blocktranslate with position=entry.target_position.name %}
+          целевая должность — {{ position }}
+        {% endblocktranslate %}
+      </p>
+      <dl class="definition-list mt-3">
+        <dt>{% translate "Текущее состояние" %}</dt>
+        <dd>{{ entry.get_status_display }}</dd>
+        <dt>{% translate "В резерве" %}</dt>
+        <dd>{{ entry.months_in_reserve|tenure }}</dd>
+        <dt>{% translate "Индекс готовности" %}</dt>
+        <dd>{% if entry.readiness_index is not None %}{{ entry.readiness_index|score:1 }}{% else %}—{% endif %}</dd>
+      </dl>
+    </div>
+  </div>
+
+  {% if form.fields.status.choices %}
+    <form method="post" class="stack stack--lg" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="form-errors">
+          <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+
+      <section class="form-section">
+        <h2 class="form-section__title">{% translate "Новое состояние" %}</h2>
+        <p class="form-section__hint">
+          {% translate "Основание сохраняется в истории записи и в журнале аудита: через год именно оно объяснит принятое решение." %}
+        </p>
+
+        <div class="form-grid">
+          {% include "components/field.html" with field=form.status %}
+          <div class="form-grid__full">
+            {% include "components/field.html" with field=form.reason %}
+          </div>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">{% translate "Применить" %}</button>
+        <a class="btn btn--ghost" href="{{ entry.get_absolute_url }}">{% translate "Отмена" %}</a>
+      </div>
+    </form>
+  {% else %}
+    <div class="alert alert--info">
+      <p class="alert__title">{% translate "Переходы недоступны" %}</p>
+      <p>
+        {% translate "Запись находится в завершающем состоянии. Назначенный и исключённый резервист не восстанавливаются: для повторного рассмотрения подаётся новая заявка." %}
+      </p>
+      <p class="mt-3">
+        <a class="btn btn--secondary btn--sm" href="{{ entry.get_absolute_url }}">
+          {% translate "Вернуться к записи" %}
+        </a>
+      </p>
+    </div>
+  {% endif %}
+
+{% endblock %}

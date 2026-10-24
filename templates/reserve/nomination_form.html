@@ -1,0 +1,64 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Выдвижение сотрудника в кадровый резерв. #}
+
+{% block title %}{% translate "Выдвижение в кадровый резерв" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Заявка не может быть подана" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    {% if form.warnings %}
+      <div class="alert alert--warning">
+        <p class="alert__title">{% translate "Обратите внимание" %}</p>
+        <ul>
+          {% for issue in form.warnings %}<li>{{ issue.message }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Кандидат и цель" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Резервист может готовиться сразу на две-три роли: именно конкуренция кандидатов за должность даёт материал для ранжирования. Программа подготовки назначается кадровой службой при одобрении и здесь необязательна." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.employee %}
+        {% include "components/field.html" with field=form.target_position %}
+        {% include "components/field.html" with field=form.reserve_group %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Обоснование" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Обоснование рассматривают руководитель и кадровая служба, оно же переносится в запись резерва и через год отвечает на вопрос, почему сотрудник в резерве." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.justification %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.achievements %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Подать заявку" %}</button>
+      <a class="btn btn--ghost" href="{% url 'reserve:nominations' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

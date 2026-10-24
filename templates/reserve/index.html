@@ -1,0 +1,135 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Кадровый резерв организации. #}
+
+{% block title %}{% translate "Кадровый резерв" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Состоят в резерве" %}</span>
+      <span class="metric__value">{{ summary.active }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=summary.total %}всего записей — {{ total }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Готовы к назначению" %}</span>
+      <span class="metric__value">{{ summary.ready_now }}</span>
+      <span class="metric__footer">{{ summary.ready_share|percent:1 }} {% translate "от состава" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Целевых должностей" %}</span>
+      <span class="metric__value">{{ summary.positions_covered }}</span>
+      <span class="metric__footer">{% translate "должностей, на которые есть кандидаты" %}</span>
+    </div>
+    <div class="metric {% if summary.overdue_reviews %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Просрочен пересмотр" %}</span>
+      <span class="metric__value">{{ summary.overdue_reviews }}</span>
+      <span class="metric__footer">
+        <a href="{% url 'reserve:reviews' %}">{% translate "очередь пересмотра" %}</a>
+      </span>
+    </div>
+  </div>
+
+  <div class="cluster cluster--between mb-4">
+    <div class="cluster cluster--sm">
+      <a class="btn btn--primary btn--sm" href="{% url 'reserve:nomination_create' %}">
+        {% translate "Выдвинуть кандидата" %}
+      </a>
+      <a class="btn btn--secondary btn--sm" href="{% url 'reserve:candidates' %}">
+        {% translate "Подбор кандидатов" %}
+      </a>
+    </div>
+    <div class="cluster cluster--sm">
+      <a class="btn btn--ghost btn--sm" href="{% url 'reserve:nominations' %}">
+        {% translate "Заявки" %}
+        {% if summary.pending_nominations %}
+          <span class="badge badge--accent badge--pill">{{ summary.pending_nominations }}</span>
+        {% endif %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'reserve:groups' %}">
+        {% translate "Программы подготовки" %}
+      </a>
+    </div>
+  </div>
+
+  {# --- Отбор --------------------------------------------------------------- #}
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.readiness_level %}
+      {% include "components/field.html" with field=filter_form.reserve_group %}
+      {% include "components/field.html" with field=filter_form.department %}
+      {% include "components/field.html" with field=filter_form.scope %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'reserve:list' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# --- Перечень ------------------------------------------------------------ #}
+  <section class="section">
+    {% if entries %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>
+                <a class="table__sort" href="?{% query_replace sort='employee' %}">{% translate "Резервист" %}</a>
+              </th>
+              <th>
+                <a class="table__sort" href="?{% query_replace sort='position' %}">{% translate "Целевая должность" %}</a>
+              </th>
+              <th class="text-right">{% translate "Ранг" %}</th>
+              <th class="text-right">
+                <a class="table__sort" href="?{% query_replace sort='readiness' %}">{% translate "Индекс" %}</a>
+              </th>
+              <th>{% translate "Готовность" %}</th>
+              <th>{% translate "Статус" %}</th>
+              <th>
+                <a class="table__sort" href="?{% query_replace sort='review' %}">{% translate "Пересмотр" %}</a>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in entries %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ entry.get_absolute_url }}">{{ entry.employee.short_name }}</a>
+                  <div class="table__secondary">{{ entry.employee.department.name|default:"—" }}</div>
+                </td>
+                <td class="text-sm">
+                  {{ entry.target_position.name }}
+                  <div class="table__secondary">{{ entry.target_position.grade.name }}</div>
+                </td>
+                <td class="text-right tabular">{{ entry.rank|default:"—" }}</td>
+                <td class="text-right tabular">
+                  {% if entry.readiness_index is not None %}
+                    {{ entry.readiness_index|score:1 }}
+                  {% else %}
+                    <span class="text-muted" title="{% translate 'Индекс не рассчитан: нет оценок по компетенциям целевой должности' %}">—</span>
+                  {% endif %}
+                </td>
+                <td>{% readiness_badge entry.readiness_level %}</td>
+                <td class="text-sm">{{ entry.get_status_display }}</td>
+                <td class="text-sm">{{ entry.review_date|deadline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="bookmark" title=_("Записей резерва не найдено") text=_("Измените условия отбора либо выдвиньте кандидата") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

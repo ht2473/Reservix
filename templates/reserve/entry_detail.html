@@ -1,0 +1,261 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка записи кадрового резерва. #}
+
+{% block title %}{{ entry.employee.short_name }} → {{ entry.target_position.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{{ entry.employee.full_name }}</p>
+        <p class="card__subtitle">{{ entry.employee.position_title|default:"—" }}</p>
+        <dl class="definition-list mt-3">
+          <dt>{% translate "Подразделение" %}</dt>
+          <dd>{{ entry.employee.department.name|default:"—" }}</dd>
+          <dt>{% translate "Стаж в организации" %}</dt>
+          <dd>{{ entry.employee.tenure_months|tenure }}</dd>
+          <dt>{% translate "Целевая должность" %}</dt>
+          <dd>{{ entry.target_position.name }}</dd>
+          <dt>{% translate "Группа резерва" %}</dt>
+          <dd>{{ entry.reserve_group.name|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Готовность" %}</p>
+        {% include "components/readiness.html" with value=entry.readiness_index level=entry.readiness_level level_signal=readiness_signal label=_("Соответствие компетенциям целевой должности") %}
+        <p class="text-xs text-muted mt-3">
+          {% if entry.readiness_calculated_at %}
+            {% blocktranslate with moment=entry.readiness_calculated_at|date_ru %}
+              рассчитано {{ moment }}
+            {% endblocktranslate %}
+          {% else %}
+            {% translate "индекс ещё не рассчитывался" %}
+          {% endif %}
+        </p>
+        {% if can_manage %}
+          <form method="post" action="{% url 'reserve:entry_readiness' entry.public_id %}" class="mt-3">
+            {% csrf_token %}
+            <button class="btn btn--ghost btn--sm" type="submit">{% translate "Пересчитать" %}</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Состояние записи" %}</p>
+        <p class="text-lg text-semibold mt-2">{{ entry.get_status_display }}</p>
+        <dl class="definition-list mt-3">
+          <dt>{% translate "В резерве с" %}</dt>
+          <dd>{{ entry.inclusion_date|date_ru }} ({{ entry.months_in_reserve|tenure }})</dd>
+          <dt>{% translate "Ранг среди кандидатов" %}</dt>
+          <dd>{{ entry.rank|default:"—" }}</dd>
+          <dt>{% translate "Плановая готовность" %}</dt>
+          <dd>{{ entry.expected_ready_date|date_ru|default:"—" }}</dd>
+          <dt>{% translate "Пересмотр" %}</dt>
+          <dd>{{ entry.review_date|deadline }}</dd>
+        </dl>
+        {% if can_manage %}
+          <div class="cluster cluster--sm mt-3">
+            <a class="btn btn--secondary btn--sm" href="{% url 'reserve:entry_edit' entry.public_id %}">
+              {% translate "Изменить" %}
+            </a>
+            <a class="btn btn--ghost btn--sm" href="{% url 'reserve:entry_status' entry.public_id %}">
+              {% translate "Сменить состояние" %}
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# --- Обоснование --------------------------------------------------------- #}
+  {% if entry.justification or entry.notes %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Обоснование включения" %}</h2>
+      </div>
+      <div class="card">
+        <div class="card__body">
+          <p>{{ entry.justification|linebreaksbr|default:"—" }}</p>
+          {% if entry.notes %}
+            <p class="text-sm text-muted mt-3">{{ entry.notes|linebreaksbr }}</p>
+          {% endif %}
+          {% if nomination %}
+            <p class="text-sm mt-3">
+              <a href="{{ nomination.get_absolute_url }}">{% translate "Заявка, по которой создана запись" %}</a>
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {# --- Соответствие целевой должности --------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Соответствие целевой должности" %}</h2>
+      <p class="section__lead">
+        {% if profile %}
+          {% blocktranslate with model=profile.competency_model.name match=profile.match_score|percent:1 coverage=profile.coverage|percent:0 %}
+            Модель «{{ model }}»: соответствие {{ match }}, подтверждено оценкой {{ coverage }} требований
+          {% endblocktranslate %}
+        {% else %}
+          {% translate "Для целевой должности не задана модель компетенций — соответствие не вычисляется" %}
+        {% endif %}
+      </p>
+    </div>
+
+    {% if profile and profile.gaps %}
+      {% if blocking_gaps %}
+        <div class="alert alert--warning mb-4">
+          <p class="alert__title">{% translate "Не выполнены критичные требования" %}</p>
+          <p>
+            {% for gap in blocking_gaps %}
+              {{ gap.competency.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          </p>
+          <p class="text-sm mt-2">
+            {% translate "Недобор по критичному требованию не блокирует запись автоматически: решение принимает кадровая служба, но обязана видеть этот факт" %}
+          </p>
+        </div>
+      {% endif %}
+
+      <div class="stack stack--sm">
+        {% for gap in priorities %}
+          {% include "components/gap_row.html" with gap=gap %}
+        {% endfor %}
+      </div>
+
+      <p class="text-sm text-muted mt-3">
+        {% translate "Показаны первые пять разрывов в порядке стоимости — потери соответствия, а не величины разрыва" %}
+      </p>
+    {% else %}
+      {% include "components/empty_state.html" with icon="layers" title=_("Соответствие не рассчитано") text=_("Модель компетенций целевой должности не задана либо оценок нет") %}
+    {% endif %}
+  </section>
+
+  {# --- Скамейка ------------------------------------------------------------ #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Кандидаты на ту же должность" %}</h2>
+      <p class="section__lead">
+        {% translate "Ранг обретает смысл только рядом с конкурентами: важно не место в списке, а расстояние до соседа" %}
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table table--compact">
+        <thead>
+          <tr>
+            <th class="text-right">{% translate "Ранг" %}</th>
+            <th>{% translate "Кандидат" %}</th>
+            <th class="text-right">{% translate "Индекс" %}</th>
+            <th>{% translate "Готовность" %}</th>
+            <th>{% translate "В резерве с" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rival in bench %}
+            <tr {% if rival.pk == entry.pk %}class="table__primary"{% endif %}>
+              <td class="text-right tabular">{{ rival.rank|default:"—" }}</td>
+              <td>
+                {% if rival.pk == entry.pk %}
+                  <span class="text-semibold">{{ rival.employee.short_name }}</span>
+                  <span class="badge badge--outline badge--pill">{% translate "эта запись" %}</span>
+                {% elif rival.can_open %}
+                  <a href="{{ rival.get_absolute_url }}">{{ rival.employee.short_name }}</a>
+                {% else %}
+                  {# Запись вне области видимости: показана в очереди, но не открывается. #}
+                  {{ rival.employee.short_name }}
+                {% endif %}
+              </td>
+              <td class="text-right tabular">
+                {% if rival.readiness_index is not None %}{{ rival.readiness_index|score:1 }}{% else %}—{% endif %}
+              </td>
+              <td>{% readiness_badge rival.readiness_level %}</td>
+              <td class="text-sm">{{ rival.inclusion_date|date_ru }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# --- История решений ------------------------------------------------------ #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "История решений" %}</h2>
+      <p class="section__lead">
+        {% translate "Каждый переход сохранён вместе с основанием и значением индекса на тот момент" %}
+      </p>
+    </div>
+
+    {% if history %}
+      <ol class="timeline">
+        {% for record in history %}
+          <li class="timeline__item">
+            <span class="timeline__dot timeline__dot--accent"></span>
+            <div class="timeline__body">
+              <p class="timeline__title">
+                {{ record.get_old_status_display|default:"—" }} → {{ record.get_new_status_display }}
+              </p>
+              <p class="timeline__time">
+                {{ record.changed_at|date_ru:"d.m.Y H:i" }}
+                {% if record.changed_by %}· {{ record.changed_by|person }}{% endif %}
+                {% if record.readiness_index is not None %}· {% translate "индекс" %} {{ record.readiness_index|score:1 }}{% endif %}
+              </p>
+              {% if record.reason %}<p class="text-sm">{{ record.reason }}</p>{% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      {% include "components/empty_state.html" with icon="clock" title=_("История пуста") %}
+    {% endif %}
+  </section>
+
+  {# --- Участие в программах -------------------------------------------------- #}
+  {% if memberships %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Участие в программах подготовки" %}</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Программа" %}</th>
+              <th>{% translate "Зачислен" %}</th>
+              <th>{% translate "Выбыл" %}</th>
+              <th>{% translate "Подтверждено куратором" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for membership in memberships %}
+              <tr>
+                <td><a href="{{ membership.group.get_absolute_url }}">{{ membership.group.name }}</a></td>
+                <td class="text-sm">{{ membership.joined_at|date_ru }}</td>
+                <td class="text-sm">{{ membership.left_at|date_ru|default:"—" }}</td>
+                <td class="text-sm">
+                  {% if membership.is_curator_approved %}
+                    {% translate "да" %}
+                  {% else %}
+                    <span class="text-muted">{% translate "нет" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}

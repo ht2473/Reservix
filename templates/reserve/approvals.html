@@ -1,0 +1,62 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Заявки, ожидающие решения текущего пользователя. #}
+
+{% block title %}{% translate "Согласование заявок" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <section class="section">
+    {% if nominations %}
+      <div class="stack">
+        {% for nomination in nominations %}
+          <article class="card card--interactive">
+            <div class="card__body">
+              <div class="cluster cluster--between">
+                <div>
+                  <p class="card__title">
+                    <a href="{{ nomination.get_absolute_url }}">{{ nomination.employee.full_name }}</a>
+                  </p>
+                  <p class="card__subtitle">
+                    {% blocktranslate with position=nomination.target_position.name %}
+                      на должность «{{ position }}»
+                    {% endblocktranslate %}
+                  </p>
+                </div>
+                <div class="text-right">
+                  <span class="badge badge--develop">{{ nomination.get_status_display }}</span>
+                  <p class="text-xs text-muted mt-2">
+                    {% blocktranslate with days=nomination.waiting_days %}
+                      ожидает {{ days }} дн.
+                    {% endblocktranslate %}
+                  </p>
+                </div>
+              </div>
+
+              <p class="text-sm mt-3 line-clamp-3">{{ nomination.justification }}</p>
+
+              <div class="cluster cluster--sm mt-3">
+                <span class="badge badge--outline badge--pill">{{ nomination.get_kind_display }}</span>
+                {% if nomination.employee.department %}
+                  <span class="text-xs text-muted">{{ nomination.employee.department.name }}</span>
+                {% endif %}
+              </div>
+
+              <div class="cluster cluster--sm mt-4">
+                <a class="btn btn--primary btn--sm" href="{{ nomination.get_absolute_url }}">
+                  {% translate "Рассмотреть" %}
+                </a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="check" title=_("Заявок на рассмотрении нет") text=_("Здесь появятся заявки, требующие именно вашего решения") %}
+    {% endif %}
+  </section>
+
+{% endblock %}
