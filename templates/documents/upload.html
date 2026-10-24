@@ -1,0 +1,60 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Приём документа в хранилище. #}
+
+{% block title %}{% translate "Загрузка документа" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors" role="alert">
+        <p class="form-errors__title">{% translate "Документ не принят" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Файл" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Файл сохраняется под обезличенным именем: по содержимому каталога хранения нельзя установить, о ком документ" %}
+      </p>
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.file %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.title %}
+        </div>
+        {% include "components/field.html" with field=form.kind %}
+        {% include "components/field.html" with field=form.valid_until %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Привязка и доступ" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Уровень доступа только сужает круг читателей: расширить его сверх права на карточку сотрудника невозможно" %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.employee %}
+        {% include "components/field.html" with field=form.access_level %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.supersedes %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.description %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Загрузить" %}</button>
+      <a class="btn btn--ghost" href="{% url 'documents:list' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

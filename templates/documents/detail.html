@@ -1,0 +1,130 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка документа. #}
+
+{% block title %}{{ document.title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% translate "Файл" %}</h2>
+      </div>
+      <div class="card__body">
+        <dl class="definition-list">
+          <dt>{% translate "Исходное имя" %}</dt>
+          <dd class="text-mono text-sm">{{ document.original_name|shorten:44 }}</dd>
+          <dt>{% translate "Формат и размер" %}</dt>
+          <dd>{{ document.extension|upper }} · {{ document.size_display }}</dd>
+          <dt>{% translate "Вид документа" %}</dt>
+          <dd>{{ document.get_kind_display }}</dd>
+          <dt>{% translate "Контрольная сумма" %}</dt>
+          <dd class="text-mono text-xs">{{ document.checksum|slice:":32" }}…</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% translate "Происхождение" %}</h2>
+      </div>
+      <div class="card__body">
+        <dl class="definition-list">
+          <dt>{% translate "Загрузил" %}</dt>
+          <dd>{{ document.uploaded_by|person }}</dd>
+          <dt>{% translate "Дата загрузки" %}</dt>
+          <dd>{{ document.created_at|date_ru:"d.m.Y H:i" }}</dd>
+          <dt>{% translate "Сотрудник" %}</dt>
+          <dd>
+            {% if document.employee %}{{ document.employee.full_name }}{% else %}—{% endif %}
+          </dd>
+          <dt>{% translate "Выгрузок" %}</dt>
+          <dd class="tabular">{{ document.download_count }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">{% translate "Доступ и срок" %}</h2>
+      </div>
+      <div class="card__body">
+        <dl class="definition-list">
+          <dt>{% translate "Уровень доступа" %}</dt>
+          <dd>{{ document.get_access_level_display }}</dd>
+          <dt>{% translate "Действителен до" %}</dt>
+          <dd>
+            {% if document.valid_until %}
+              {{ document.valid_until|deadline }}
+            {% else %}
+              {% translate "бессрочно" %}
+            {% endif %}
+          </dd>
+          <dt>{% translate "Версия" %}</dt>
+          <dd>
+            {% if document.is_current %}
+              <span class="badge badge--ready">{% translate "действующая" %}</span>
+            {% else %}
+              <span class="badge badge--neutral">{% translate "замещена" %}</span>
+              <a href="{{ document.superseded_by.get_absolute_url }}">{% translate "к действующей" %}</a>
+            {% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="cluster cluster--sm mb-6">
+    <a class="btn btn--primary btn--sm" href="{{ document.download_url }}">
+      {% icon "download" 16 %}{% translate "Выгрузить" %}
+    </a>
+
+    {% if integrity_ok %}
+      <span class="badge badge--ready">{% icon "check-circle" 14 %} {% translate "Целостность подтверждена" %}</span>
+    {% else %}
+      <span class="badge badge--risk">{% icon "alert-triangle" 14 %} {% translate "Контрольная сумма не совпала" %}</span>
+    {% endif %}
+
+    {% if can_manage %}
+      <form method="post" action="{% url 'documents:delete' document.public_id %}">
+        {% csrf_token %}
+        <button class="btn btn--danger-soft btn--sm" type="submit">
+          {% icon "trash" 16 %}{% translate "Пометить удалённым" %}
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if document.description %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Описание" %}</h2>
+      </div>
+      <p class="prose">{{ document.description|linebreaksbr }}</p>
+    </section>
+  {% endif %}
+
+  {% if previous_versions %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Замещённые версии" %}</h2>
+        <p class="section__lead">
+          {% translate "Прежние редакции сохраняются: они могли служить основанием уже принятых решений" %}
+        </p>
+      </div>
+      <ul class="timeline">
+        {% for version in previous_versions %}
+          <li class="timeline__item">
+            <span class="timeline__dot"></span>
+            <span class="timeline__time">{{ version.created_at|date_ru }}</span>
+            <a class="timeline__title" href="{{ version.get_absolute_url }}">{{ version.title }}</a>
+            <p class="timeline__body">{{ version.uploaded_by|person }} · {{ version.size_display }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

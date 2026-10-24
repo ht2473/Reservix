@@ -1,0 +1,122 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Перечень документов хранилища. #}
+
+{% block title %}{% translate "Документы" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if statistics %}
+    <div class="grid grid--4 mb-6">
+      <div class="metric">
+        <span class="metric__label">{% translate "Документов" %}</span>
+        <span class="metric__value">{{ statistics.total }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with size=statistics.size_mb %}объём хранилища — {{ size }} МБ{% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Замещённых версий" %}</span>
+        <span class="metric__value">{{ statistics.superseded }}</span>
+        <span class="metric__footer">{% translate "сохранены как основание прежних решений" %}</span>
+      </div>
+      <div class="metric {% if statistics.expired %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "С истёкшим сроком" %}</span>
+        <span class="metric__value">{{ statistics.expired }}</span>
+        <span class="metric__footer">{% translate "сертификаты и допуски" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Видов документов" %}</span>
+        <span class="metric__value">{{ statistics.by_kind|length }}</span>
+        <span class="metric__footer">
+          {% for name, count in statistics.by_kind|slice:":2" %}{{ name }} — {{ count }}{% if not forloop.last %} · {% endif %}{% endfor %}
+        </span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if can_upload %}
+    <div class="cluster cluster--sm mb-4">
+      <a class="btn btn--primary btn--sm" href="{% url 'documents:upload' %}">
+        {% icon "plus" 16 %}{% translate "Загрузить документ" %}
+      </a>
+    </div>
+  {% endif %}
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.kind %}
+      {% include "components/field.html" with field=filter_form.access_level %}
+      {% include "components/field.html" with field=filter_form.only_current inline=True %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'documents:list' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if documents %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Документ" %}</th>
+              <th>{% translate "Вид" %}</th>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Доступ" %}</th>
+              <th class="text-right">{% translate "Размер" %}</th>
+              <th>{% translate "Действует до" %}</th>
+              <th>{% translate "Загружен" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for document in documents %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ document.get_absolute_url }}">{{ document.title }}</a>
+                  <div class="table__secondary">
+                    {{ document.extension|upper }}
+                    {% if not document.is_current %}
+                      · <span class="badge badge--neutral">{% translate "замещён" %}</span>
+                    {% endif %}
+                  </div>
+                </td>
+                <td class="text-sm">{{ document.get_kind_display }}</td>
+                <td class="text-sm">
+                  {% if document.employee %}{{ document.employee.short_name }}{% else %}—{% endif %}
+                </td>
+                <td class="text-sm">
+                  {% if document.access_level == "confidential" %}
+                    <span class="badge badge--risk">{{ document.get_access_level_display }}</span>
+                  {% elif document.access_level == "public" %}
+                    <span class="badge badge--neutral">{{ document.get_access_level_display }}</span>
+                  {% else %}
+                    <span class="badge badge--outline">{{ document.get_access_level_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular text-sm">{{ document.size_display }}</td>
+                <td class="text-sm">
+                  {% if document.valid_until %}{{ document.valid_until|deadline }}{% else %}—{% endif %}
+                </td>
+                <td class="text-sm">
+                  {{ document.uploaded_by|person }}
+                  <div class="table__secondary">{{ document.created_at|date_ru }}</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="file" title=_("Документов нет") text=_("Приказы, протоколы и сертификаты прикрепляются к сотруднику или к записи резерва") %}
+    {% endif %}
+  </section>
+
+{% endblock %}
