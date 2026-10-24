@@ -9,7 +9,7 @@ FROM python:3.12.13-slim-bookworm AS builder
 
 # uv копируется из официального образа: версия закреплена тегом, а установка
 # через pip добавила бы лишний слой и замедлила сборку.
-COPY --from=ghcr.io/astral-sh/uv:0.9.7 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11.15 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
