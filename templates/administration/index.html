@@ -1,0 +1,144 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Сводка состояния системы. #}
+
+{% block title %}{% translate "Панель администратора" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {# --- Требует внимания ------------------------------------------------- #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Требует внимания" %}</h2>
+      <p class="section__lead">
+        {% translate "Разделы, в которых данные неполны или ожидают решения" %}
+      </p>
+    </div>
+
+    <div class="stack stack--sm">
+      {% for item in attention %}
+        <a class="card card--interactive" href="{{ item.url }}">
+          <div class="card__body cluster cluster--between">
+            <div>
+              <p class="text-medium">{{ item.label }}</p>
+              <p class="text-sm text-muted">{{ item.hint }}</p>
+            </div>
+            <span class="badge {% if item.count %}badge--risk{% else %}badge--ready{% endif %} badge--pill">
+              {{ item.count }}
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Показатели -------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Система в цифрах" %}</h2>
+    </div>
+
+    <div class="grid grid--4">
+      <div class="metric">
+        <span class="metric__label">{% translate "Учётные записи" %}</span>
+        <span class="metric__value">{{ user_stats.total|spaced }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with active=user_stats.active blocked=user_stats.blocked %}
+            активных {{ active }}, заблокировано {{ blocked }}
+          {% endblocktranslate %}
+        </span>
+      </div>
+
+      <div class="metric">
+        <span class="metric__label">{% translate "Сотрудники" %}</span>
+        <span class="metric__value">{{ employee_total|spaced }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with count=employee_active %}работают {{ count }}{% endblocktranslate %}
+        </span>
+      </div>
+
+      <div class="metric metric--accent">
+        <span class="metric__label">{% translate "В кадровом резерве" %}</span>
+        <span class="metric__value">{{ reserve_total|spaced }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with count=pending_nominations %}
+            заявок на рассмотрении: {{ count }}
+          {% endblocktranslate %}
+        </span>
+      </div>
+
+      <div class="metric">
+        <span class="metric__label">{% translate "Неудачных входов за неделю" %}</span>
+        <span class="metric__value">{{ failed_logins_week|spaced }}</span>
+        <span class="metric__footer">{% translate "по данным журнала входов" %}</span>
+      </div>
+    </div>
+  </section>
+
+  {# --- Последние события -------------------------------------------------- #}
+  <section class="section">
+    <div class="grid grid--2 grid--gap-lg">
+
+      <div class="panel">
+        <h3 class="panel__title">{% translate "Последние действия" %}</h3>
+        {% if recent_events %}
+          <ol class="timeline">
+            {% for event in recent_events %}
+              <li class="timeline__item">
+                <span class="timeline__dot {% if event.severity == 'critical' %}timeline__dot--risk{% elif event.severity == 'warning' %}timeline__dot--develop{% endif %}"></span>
+                <div class="timeline__body">
+                  <p class="timeline__title">
+                    {{ event.get_action_display }} — {{ event.object_repr|default:event.message|localized|shorten:60 }}
+                  </p>
+                  <p class="timeline__time">
+                    {{ event.actor_repr|default:_("Система")|localized }} · {{ event.created_at|date_ru:"d.m.Y H:i" }}
+                  </p>
+                </div>
+              </li>
+            {% endfor %}
+          </ol>
+          <a class="action-link mt-3" href="{% url 'administration:audit' %}">
+            {% translate "Весь журнал аудита" %}<span class="action-link__arrow">→</span>
+          </a>
+        {% else %}
+          {% include "components/empty_state.html" with icon="shield" title=_("Действий пока не зафиксировано") %}
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h3 class="panel__title">{% translate "Последние входы" %}</h3>
+        {% if recent_logins %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>{% translate "Пользователь" %}</th>
+                  <th>{% translate "Результат" %}</th>
+                  <th>{% translate "Когда" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in recent_logins %}
+                  <tr>
+                    <td class="table__primary">{{ record.email }}</td>
+                    <td>
+                      <span class="badge {% if record.outcome == 'success' %}badge--ready{% else %}badge--risk{% endif %}">
+                        {{ record.get_outcome_display }}
+                      </span>
+                    </td>
+                    <td class="text-sm text-muted">{{ record.created_at|date_ru:"d.m.Y H:i" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "components/empty_state.html" with icon="users" title=_("Входов пока не было") %}
+        {% endif %}
+      </div>
+
+    </div>
+  </section>
+
+{% endblock %}

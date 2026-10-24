@@ -1,0 +1,61 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Форма учётной записи. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <fieldset class="form-section">
+      <legend class="form-section__title">{% translate "Сотрудник" %}</legend>
+      <p class="form-section__hint">
+        {% translate "Адрес электронной почты служит логином и адресом для уведомлений" %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.email wrapper_class="form-grid__full" %}
+        {% include "components/field.html" with field=form.last_name %}
+        {% include "components/field.html" with field=form.first_name %}
+        {% include "components/field.html" with field=form.middle_name %}
+        {% include "components/field.html" with field=form.phone %}
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend class="form-section__title">{% translate "Права доступа" %}</legend>
+      <p class="form-section__hint">
+        {% translate "Роль определяет доступные операции, область видимости — чьи данные доступны" %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.role %}
+        {% include "components/field.html" with field=form.scope_level %}
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend class="form-section__title">{% translate "Место в организации" %}</legend>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.branch %}
+        {% include "components/field.html" with field=form.department %}
+        {% include "components/field.html" with field=form.is_department_head inline=True wrapper_class="form-grid__full" %}
+        {% include "components/field.html" with field=form.is_active inline=True wrapper_class="form-grid__full" %}
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{% url 'administration:users' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

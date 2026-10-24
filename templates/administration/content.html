@@ -1,0 +1,161 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Содержимое публичной части. #}
+
+{% block title %}{% translate "Контент портала" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Страницы" %}</span>
+      <span class="metric__value">{{ pages|length }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=unpublished.pages %}черновиков: {{ count }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Статьи" %}</span>
+      <span class="metric__value">{{ article_total }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=article_drafts %}черновиков: {{ count }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Термины глоссария" %}</span>
+      <span class="metric__value">{{ terms|length }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Вопросы и ответы" %}</span>
+      <span class="metric__value">{{ faq_items|length }}</span>
+    </div>
+  </div>
+
+  {# --- Страницы ------------------------------------------------------------ #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Страницы" %}</h2>
+    </div>
+
+    {% if pages %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Заголовок" %}</th>
+              <th>{% translate "Адрес" %}</th>
+              <th>{% translate "В подвале" %}</th>
+              <th>{% translate "Публикация" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for page in pages %}
+              <tr>
+                <td class="table__primary">{{ page.title }}</td>
+                <td class="text-sm text-mono">/{{ page.slug }}/</td>
+                <td class="text-sm">
+                  {% if page.show_in_footer %}{% translate "да" %}{% else %}{% translate "нет" %}{% endif %}
+                </td>
+                <td>
+                  {% if page.is_published %}
+                    <span class="badge badge--ready">{% translate "опубликована" %}</span>
+                  {% else %}
+                    <span class="badge badge--outline">{% translate "черновик" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="book" title=_("Страниц нет") %}
+    {% endif %}
+  </section>
+
+  {# --- Статьи --------------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Статьи базы знаний" %}</h2>
+      <p class="section__lead">{% translate "Показаны последние сорок материалов" %}</p>
+    </div>
+
+    {% if articles %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Заголовок" %}</th>
+              <th>{% translate "Раздел" %}</th>
+              <th>{% translate "Автор" %}</th>
+              <th class="text-right">{% translate "Просмотров" %}</th>
+              <th>{% translate "Публикация" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for article in articles %}
+              <tr>
+                <td class="table__primary">{{ article.title|shorten:70 }}</td>
+                <td class="text-sm">{{ article.category.name|default:"—" }}</td>
+                <td class="text-sm">{{ article.author.short_name|default:"—" }}</td>
+                <td class="text-right tabular">{{ article.view_count|spaced }}</td>
+                <td>
+                  {% if article.is_published %}
+                    <span class="badge badge--ready">{{ article.published_at|date_ru:"d.m.Y" }}</span>
+                  {% else %}
+                    <span class="badge badge--outline">{% translate "черновик" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="book" title=_("Статей нет") %}
+    {% endif %}
+  </section>
+
+  {# --- Глоссарий и вопросы --------------------------------------------------- #}
+  <section class="section section--sunken">
+    <div class="grid grid--2 grid--gap-lg">
+
+      <div class="panel">
+        <h2 class="panel__title">{% translate "Глоссарий" %}</h2>
+        {% if terms %}
+          <ul class="stack stack--sm">
+            {% for term in terms %}
+              <li class="cluster cluster--between">
+                <span>{{ term.term }}</span>
+                {% if not term.is_published %}
+                  <span class="badge badge--outline badge--pill">{% translate "скрыт" %}</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-muted">{% translate "Термины не заданы" %}</p>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h2 class="panel__title">{% translate "Вопросы и ответы" %}</h2>
+        {% if faq_items %}
+          <ul class="stack stack--sm">
+            {% for item in faq_items %}
+              <li>
+                <p class="text-medium"><span class="line-clamp-2" title="{{ item.question }}">{{ item.question }}</span></p>
+                <p class="text-sm text-muted">{{ item.category.name }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-muted">{% translate "Вопросы не заданы" %}</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </section>
+
+{% endblock %}

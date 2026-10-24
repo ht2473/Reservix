@@ -1,0 +1,179 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Карточка учётной записи. #}
+
+{% block title %}{{ account.short_name }}{% endblock %}
+
+{% block page_actions %}
+  <div class="page-header__actions">
+    <a class="btn btn--secondary" href="{% url 'administration:user_edit' account.pk %}">
+      {% icon "edit" 16 %}{% translate "Изменить" %}
+    </a>
+    <form method="post" action="{% url 'administration:user_toggle' account.pk %}">
+      {% csrf_token %}
+      <button class="btn {% if account.is_active %}btn--danger-soft{% else %}btn--primary{% endif %}" type="submit">
+        {% if account.is_active %}{% translate "Заблокировать" %}{% else %}{% translate "Разблокировать" %}{% endif %}
+      </button>
+    </form>
+  </div>
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Права доступа" %}</h2>
+      <dl class="definition-list">
+        <div>
+          <dt>{% translate "Роль" %}</dt>
+          <dd>{{ account.role_label }}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Область видимости" %}</dt>
+          <dd>{{ account.get_scope_level_display }}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Филиал" %}</dt>
+          <dd>{{ account.branch.name|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Подразделение" %}</dt>
+          <dd>{{ account.department.name|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Руководитель подразделения" %}</dt>
+          <dd>{% if account.is_department_head %}{% translate "да" %}{% else %}{% translate "нет" %}{% endif %}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Двухфакторная аутентификация" %}</dt>
+          <dd>
+            {% if account.two_factor_enabled %}
+              <span class="badge badge--ready">{% translate "включена" %}</span>
+            {% else %}
+              <span class="badge badge--develop">{% translate "выключена" %}</span>
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Состояние записи" %}</h2>
+      <dl class="definition-list">
+        <div>
+          <dt>{% translate "Электронная почта" %}</dt>
+          <dd class="text-mono">{{ account.email }}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Телефон" %}</dt>
+          <dd>{{ account.phone|default:"—" }}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Создана" %}</dt>
+          <dd>{{ account.created_at|date_ru:"d.m.Y" }}</dd>
+        </div>
+        <div>
+          <dt>{% translate "Последняя активность" %}</dt>
+          <dd>
+            {% if account.last_activity_at %}
+              {{ account.last_activity_at|date_ru:"d.m.Y H:i" }}
+            {% else %}
+              {% translate "не входил" %}
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>{% translate "Пароль изменён" %}</dt>
+          <dd>
+            {% if account.password_changed_at %}
+              {{ account.password_changed_at|date_ru:"d.m.Y" }}
+            {% else %}
+              <span class="badge badge--develop">{% translate "выданный пароль не изменён" %}</span>
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>{% translate "Карточка сотрудника" %}</dt>
+          <dd>
+            {% comment %}
+              Адрес проверяется, а не подставляется сразу: раздел сотрудников подключается позже
+              блока учётных записей, и до тех пор `get_absolute_url` возвращает пустую строку.
+            {% endcomment %}
+            {% if employee %}
+              {% with employee_url=employee.get_absolute_url %}
+                {% if employee_url %}
+                  <a href="{{ employee_url }}">{{ employee.title }}</a>
+                {% else %}
+                  {{ employee.title }}
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              {% translate "не связана" %}
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "История входов" %}</h2>
+      {% if login_records %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Когда" %}</th>
+                <th>{% translate "Результат" %}</th>
+                <th>{% translate "Адрес" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for record in login_records %}
+                <tr>
+                  <td class="text-sm">{{ record.created_at|date_ru:"d.m.Y H:i" }}</td>
+                  <td>
+                    <span class="badge {% if record.outcome == 'success' %}badge--ready{% else %}badge--risk{% endif %}">
+                      {{ record.get_outcome_display }}
+                    </span>
+                  </td>
+                  <td class="text-sm text-mono">{{ record.ip_address|default:"—" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="users" title=_("Входов не зафиксировано") %}
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Действия в системе" %}</h2>
+      {% if audit_records %}
+        <ol class="timeline">
+          {% for record in audit_records %}
+            <li class="timeline__item">
+              <span class="timeline__dot"></span>
+              <div class="timeline__body">
+                <p class="timeline__title">
+                  {{ record.get_action_display }} — {{ record.object_repr|default:record.message|localized|shorten:50 }}
+                </p>
+                <p class="timeline__time">{{ record.created_at|date_ru:"d.m.Y H:i" }}</p>
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        {% include "components/empty_state.html" with icon="shield" title=_("Действий не зафиксировано") %}
+      {% endif %}
+    </div>
+
+  </div>
+
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Организационная структура. #}
+
+{% block title %}{% translate "Организационная структура" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Филиалы" %}</span>
+      <span class="metric__value">{{ branches|length }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Подразделения" %}</span>
+      <span class="metric__value">{{ departments|length }}</span>
+    </div>
+    <div class="metric metric--accent">
+      <span class="metric__label">{% translate "Штатных единиц" %}</span>
+      <span class="metric__value">{{ headcount_plan|spaced }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with fact=headcount_fact %}занято {{ fact }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Профили должностей" %}</span>
+      <span class="metric__value">{{ profiles_defined }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=positions_without_profile %}
+          без профиля: {{ count }}
+        {% endblocktranslate %}
+      </span>
+    </div>
+  </div>
+
+  {# --- Филиалы ------------------------------------------------------------ #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Филиалы" %}</h2>
+    </div>
+
+    <div class="grid grid--2">
+      {% for branch in branches %}
+        <a class="card card--interactive" href="{% url 'administration:branch_detail' branch.pk %}">
+          <div class="card__body">
+            <p class="card__title">
+              {{ branch.name }}
+              {% if branch.is_head_office %}
+              {% endif %}
+            </p>
+            <p class="card__subtitle">{{ branch.city }} · {{ branch.timezone }}</p>
+            <p class="text-sm text-muted mt-2">
+              {% blocktranslate with departments=branch.department_count employees=branch.employee_count %}
+                подразделений: {{ departments }}, сотрудников: {{ employees }}
+              {% endblocktranslate %}
+            </p>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Подразделения ------------------------------------------------------ #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Подразделения" %}</h2>
+      <p class="section__lead">
+        {% translate "Вложенность показана отступом: иерархия хранится материализованным путём" %}
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Наименование" %}</th>
+            <th>{% translate "Филиал" %}</th>
+            <th>{% translate "Руководитель" %}</th>
+            <th class="text-right">{% translate "Должностей" %}</th>
+            <th class="text-right">{% translate "Сотрудников" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for department in departments %}
+            <tr>
+              <td class="table__primary">
+                <span style="padding-left: {{ department.depth }}rem;">
+                  <a href="{% url 'administration:department_detail' department.pk %}">
+                    {{ department.name }}
+                  </a>
+                </span>
+                <div class="table__secondary text-mono">{{ department.code }}</div>
+              </td>
+              <td class="text-sm">{{ department.branch.name }}</td>
+              <td class="text-sm">{{ department.head.short_name|default:"—" }}</td>
+              <td class="text-right tabular">{{ department.position_count }}</td>
+              <td class="text-right tabular">{{ department.employee_count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# --- Грейды -------------------------------------------------------------- #}
+  <section class="section section--sunken">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Грейды" %}</h2>
+      <p class="section__lead">
+        {% translate "Уровень грейда определяет, какое перемещение считается повышением" %}
+      </p>
+    </div>
+
+    <div class="grid grid--auto">
+      {% for grade in grades %}
+        <div class="card">
+          <div class="card__body">
+            <p class="card__title">{{ grade.name }}</p>
+            <p class="card__subtitle">
+              {% blocktranslate with level=grade.level %}уровень {{ level }}{% endblocktranslate %}
+              {% if grade.is_managerial %}
+                · <span class="text-accent">{% translate "управленческий" %}</span>
+              {% endif %}
+            </p>
+            <p class="text-sm text-muted mt-2">
+              {% blocktranslate with count=grade.position_count %}должностей: {{ count }}{% endblocktranslate %}
+            </p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Штатное расписание -------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Штатное расписание" %}</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Должность" %}</th>
+            <th>{% translate "Грейд" %}</th>
+            <th>{% translate "Подразделение" %}</th>
+            <th class="text-right">{% translate "План" %}</th>
+            <th class="text-right">{% translate "Занято" %}</th>
+            <th>{% translate "Профиль" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for position in positions %}
+            <tr>
+              <td class="table__primary">
+                <a href="{% url 'administration:position_detail' position.pk %}">{{ position.name }}</a>
+                {% if position.is_key_position %}
+                  <span class="badge badge--risk badge--pill">{% translate "критичная" %}</span>
+                {% endif %}
+              </td>
+              <td class="text-sm">{{ position.grade.name }}</td>
+              <td class="text-sm">
+                {{ position.department.name|default:_("типовая") }}
+              </td>
+              <td class="text-right tabular">{{ position.headcount_plan }}</td>
+              <td class="text-right tabular">{{ position.employee_count }}</td>
+              <td>
+                {% if position.profile %}
+                  <span class="badge badge--ready">{% translate "составлен" %}</span>
+                {% else %}
+                  <span class="badge badge--develop">{% translate "не составлен" %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Карточка должности. #}
+
+{% block title %}{{ position.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Должность" %}</h2>
+      <dl class="definition-list">
+        <div><dt>{% translate "Код" %}</dt><dd class="text-mono">{{ position.code }}</dd></div>
+        <div><dt>{% translate "Грейд" %}</dt><dd>{{ position.grade.name }} ({{ position.grade.level }})</dd></div>
+        <div>
+          <dt>{% translate "Подразделение" %}</dt>
+          <dd>
+            {% if position.department %}
+              <a href="{% url 'administration:department_detail' position.department.pk %}">
+                {{ position.department.name }}
+              </a>
+            {% else %}
+              {% translate "типовая должность" %}
+            {% endif %}
+          </dd>
+        </div>
+        <div><dt>{% translate "Штатных единиц" %}</dt><dd class="tabular">{{ position.headcount_plan }}</dd></div>
+        <div>
+          <dt>{% translate "Критичность" %}</dt>
+          <dd>
+            {% if position.is_key_position %}
+              <span class="badge badge--risk">{% translate "критичная должность" %}</span>
+            {% else %}
+              {% translate "обычная" %}
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Профиль требований" %}</h2>
+      {% if profile %}
+        <dl class="definition-list">
+          <div><dt>{% translate "Образование не ниже" %}</dt><dd>{{ profile.get_min_education_display }}</dd></div>
+          <div>
+            <dt>{% translate "Общий стаж" %}</dt>
+            <dd>{% blocktranslate with years=profile.min_total_experience_years %}от {{ years }} лет{% endblocktranslate %}</dd>
+          </div>
+          <div>
+            <dt>{% translate "Профильный стаж" %}</dt>
+            <dd>{% blocktranslate with years=profile.min_relevant_experience_years %}от {{ years }} лет{% endblocktranslate %}</dd>
+          </div>
+          <div>
+            <dt>{% translate "Стаж в организации" %}</dt>
+            <dd>{{ profile.min_company_tenure_months|tenure }}</dd>
+          </div>
+          <div>
+            <dt>{% translate "Управленческий опыт" %}</dt>
+            <dd>
+              {% if profile.requires_management_experience %}
+                {% blocktranslate with count=profile.min_subordinates %}
+                  требуется, подчинённых не менее {{ count }}
+                {% endblocktranslate %}
+              {% else %}
+                {% translate "не требуется" %}
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+        {% if profile.purpose %}
+          <p class="text-sm text-muted mt-3">{{ profile.purpose }}</p>
+        {% endif %}
+      {% else %}
+        {% include "components/empty_state.html" with icon="clipboard" title=_("Профиль не составлен") text=_("Без профиля соответствие кандидата должности не рассчитывается") %}
+      {% endif %}
+    </div>
+
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Занимают должность" %}</h2>
+      {% if employees %}
+        <ul class="stack stack--sm">
+          {% for employee in employees %}
+            <li class="cluster cluster--between">
+              <span>{{ employee.short_name }}</span>
+              <span class="text-sm text-muted">{{ employee.department.name }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Ставка вакантна" %}</p>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Кадровый резерв на должность" %}</h2>
+      {% if reserve_entries %}
+        <ul class="stack stack--sm">
+          {% for entry in reserve_entries %}
+            <li class="cluster cluster--between">
+              <span>{{ entry.employee.short_name }}</span>
+              {% readiness_badge entry.readiness_level entry.get_readiness_level_display %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Резервистов нет" %}</p>
+      {% endif %}
+
+      {% if competency_models %}
+        <h2 class="panel__title mt-6">{% translate "Модели компетенций" %}</h2>
+        <ul class="stack stack--sm">
+          {% for model in competency_models %}
+            <li class="text-sm">{{ model }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+
+  </div>
+
+{% endblock %}

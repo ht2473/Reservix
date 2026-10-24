@@ -1,0 +1,72 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Карточка филиала: реквизиты и состав подразделений. #}
+
+{% block title %}{{ branch.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Реквизиты" %}</h2>
+      <dl class="definition-list">
+        <div><dt>{% translate "Код" %}</dt><dd class="text-mono">{{ branch.code }}</dd></div>
+        <div><dt>{% translate "Город" %}</dt><dd>{{ branch.city }}</dd></div>
+        <div><dt>{% translate "Адрес" %}</dt><dd>{{ branch.address|default:"—" }}</dd></div>
+        <div><dt>{% translate "Часовой пояс" %}</dt><dd class="text-mono">{{ branch.timezone }}</dd></div>
+        <div><dt>{% translate "Телефон" %}</dt><dd>{{ branch.phone|default:"—" }}</dd></div>
+        <div><dt>{% translate "Почта" %}</dt><dd>{{ branch.email|default:"—" }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Численность" %}</h2>
+      <div class="metric metric--accent">
+        <span class="metric__label">{% translate "Работают в филиале" %}</span>
+        <span class="metric__value">{{ employee_count|spaced }}</span>
+      </div>
+      <p class="text-sm text-muted mt-3">
+        {% translate "Часовой пояс филиала применяется к срокам мероприятий развития: дедлайн новосибирского резервиста не трактуется по московскому времени." %}
+      </p>
+    </div>
+  </div>
+
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Подразделения филиала" %}</h2>
+    </div>
+
+    {% if departments %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Наименование" %}</th>
+              <th>{% translate "Руководитель" %}</th>
+              <th class="text-right">{% translate "Сотрудников" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for department in departments %}
+              <tr>
+                <td class="table__primary">
+                  <span style="padding-left: {{ department.depth }}rem;">
+                    <a href="{% url 'administration:department_detail' department.pk %}">
+                      {{ department.name }}
+                    </a>
+                  </span>
+                </td>
+                <td class="text-sm">{{ department.head.short_name|default:"—" }}</td>
+                <td class="text-right tabular">{{ department.employee_count }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="sitemap" title=_("Подразделений нет") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Справочники предметной области. #}
+
+{% block title %}{% translate "Справочники" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Компетенции" %}</span>
+      <span class="metric__value">{{ competencies|length }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=competencies_incomplete|length %}
+          с неполной шкалой: {{ count }}
+        {% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Модели компетенций" %}</span>
+      <span class="metric__value">{{ competency_models|length }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=models_unbalanced|length %}
+          веса не сбалансированы: {{ count }}
+        {% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Группы резерва" %}</span>
+      <span class="metric__value">{{ reserve_groups|length }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Учебные ресурсы" %}</span>
+      <span class="metric__value">{{ learning_total }}</span>
+    </div>
+  </div>
+
+  {# --- Категории компетенций ---------------------------------------------- #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Категории компетенций" %}</h2>
+      <p class="section__lead">
+        {% translate "Категории задают оси лепестковой диаграммы: без них радар из двадцати осей нечитаем" %}
+      </p>
+    </div>
+
+    <div class="grid grid--auto">
+      {% for category in categories %}
+        <div class="card">
+          <div class="card__body">
+            <p class="card__title">{{ category.name }}</p>
+            <p class="card__subtitle">{{ category.get_kind_display }}</p>
+            <p class="text-sm text-muted mt-2">
+              {% blocktranslate with count=category.competency_count %}
+                компетенций: {{ count }}
+              {% endblocktranslate %}
+            </p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Компетенции --------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Компетенции" %}</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Наименование" %}</th>
+            <th>{% translate "Категория" %}</th>
+            <th>{% translate "Тип" %}</th>
+            <th>{% translate "Шкала" %}</th>
+            <th>{% translate "Состояние" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for competency in competencies %}
+            <tr>
+              <td class="table__primary">
+                {{ competency.name }}
+                <div class="table__secondary text-mono">{{ competency.code }}</div>
+              </td>
+              <td class="text-sm">{{ competency.category.name }}</td>
+              <td class="text-sm">{{ competency.get_kind_display }}</td>
+              <td>
+                {% if competency.has_full_scale %}
+                  <span class="badge badge--ready">{% translate "описана" %}</span>
+                {% else %}
+                  <span class="badge badge--develop">
+                    {% blocktranslate with count=competency.scale_levels.count %}
+                      уровней: {{ count }}
+                    {% endblocktranslate %}
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if competency.is_active %}
+                  <span class="badge badge--neutral">{% translate "действует" %}</span>
+                {% else %}
+                  <span class="badge badge--outline">{% translate "выведена" %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# --- Модели компетенций -------------------------------------------------- #}
+  <section class="section section--sunken">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Модели компетенций" %}</h2>
+      <p class="section__lead">
+        {% translate "Сумма весов требований должна быть равна единице: иначе балл соответствия нельзя трактовать как долю" %}
+      </p>
+    </div>
+
+    {% if competency_models %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Модель" %}</th>
+              <th class="text-right">{% translate "Требований" %}</th>
+              <th class="text-right">{% translate "Сумма весов" %}</th>
+              <th>{% translate "Публикация" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for model in competency_models %}
+              <tr>
+                <td class="table__primary">
+                  {{ model.name }}
+                  <div class="table__secondary">
+                    {% blocktranslate with version=model.version %}версия {{ version }}{% endblocktranslate %}
+                  </div>
+                </td>
+                <td class="text-right tabular">{{ model.requirements.count }}</td>
+                <td class="text-right tabular">
+                  {{ model.weight_sum|score:3 }}
+                  {% if not model.is_weight_balanced %}
+                    <span class="badge badge--risk badge--pill">{% translate "не 1,000" %}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if model.is_published %}
+                    <span class="badge badge--ready">{% translate "опубликована" %}</span>
+                  {% else %}
+                    <span class="badge badge--outline">{% translate "черновик" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="layers" title=_("Модели компетенций не заданы") %}
+    {% endif %}
+  </section>
+
+  {# --- Группы резерва ------------------------------------------------------ #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Группы кадрового резерва" %}</h2>
+    </div>
+
+    {% if reserve_groups %}
+      <div class="grid grid--2">
+        {% for group in reserve_groups %}
+          <div class="card">
+            <div class="card__body">
+              <p class="card__title">{{ group.name }}</p>
+              <p class="card__subtitle">{{ group.get_kind_display }}</p>
+              <p class="text-sm text-muted mt-2">
+                {% blocktranslate with horizon=group.horizon_months entries=group.entry_count %}
+                  горизонт подготовки: {{ horizon }} мес., записей: {{ entries }}
+                {% endblocktranslate %}
+              </p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="bookmark" title=_("Группы резерва не заданы") text=_("Группа задаёт горизонт подготовки и порог зачисления") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

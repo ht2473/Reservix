@@ -1,0 +1,76 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Обращение и ответ на него. #}
+
+{% block title %}{{ item.subject }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Обращение" %}</h2>
+
+      <dl class="definition-list">
+        <div><dt>{% translate "Заявитель" %}</dt><dd>{{ item.name }}</dd></div>
+        <div><dt>{% translate "Почта" %}</dt><dd class="text-mono">{{ item.email }}</dd></div>
+        <div><dt>{% translate "Телефон" %}</dt><dd>{{ item.phone|default:"—" }}</dd></div>
+        <div><dt>{% translate "Организация" %}</dt><dd>{{ item.organization|default:"—" }}</dd></div>
+        <div><dt>{% translate "Тема" %}</dt><dd>{{ item.get_topic_display }}</dd></div>
+        <div><dt>{% translate "Поступило" %}</dt><dd>{{ item.created_at|date_ru:"d.m.Y H:i" }}</dd></div>
+        <div>
+          <dt>{% translate "Согласие на обработку" %}</dt>
+          <dd>
+            {% if item.consent_given %}
+              <span class="badge badge--ready">{% translate "получено" %}</span>
+            {% else %}
+              <span class="badge badge--risk">{% translate "не получено" %}</span>
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+
+      <h3 class="panel__title mt-6">{{ item.subject }}</h3>
+      <div class="prose">
+        <p>{{ item.message|linebreaksbr }}</p>
+      </div>
+
+      {% if item.answered_at %}
+        <p class="text-sm text-muted mt-4">
+          {% blocktranslate with author=item.answered_by.short_name|default:_("сотрудник") when=item.answered_at|date_ru:"d.m.Y H:i" %}
+            Ответ дан: {{ author }}, {{ when }}
+          {% endblocktranslate %}
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Обработка" %}</h2>
+
+      <form method="post" class="stack" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        {% include "components/field.html" with field=form.status %}
+        {% include "components/field.html" with field=form.answer %}
+        {% include "components/field.html" with field=form.internal_note %}
+
+        <div class="form-actions">
+          <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+          <a class="btn btn--ghost" href="{% url 'administration:feedback' %}">
+            {% translate "К списку обращений" %}
+          </a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+{% endblock %}

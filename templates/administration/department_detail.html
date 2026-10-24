@@ -1,0 +1,107 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Карточка подразделения: положение в иерархии, штат и должности. #}
+
+{% block title %}{{ department.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Сведения" %}</h2>
+      <dl class="definition-list">
+        <div><dt>{% translate "Код" %}</dt><dd class="text-mono">{{ department.code }}</dd></div>
+        <div>
+          <dt>{% translate "Филиал" %}</dt>
+          <dd>
+            <a href="{% url 'administration:branch_detail' department.branch.pk %}">
+              {{ department.branch.name }}
+            </a>
+          </dd>
+        </div>
+        <div>
+          <dt>{% translate "Вышестоящее" %}</dt>
+          <dd>
+            {% if department.parent %}
+              <a href="{% url 'administration:department_detail' department.parent.pk %}">
+                {{ department.parent.name }}
+              </a>
+            {% else %}
+              {% translate "верхний уровень" %}
+            {% endif %}
+          </dd>
+        </div>
+        <div><dt>{% translate "Руководитель" %}</dt><dd>{{ department.head.short_name|default:"—" }}</dd></div>
+        <div><dt>{% translate "Путь в иерархии" %}</dt><dd class="text-mono text-sm">{{ department.path }}</dd></div>
+        <div><dt>{% translate "Сотрудников" %}</dt><dd class="tabular">{{ employee_count }}</dd></div>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel__title">{% translate "Вложенные подразделения" %}</h2>
+      {% if children %}
+        <ul class="stack stack--sm">
+          {% for child in children %}
+            <li>
+              <a class="action-link" href="{% url 'administration:department_detail' child.pk %}">
+                {{ child.name }}<span class="action-link__arrow">→</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Вложенных подразделений нет" %}</p>
+      {% endif %}
+
+      <h2 class="panel__title mt-6">{% translate "Должности подразделения" %}</h2>
+      {% if positions %}
+        <ul class="stack stack--sm">
+          {% for position in positions %}
+            <li class="cluster cluster--between">
+              <a href="{% url 'administration:position_detail' position.pk %}">{{ position.name }}</a>
+              <span class="text-sm text-muted">{{ position.grade.name }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Должности не закреплены" %}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Сотрудники подразделения" %}</h2>
+      <p class="section__lead">{% translate "Показаны первые пятьдесят записей" %}</p>
+    </div>
+
+    {% if employees %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Табельный номер" %}</th>
+              <th>{% translate "Стаж" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for employee in employees %}
+              <tr>
+                <td class="table__primary">{{ employee.short_name }}</td>
+                <td class="text-sm">{{ employee.title }}</td>
+                <td class="text-sm text-mono">{{ employee.personnel_number }}</td>
+                <td class="text-sm">{{ employee.tenure_months|tenure }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="users" title=_("Сотрудников нет") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

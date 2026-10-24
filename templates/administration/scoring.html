@@ -1,0 +1,160 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Модель скоринга. #}
+
+{% block title %}{% translate "Модель скоринга" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {# --- Частные критерии ---------------------------------------------------- #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Частные критерии готовности" %}</h2>
+      <p class="section__lead">
+        {% translate "Каждый критерий нормируется к диапазону 0–100 и вычисляется по своему источнику данных" %}
+      </p>
+    </div>
+
+    {% if criteria %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Критерий" %}</th>
+              <th>{% translate "Источник" %}</th>
+              <th>{% translate "Направление" %}</th>
+              <th>{% translate "Единица" %}</th>
+              <th>{% translate "Состояние" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for criterion in criteria %}
+              <tr>
+                <td class="table__primary">
+                  {{ criterion.name }}
+                  {% if criterion.description %}
+                    <div class="table__secondary"><span class="line-clamp-2" title="{{ criterion.description }}">{{ criterion.description }}</span></div>
+                  {% endif %}
+                </td>
+                <td class="text-sm text-mono">{{ criterion.source }}</td>
+                <td class="text-sm">{{ criterion.get_direction_display }}</td>
+                <td class="text-sm">{{ criterion.unit|default:"—" }}</td>
+                <td>
+                  {% if criterion.is_active %}
+                    <span class="badge badge--ready">{% translate "используется" %}</span>
+                  {% else %}
+                    <span class="badge badge--outline">{% translate "выключен" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="sliders" title=_("Критерии не заданы") text=_("Состав критериев определяется на этапе настройки аналитического ядра") %}
+    {% endif %}
+  </section>
+
+  {# --- Схемы весов --------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Схемы оценивания" %}</h2>
+      <p class="section__lead">
+        {% translate "Три способа получения весов сравниваются между собой: расхождение их результатов — предмет анализа устойчивости ранжирования" %}
+      </p>
+    </div>
+
+    {% if schemes %}
+      <div class="stack">
+        {% for scheme in schemes %}
+          <article class="card">
+            <div class="card__header">
+              <div>
+                <p class="card__title">
+                  {{ scheme.name }}
+                  {% if scheme.is_default %}
+                    <span class="badge badge--accent badge--pill">{% translate "по умолчанию" %}</span>
+                  {% endif %}
+                </p>
+                <p class="card__subtitle">
+                  {{ scheme.get_method_display }} · {{ scheme.get_aggregation_display }}
+                </p>
+              </div>
+              <div>
+                {% if scheme.is_ready %}
+                  <span class="badge badge--ready">{% translate "готова к расчёту" %}</span>
+                {% else %}
+                  <span class="badge badge--risk">{% translate "не готова" %}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="card__body">
+              {% if scheme.method == "ahp" %}
+                <p class="text-sm {% if scheme.is_consistent %}text-muted{% else %}text-risk{% endif %}">
+                  {% blocktranslate with ratio=scheme.consistency_ratio|default:"—" limit=scheme.consistency_threshold %}
+                    Отношение согласованности суждений: {{ ratio }} при допустимом пороге {{ limit }}
+                  {% endblocktranslate %}
+                </p>
+              {% endif %}
+
+              {% if scheme.weights.all %}
+                <ul class="stack stack--sm mt-3">
+                  {% for weight in scheme.weights.all %}
+                    <li>
+                      <div class="cluster cluster--between">
+                        <span class="text-sm">{{ weight.criterion.name }}</span>
+                        <span class="text-sm tabular">{{ weight.percent }}%</span>
+                      </div>
+                      {% progress_bar weight.percent 100 "" "neutral" %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <p class="text-sm text-muted">{% translate "Веса критериев не заданы" %}</p>
+              {% endif %}
+
+              {% if scheme.source_note %}
+                <p class="text-sm text-muted mt-3">{{ scheme.source_note }}</p>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="sliders" title=_("Схемы оценивания не заданы") text=_("Схема определяет веса критериев и способ их свёртки в индекс готовности") %}
+    {% endif %}
+  </section>
+
+  {# --- Пороговые значения --------------------------------------------------- #}
+  <section class="section section--sunken">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Пороговые значения" %}</h2>
+      <p class="section__lead">
+        {% translate "Значения вынесены в конфигурацию: каждое из них — управленческое решение организации, а не техническая константа" %}
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Параметр" %}</th>
+            <th class="text-right">{% translate "Значение" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for label, value in settings_values %}
+            <tr>
+              <td>{{ label }}</td>
+              <td class="text-right tabular">{{ value }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+{% endblock %}

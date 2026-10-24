@@ -1,0 +1,77 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Состав накопленных данных. #}
+
+{% block title %}{% translate "Данные системы" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric metric--accent">
+      <span class="metric__label">{% translate "Всего записей" %}</span>
+      <span class="metric__value">{{ total_records|spaced }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Перенесено из исходной базы" %}</span>
+      <span class="metric__value">{{ legacy_records|spaced }}</span>
+      <span class="metric__footer">
+        {% translate "записи, сохранившие ссылку на строку выгрузки db/cadr_reserve.sql" %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Разделов предметной области" %}</span>
+      <span class="metric__value">{{ sections|length }}</span>
+    </div>
+  </div>
+
+  {% for section in sections %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{{ section.title }}</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Сущность" %}</th>
+              <th class="text-right">{% translate "Записей" %}</th>
+              <th class="text-right">{% translate "Из них перенесено" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for label, total, legacy in section.rows %}
+              <tr>
+                <td class="table__primary">{{ label }}</td>
+                <td class="text-right tabular">{{ total|spaced }}</td>
+                <td class="text-right tabular text-muted">
+                  {% if legacy is None %}—{% else %}{{ legacy|spaced }}{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endfor %}
+
+  <section class="section section--sunken">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Сопровождение данных" %}</h2>
+    </div>
+
+    <div class="prose">
+      <p>
+        {% translate "Перенос исходной базы данных выполняется командой сопровождения. Она читает текстовую выгрузку, сопоставляет свободный текст со справочниками и сообщает обо всех расхождениях, не прерывая перенос." %}
+      </p>
+      <pre class="text-mono text-sm"><code>uv run python manage.py import_legacy --dry-run
+uv run python manage.py import_legacy
+uv run python manage.py seed_people</code></pre>
+      <p class="text-sm text-muted">
+        {% translate "Режим разбора показывает, какие наименования должностей не сопоставились со штатным расписанием, не записывая ничего в базу." %}
+      </p>
+    </div>
+  </section>
+
+{% endblock %}

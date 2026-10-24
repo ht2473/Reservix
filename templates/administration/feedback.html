@@ -1,0 +1,96 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Обращения с публичной части сайта. #}
+
+{% block title %}{% translate "Обратная связь" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--auto mb-6">
+    {% for value, label in statuses %}
+      <div class="metric">
+        <span class="metric__label">{{ label }}</span>
+        <span class="metric__value">{{ status_counts|get_item:value|default:"0" }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <form class="filter-panel mb-4" method="get" action="">
+    <div class="filter-panel__row">
+      <div class="field">
+        <label class="field__label" for="filter-status">{% translate "Состояние" %}</label>
+        <select class="field-select" id="filter-status" name="status">
+          <option value="">{% translate "Любое" %}</option>
+          {% for value, label in statuses %}
+            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="filter-topic">{% translate "Тема" %}</label>
+        <select class="field-select" id="filter-topic" name="topic">
+          <option value="">{% translate "Любая" %}</option>
+          {% for value, label in topics %}
+            <option value="{{ value }}" {% if request.GET.topic == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-panel__actions">
+      <button class="btn btn--secondary btn--sm" type="submit">{% translate "Применить" %}</button>
+      <a class="btn btn--ghost btn--sm" href="{% url 'administration:feedback' %}">
+        {% translate "Сбросить" %}
+      </a>
+    </div>
+  </form>
+
+  {% if items %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Поступило" %}</th>
+            <th>{% translate "Заявитель" %}</th>
+            <th>{% translate "Тема" %}</th>
+            <th>{% translate "Заголовок" %}</th>
+            <th>{% translate "Состояние" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td class="text-sm text-muted">{{ item.created_at|date_ru:"d.m.Y H:i" }}</td>
+              <td class="text-sm">
+                {{ item.name }}
+                <div class="table__secondary">{{ item.email }}</div>
+              </td>
+              <td class="text-sm">{{ item.get_topic_display }}</td>
+              <td class="table__primary">
+                <a href="{% url 'administration:feedback_detail' item.pk %}">
+                  {{ item.subject|shorten:60 }}
+                </a>
+              </td>
+              <td>
+                <span class="badge {% if item.status == 'new' %}badge--risk{% elif item.status == 'answered' %}badge--ready{% else %}badge--neutral{% endif %}">
+                  {{ item.get_status_display }}
+                </span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="mail" title=_("Обращений нет") text=_("Форма обратной связи доступна в публичной части сайта") %}
+  {% endif %}
+
+{% endblock %}

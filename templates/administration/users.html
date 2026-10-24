@@ -1,0 +1,110 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Учётные записи и роли. #}
+
+{% block title %}{% translate "Пользователи и роли" %}{% endblock %}
+
+{% block page_actions %}
+  <div class="page-header__actions">
+    <a class="btn btn--primary" href="{% url 'administration:user_create' %}">
+      {% icon "plus" 16 %}{% translate "Новая учётная запись" %}
+    </a>
+  </div>
+{% endblock %}
+
+{% block workspace_content %}
+
+  {# --- Распределение по ролям -------------------------------------------- #}
+  <div class="grid grid--auto mb-6">
+    {% for value, label in roles %}
+      <div class="metric">
+        <span class="metric__label">{{ label }}</span>
+        <span class="metric__value">{{ role_counts|get_item:value|default:"0" }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# --- Фильтры ------------------------------------------------------------ #}
+  <form class="filter-panel mb-4" method="get" action="">
+    <div class="filter-panel__row">
+      {% for field in filter_form %}
+        {% include "components/field.html" with field=field %}
+      {% endfor %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--secondary btn--sm" type="submit">{% translate "Применить" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'administration:users' %}">
+          {% translate "Сбросить" %}
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# --- Список ------------------------------------------------------------- #}
+  {% if users %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>
+              <a class="table__sort" href="?{% query_replace sort='name' %}">
+                {% translate "Сотрудник" %}
+              </a>
+            </th>
+            <th>{% translate "Роль" %}</th>
+            <th>{% translate "Область видимости" %}</th>
+            <th>{% translate "Подразделение" %}</th>
+            <th>
+              <a class="table__sort" href="?{% query_replace sort='-activity' %}">
+                {% translate "Активность" %}
+              </a>
+            </th>
+            <th>{% translate "Состояние" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for account in users %}
+            <tr>
+              <td class="table__primary">
+                <a href="{% url 'administration:user_detail' account.pk %}">{{ account.short_name }}</a>
+                <div class="table__secondary">{{ account.email }}</div>
+              </td>
+              <td>{{ account.role_label }}</td>
+              <td class="text-sm">{{ account.get_scope_level_display }}</td>
+              <td class="text-sm">
+                {{ account.department.name|default:"—" }}
+                {% if account.is_department_head %}
+                  <span class="badge badge--outline badge--pill">{% translate "рук." %}</span>
+                {% endif %}
+              </td>
+              <td class="text-sm text-muted">
+                {% if account.last_activity_at %}
+                  {{ account.last_activity_at|date_ru:"d.m.Y H:i" }}
+                {% else %}
+                  {% translate "не входил" %}
+                {% endif %}
+              </td>
+              <td>
+                {% if account.is_active %}
+                  <span class="badge badge--ready">{% translate "активна" %}</span>
+                {% else %}
+                  <span class="badge badge--risk">{% translate "заблокирована" %}</span>
+                {% endif %}
+                {% if account.must_change_password %}
+                  <span class="badge badge--develop">{% translate "пароль не изменён" %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="users" title=_("Учётные записи не найдены") text=_("Измените условия отбора или создайте новую запись") action_url=admin_user_create_url action_label=_("Новая учётная запись") %}
+  {% endif %}
+
+{% endblock %}

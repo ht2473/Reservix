@@ -1,0 +1,113 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Журнал аудита. #}
+
+{% block title %}{% translate "Журнал аудита" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form class="filter-panel mb-4" method="get" action="">
+    <div class="filter-panel__row">
+      <div class="field">
+        <label class="field__label" for="filter-q">{% translate "Поиск" %}</label>
+        <input class="field-input" id="filter-q" type="search" name="q"
+               value="{{ current_filters.q|default:'' }}"
+               placeholder="{% translate 'Объект, описание или автор' %}">
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="filter-action">{% translate "Действие" %}</label>
+        <select class="field-select" id="filter-action" name="action">
+          <option value="">{% translate "Любое" %}</option>
+          {% for value, label in actions %}
+            <option value="{{ value }}" {% if current_filters.action == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="filter-severity">{% translate "Значимость" %}</label>
+        <select class="field-select" id="filter-severity" name="severity">
+          <option value="">{% translate "Любая" %}</option>
+          {% for value, label in severities %}
+            <option value="{{ value }}" {% if current_filters.severity == value %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="filter-since">{% translate "С даты" %}</label>
+        <input class="field-input field-input--date" id="filter-since" type="date" name="since"
+               value="{{ current_filters.since|default:'' }}">
+      </div>
+    </div>
+
+    <div class="filter-panel__actions">
+      <button class="btn btn--secondary btn--sm" type="submit">{% translate "Применить" %}</button>
+      {% if current_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'administration:audit' %}">
+          {% translate "Сбросить" %}
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <p class="text-sm text-muted mb-3">
+    {% blocktranslate with total=total_records %}
+      Всего записей в журнале: {{ total }}
+    {% endblocktranslate %}
+  </p>
+
+  {% if records %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Время" %}</th>
+            <th>{% translate "Автор" %}</th>
+            <th>{% translate "Действие" %}</th>
+            <th>{% translate "Объект" %}</th>
+            <th>{% translate "Адрес запроса" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td class="text-sm text-muted">{{ record.created_at|date_ru:"d.m.Y H:i:s" }}</td>
+              <td class="text-sm">
+                {{ record.actor_repr|default:_("Система")|localized }}
+                {% if record.actor_role %}
+                  <div class="table__secondary">{{ record.actor_role }}</div>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {% if record.severity == 'critical' %}badge--risk{% elif record.severity == 'warning' %}badge--develop{% else %}badge--neutral{% endif %}">
+                  {{ record.get_action_display }}
+                </span>
+              </td>
+              <td class="table__primary">
+                {{ record.object_repr|default:record.message|localized|shorten:70 }}
+                {% if record.reason %}
+                  <div class="table__secondary">{{ record.reason|shorten:70 }}</div>
+                {% endif %}
+              </td>
+              <td class="text-sm text-mono text-muted">
+                {{ record.request_method }} {{ record.request_path|shorten:40 }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="shield" title=_("Записей не найдено") text=_("Измените условия отбора: возможно, за выбранный период действий не было") %}
+  {% endif %}
+
+{% endblock %}
