@@ -66,6 +66,9 @@ jobs:
         # Непереведённая строка в каталоге означает русский текст в
         # английском интерфейсе — такое расхождение видно пользователю.
         run: uv run python scripts/i18n.py check
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+          DJANGO_SECRET_KEY: ci-only-secret-key-not-used-in-production-environment
 
   # --- Безопасность ----------------------------------------------------------
   security:
