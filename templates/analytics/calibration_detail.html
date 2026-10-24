@@ -1,0 +1,139 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка сессии калибровки. #}
+
+{% block title %}{{ session.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Рассмотрено оценок" %}</span>
+      <span class="metric__value">{{ session.placement_count }}</span>
+      <span class="metric__footer">{{ session.held_on|date_ru }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Изменено" %}</span>
+      <span class="metric__value">{{ effect.adjusted }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=effect.moved_cells %}сменили ячейку — {{ count }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Сдвиг результативности" %}</span>
+      <span class="metric__value">{{ effect.performance_shift|delta:1 }}</span>
+      <span class="metric__footer">{% translate "среднее изменение по изменённым оценкам" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Сдвиг потенциала" %}</span>
+      <span class="metric__value">{{ effect.potential_shift|delta:1 }}</span>
+      <span class="metric__footer">{% translate "отрицательное значение — оценки завышались" %}</span>
+    </div>
+  </div>
+
+  <div class="grid grid--2 mb-6">
+    <div class="panel">
+      <p class="text-sm text-semibold">{% translate "Повестка" %}</p>
+      <p class="text-sm">{{ session.agenda|default:"—" }}</p>
+    </div>
+    <div class="panel">
+      <p class="text-sm text-semibold">{% translate "Сведения" %}</p>
+      <dl class="definition-list">
+        <dt>{% translate "Состояние" %}</dt>
+        <dd>{{ session.get_status_display }}</dd>
+
+        <dt>{% translate "Ведущий" %}</dt>
+        <dd>{{ session.facilitator|person }}</dd>
+
+        <dt>{% translate "Область" %}</dt>
+        <dd>{% if session.branch %}{{ session.branch.name }}{% elif session.department %}{{ session.department.name }}{% else %}{% translate "вся организация" %}{% endif %}</dd>
+
+        {% if session.campaign %}
+          <dt>{% translate "Кампания оценки" %}</dt>
+          <dd>{{ session.campaign.name }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+
+  {% if session.decisions %}
+    <div class="panel mb-6">
+      <p class="text-sm text-semibold">{% translate "Протокол" %}</p>
+      <p class="text-sm">{{ session.decisions|linebreaksbr }}</p>
+    </div>
+  {% elif can_edit_methodology and session.status != "completed" and session.status != "cancelled" %}
+    <form method="post" action="{% url 'analytics:calibration_close' session.public_id %}"
+          class="panel mb-6 stack stack--sm">
+      {% csrf_token %}
+      <p class="text-sm text-semibold">{% translate "Завершить сессию" %}</p>
+      <p class="text-xs text-muted">
+        {% translate "Протокол обязателен: сессия без записи о том, кто и на каком основании перемещён, через полгода неотличима от отсутствия сессии." %}
+      </p>
+      {% include "components/field.html" with field=close_form.decisions %}
+      <div>
+        <button class="btn btn--primary btn--sm" type="submit">{% translate "Завершить" %}</button>
+      </div>
+    </form>
+  {% endif %}
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Рассмотренные оценки" %}</h2>
+      <p class="section__lead">{% translate "Изменённые идут первыми: они и составляют результат сессии" %}</p>
+    </div>
+
+    {% if placements %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Подразделение" %}</th>
+              <th class="num">{% translate "Было" %}</th>
+              <th class="num">{% translate "Стало" %}</th>
+              <th>{% translate "Ячейка" %}</th>
+              <th>{% translate "Обоснование" %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for placement in placements %}
+              <tr>
+                <td>{{ placement.employee.short_name }}</td>
+                <td class="text-sm text-muted">{{ placement.employee.department.name|default:"—" }}</td>
+                <td class="num tabular">
+                  {% if placement.initial_performance is not None %}
+                    {{ placement.initial_performance|score:0 }} / {{ placement.initial_potential|score:0 }}
+                  {% else %}—{% endif %}
+                </td>
+                <td class="num tabular">
+                  {{ placement.performance|score:0 }} / {{ placement.potential|score:0 }}
+                </td>
+                <td class="text-sm">{{ placement.get_cell_display }}</td>
+                <td class="text-xs text-muted">
+                  {% if placement.is_adjusted %}
+                    <span class="line-clamp-2" title="{{ placement.comment }}">{{ placement.comment }}</span>
+                  {% else %}
+                    <span class="badge badge--outline badge--pill">{% translate "подтверждено" %}</span>
+                  {% endif %}
+                </td>
+                <td class="num">
+                  {% if session.status != "completed" %}
+                    <a class="btn btn--ghost btn--sm"
+                       href="{% url 'analytics:calibrate' placement.pk %}?session={{ session.pk }}">
+                      {% translate "Изменить" %}
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="grid" title=_("К сессии не привязано ни одной оценки") text=_("Свяжите размещения с сессией, чтобы протокол отражал, что именно рассматривалось") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Список размещений в матрице 9-box. #}
+
+{% block title %}{% translate "Размещения в матрице" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric {% if auto_count %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Ожидают подтверждения" %}</span>
+      <span class="metric__value">{{ auto_count }}</span>
+      <span class="metric__footer">{% translate "оценок выставлено системой и не пересмотрено человеком" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Скорректировано" %}</span>
+      <span class="metric__value">{{ adjusted_count }}</span>
+      <span class="metric__footer">{% translate "изменено на сессиях калибровки" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Всего в выборке" %}</span>
+      <span class="metric__value">{{ page_obj.paginator.count|default:placements|length }}</span>
+      <span class="metric__footer">{% translate "действующих оценок" %}</span>
+    </div>
+  </div>
+
+  <div class="cluster cluster--sm mb-4">
+    <a class="btn btn--secondary btn--sm" href="{% url 'analytics:ninebox' %}">
+      {% translate "К матрице" %}
+    </a>
+    {% if can_edit_methodology %}
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:placement_create' %}">
+        {% translate "Оценить сотрудника" %}
+      </a>
+    {% endif %}
+  </div>
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.branch %}
+      {% include "components/field.html" with field=filter_form.department %}
+      {% include "components/field.html" with field=filter_form.cell %}
+      {% include "components/field.html" with field=filter_form.origin %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'analytics:placements' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if placements %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Сотрудник" %}</th>
+            <th>{% translate "Подразделение" %}</th>
+            <th class="num">{% translate "Результативность" %}</th>
+            <th class="num">{% translate "Потенциал" %}</th>
+            <th>{% translate "Ячейка" %}</th>
+            <th>{% translate "Происхождение оценки" %}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for placement in placements %}
+            <tr>
+              <td>{{ placement.employee.short_name }}</td>
+              <td class="text-sm text-muted">{{ placement.employee.department.name|default:"—" }}</td>
+              <td class="num tabular">{{ placement.performance|score:1 }}</td>
+              <td class="num tabular">{{ placement.potential|score:1 }}</td>
+              <td class="text-sm">{{ placement.get_cell_display }}</td>
+              <td class="text-xs">
+                {% if placement.is_adjusted %}
+                  <span class="badge badge--info">{% translate "калибровано" %}</span>
+                  {% if placement.initial_performance is not None %}
+                    <span class="text-muted tabular">
+                      {{ placement.initial_performance|score:0 }} / {{ placement.initial_potential|score:0 }}
+                      → {{ placement.performance|score:0 }} / {{ placement.potential|score:0 }}
+                    </span>
+                  {% endif %}
+                {% elif placement.placed_by %}
+                  <span class="badge badge--outline">{% translate "руководитель" %}</span>
+                  <span class="text-muted">{{ placement.placed_by|person }}</span>
+                {% else %}
+                  <span class="badge badge--develop">{% translate "предварительно" %}</span>
+                {% endif %}
+              </td>
+              <td class="num">
+                <a class="btn btn--ghost btn--sm"
+                   href="{% url 'analytics:calibrate' placement.pk %}">
+                  {% translate "Скорректировать" %}
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="grid" title=_("Размещений не найдено") text=_("Либо матрица ещё не заполнялась, либо условия отбора не оставили записей") %}
+  {% endif %}
+
+{% endblock %}

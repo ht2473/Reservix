@@ -1,0 +1,216 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Обзор аналитического ядра. #}
+
+{% block title %}{% translate "Аналитика резерва" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Средний индекс готовности" %}</span>
+      <span class="metric__value">{{ health.average_index|score:1 }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=health.entries %}по {{ count }} записям резерва{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric {% if health.average_coverage < 67 %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Обеспеченность данными" %}</span>
+      <span class="metric__value">{{ health.average_coverage|percent:1 }}</span>
+      <span class="metric__footer">{% translate "доля веса критериев, для которых есть данные" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Готовы к назначению" %}</span>
+      <span class="metric__value">{{ health.ready_now }}</span>
+      <span class="metric__footer">{{ health.ready_share|percent:1 }} {% translate "от состава резерва" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Назначений из резерва" %}</span>
+      <span class="metric__value">{{ health.reserve_conversion|percent:1 }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=health.appointments_year %}из {{ total }} назначений за год{% endblocktranslate %}
+      </span>
+    </div>
+  </div>
+
+  <div class="cluster cluster--between mb-6">
+    <div class="cluster cluster--sm">
+      <a class="btn btn--primary btn--sm" href="{% url 'analytics:ranking' %}">
+        {% translate "Рейтинг готовности" %}
+      </a>
+      <a class="btn btn--secondary btn--sm" href="{% url 'analytics:ninebox' %}">
+        {% translate "Матрица 9-box" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:schemes' %}">
+        {% translate "Схемы оценивания" %}
+      </a>
+    </div>
+    <div class="cluster cluster--sm">
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:comparison' %}">
+        {% translate "Сравнение схем" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:stability' %}">
+        {% translate "Устойчивость" %}
+      </a>
+    </div>
+  </div>
+
+  {% if last_calculation %}
+    <p class="text-xs text-muted mb-6">
+      {% blocktranslate with moment=last_calculation.calculated_at|date_ru:"d.m.Y H:i" scheme=last_calculation.scheme.name %}
+        Последний расчёт — {{ moment }}, схема «{{ scheme }}». Показатели читаются из
+        сохранённых расчётов и не пересчитываются при открытии страницы.
+      {% endblocktranslate %}
+    </p>
+  {% else %}
+    <div class="alert alert--info mb-6">
+      <p>{% translate "Индексы ещё не рассчитывались. Показатели пусты не потому, что резерв слаб, а потому, что расчёт не запускался." %}</p>
+      {% if can_edit_methodology %}
+        <form method="post" action="{% url 'analytics:recalculate' %}" class="mt-2">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'analytics:index' %}">
+          <button class="btn btn--primary btn--sm" type="submit">{% translate "Рассчитать индексы" %}</button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {# --- Распределение индекса ------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Распределение индекса готовности" %}</h2>
+      <p class="section__lead">
+        {% translate "Форма распределения содержательнее среднего: два сгущения означают, что резерв состоит из двух разных групп" %}
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table table--compact">
+        <thead>
+          <tr>
+            <th>{% translate "Интервал индекса" %}</th>
+            <th class="num">{% translate "Резервистов" %}</th>
+            <th class="num">{% translate "Доля" %}</th>
+            <th>{% translate "Распределение" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for bucket in distribution %}
+            <tr>
+              <td class="tabular">{{ bucket.from }}–{{ bucket.to }}</td>
+              <td class="num tabular">{{ bucket.count }}</td>
+              <td class="num tabular">{{ bucket.share|percent:1 }}</td>
+              <td>{% progress_bar bucket.share 100 "" "neutral" %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# --- Средние по критериям --------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Слабые и сильные стороны резерва" %}</h2>
+      <p class="section__lead">
+        {% translate "Средние значения частных критериев по действующим расчётам. Первыми идут критерии, которые тянут индекс вниз" %}
+      </p>
+    </div>
+
+    {% if criteria %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Критерий" %}</th>
+              <th class="num">{% translate "Среднее" %}</th>
+              <th class="num">{% translate "Измерено" %}</th>
+              <th class="num">{% translate "Покрытие" %}</th>
+              <th>{% translate "Уровень" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in criteria %}
+              <tr>
+                <td>{{ row.name|localized }}</td>
+                <td class="num tabular">{{ row.average|score:1 }}</td>
+                <td class="num tabular">{{ row.measured }}</td>
+                <td class="num tabular">{{ row.coverage|percent:0 }}</td>
+                <td>{% progress_bar row.average 100 %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="chart" title=_("Расчётов ещё не было") text=_("Средние по критериям появятся после первого расчёта индексов") %}
+    {% endif %}
+  </section>
+
+  {# --- Матрица и рейтинг ------------------------------------------------------ #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Матрица 9-box" %}</h2>
+        <p class="section__lead">
+          {% if grid.is_discriminating %}
+            {% blocktranslate with share=grid.concentration %}Наибольшая ячейка занимает {{ share }} % — оценка различает сотрудников{% endblocktranslate %}
+          {% else %}
+            {% blocktranslate with share=grid.concentration %}Наибольшая ячейка занимает {{ share }} % — оценка почти не различает сотрудников и нуждается в калибровке{% endblocktranslate %}
+          {% endif %}
+        </p>
+      </div>
+
+      <div class="ninebox ninebox--compact">
+        <div class="ninebox__axis-y">{% translate "Результативность" %}</div>
+        {% for row in grid.rows %}
+          {% for cell in row %}
+            <a class="ninebox__cell ninebox__cell--zone-{{ cell.zone }}{% if cell.is_talent %} ninebox__cell--pool{% endif %}"
+               href="{% url 'analytics:ninebox' %}?cell={{ cell.code }}">
+              <span class="ninebox__cell-name">{{ cell.label }}</span>
+              <span class="ninebox__cell-count">{{ cell.count }}</span>
+              <span class="ninebox__cell-share">{{ cell.share|percent:1 }}</span>
+            </a>
+          {% endfor %}
+        {% endfor %}
+        <div class="ninebox__axis-x">{% translate "Потенциал" %}</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Первые по индексу" %}</h2>
+        <p class="section__lead">{% translate "Строка — пара «резервист — целевая должность», а не человек" %}</p>
+      </div>
+
+      {% if top %}
+        <div class="table-wrap">
+          <table class="table table--compact">
+            <thead>
+              <tr>
+                <th>{% translate "Резервист" %}</th>
+                <th>{% translate "Целевая должность" %}</th>
+                <th class="num">{% translate "Индекс" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in top %}
+                <tr>
+                  <td>
+                    <a href="{% url 'analytics:breakdown' entry.public_id %}">{{ entry.employee.short_name }}</a>
+                  </td>
+                  <td class="text-sm">{{ entry.target_position.name|shorten:34 }}</td>
+                  <td class="num tabular">{{ entry.readiness_index|score:1 }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="chart" title=_("Индексы не рассчитаны") %}
+      {% endif %}
+    </section>
+  </div>
+
+{% endblock %}

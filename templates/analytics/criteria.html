@@ -1,0 +1,80 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Справочник частных критериев индекса готовности. #}
+
+{% block title %}{% translate "Критерии готовности" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if can_edit_methodology %}
+    <div class="cluster cluster--between mb-6">
+      <p class="text-sm text-muted">
+        {% translate "Наименования и описания ведёт кадровая служба; методика расчёта описывает поведение кода и обновляется сверкой" %}
+      </p>
+      <form method="post" action="{% url 'analytics:criteria_sync' %}">
+        {% csrf_token %}
+        <button class="btn btn--secondary btn--sm" type="submit">
+          {% translate "Сверить с методикой" %}
+        </button>
+      </form>
+    </div>
+  {% endif %}
+
+  <div class="stack stack--lg">
+    {% for criterion in criteria %}
+      <article class="card">
+        <div class="card__header">
+          <div>
+            <h2 class="card__title">
+              <a href="{% url 'analytics:criterion_detail' criterion.pk %}">{{ criterion.name }}</a>
+            </h2>
+            <p class="card__subtitle">{{ criterion.description }}</p>
+          </div>
+          <div class="cluster cluster--sm">
+            {% if criterion.source in implemented %}
+              <span class="badge badge--ready">{% translate "Реализован" %}</span>
+            {% else %}
+              <span class="badge badge--risk">{% translate "Нет функции расчёта" %}</span>
+            {% endif %}
+            {% if not criterion.is_active %}
+              <span class="badge badge--outline">{% translate "Не применяется" %}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card__body">
+          <dl class="definition-list">
+            <dt>{% translate "Источник данных" %}</dt>
+            <dd class="text-mono text-sm">{{ criterion.source }}</dd>
+
+            <dt>{% translate "Единица измерения" %}</dt>
+            <dd>{{ criterion.unit|default:"—" }}</dd>
+
+            <dt>{% translate "Направление" %}</dt>
+            <dd>{{ criterion.get_direction_display }}</dd>
+
+            {% with row=averages|get_item:criterion.code %}
+              {% if row %}
+                <dt>{% translate "Среднее по резерву" %}</dt>
+                <dd class="tabular">
+                  {{ row.average|score:1 }}
+                  <span class="text-xs text-muted">
+                    ({% blocktranslate with measured=row.measured %}измерено у {{ measured }}{% endblocktranslate %})
+                  </span>
+                </dd>
+              {% endif %}
+            {% endwith %}
+          </dl>
+
+          {% if criterion.methodology %}
+            <p class="text-sm mt-3">{{ criterion.methodology }}</p>
+          {% endif %}
+        </div>
+      </article>
+    {% empty %}
+      {% include "components/empty_state.html" with icon="layers" title=_("Справочник пуст") text=_("Выполните сверку с методикой, чтобы создать шесть критериев расчёта") %}
+    {% endfor %}
+  </div>
+
+{% endblock %}

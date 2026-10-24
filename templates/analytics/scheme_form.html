@@ -1,0 +1,54 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Создание и правка схемы оценивания. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Схема" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Код схемы попадает в адреса и выгрузки и после создания меняться не должен: по нему сопоставляются расчёты разных дат." %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.name %}
+        {% include "components/field.html" with field=form.code %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.description %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Методика" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Способ получения весов определяет, как они будут заданы: экспертная форма, матрица парных сравнений или расчёт по данным резерва. Свёртка «взвешенная сумма» даёт абсолютную оценку, сравнимую с порогом готовности; TOPSIS — относительную, зависящую от состава сравниваемой группы." %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.method %}
+        {% include "components/field.html" with field=form.aggregation %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.source_note %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{% url 'analytics:schemes' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

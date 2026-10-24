@@ -1,0 +1,107 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Рейтинг резервистов по композитному индексу готовности. #}
+
+{% block title %}{% translate "Рейтинг готовности" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="cluster cluster--between mb-4">
+    <div class="cluster cluster--sm">
+      {% for item in schemes %}
+        <a class="btn btn--sm {% if item == scheme %}btn--secondary{% else %}btn--ghost{% endif %}"
+           href="?scheme={{ item.code }}">{{ item.name }}</a>
+      {% endfor %}
+    </div>
+    <a class="btn btn--ghost btn--sm" href="{% url 'analytics:comparison' %}">
+      {% translate "Сравнить схемы" %}
+    </a>
+  </div>
+
+  {% if scheme %}
+    <p class="text-xs text-muted mb-4">
+      {% blocktranslate with method=scheme.get_method_display aggregation=scheme.get_aggregation_display %}
+        Веса получены способом «{{ method }}», свёртка — {{ aggregation }}.
+      {% endblocktranslate %}
+      {% if scheme.aggregation == "topsis" %}
+        {% translate "Значения относительны: они зависят от состава сравниваемой группы и с порогом готовности не сопоставляются." %}
+      {% endif %}
+    </p>
+  {% endif %}
+
+  <form class="filter-panel" method="get" role="search">
+    {% if scheme %}<input type="hidden" name="scheme" value="{{ scheme.code }}">{% endif %}
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.branch %}
+      {% include "components/field.html" with field=filter_form.reliability %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'analytics:ranking' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if snapshots %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="num">{% translate "Ранг" %}</th>
+            <th>{% translate "Резервист" %}</th>
+            <th>{% translate "Целевая должность" %}</th>
+            <th class="num">{% translate "Индекс" %}</th>
+            <th>{% translate "Уровень" %}</th>
+            <th class="num">{% translate "Обеспеченность" %}</th>
+            <th>{% translate "Слабые критерии" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for snapshot in snapshots %}
+            <tr>
+              <td class="num tabular">
+                {% if snapshot.rank_in_position %}
+                  {{ snapshot.rank_in_position }}&nbsp;/&nbsp;{{ snapshot.candidates_total }}
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                <a href="{% url 'analytics:breakdown' snapshot.entry.public_id %}">
+                  {{ snapshot.entry.employee.short_name }}
+                </a>
+                <div class="text-xs text-muted">{{ snapshot.entry.employee.department.name|default:"—" }}</div>
+              </td>
+              <td class="text-sm">{{ snapshot.entry.target_position.name|shorten:40 }}</td>
+              <td class="num tabular">{{ snapshot.index_value|score:1 }}</td>
+              <td>{% readiness_badge snapshot.readiness_level %}</td>
+              <td class="num tabular">
+                {% with meta=snapshot.criterion_values|get_item:"_meta" %}
+                  {% if meta %}
+                    {# Доля хранится в снимке как часть единицы. #}
+                    <span class="{% if not meta.reliable %}text-develop{% endif %}">
+                      {% widthratio meta.coverage 1 100 %}&nbsp;%
+                    </span>
+                  {% else %}—{% endif %}
+                {% endwith %}
+              </td>
+              <td class="text-xs text-muted">
+                {% for code in snapshot.weakest_criteria %}
+                  {% with row=snapshot.criterion_values|get_item:code %}
+                    {% if row.name %}{{ row.name|localized }}{% if not forloop.last %}, {% endif %}{% endif %}
+                  {% endwith %}
+                {% empty %}—{% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="chart" title=_("Расчётов не найдено") text=_("Либо индексы ещё не рассчитывались, либо условия отбора не оставили записей") %}
+  {% endif %}
+
+{% endblock %}

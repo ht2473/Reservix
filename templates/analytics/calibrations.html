@@ -1,0 +1,81 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Сессии калибровки — совместная сверка оценок руководителями. #}
+
+{% block title %}{% translate "Сессии калибровки" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if can_edit_methodology %}
+    <div class="cluster cluster--sm mb-4">
+      <a class="btn btn--primary btn--sm" href="{% url 'analytics:calibration_create' %}">
+        {% translate "Назначить сессию" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:ninebox' %}">
+        {% translate "К матрице 9-box" %}
+      </a>
+    </div>
+  {% endif %}
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.branch %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'analytics:calibrations' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if sessions %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Сессия" %}</th>
+            <th>{% translate "Дата" %}</th>
+            <th>{% translate "Область" %}</th>
+            <th>{% translate "Ведущий" %}</th>
+            <th class="num">{% translate "Рассмотрено" %}</th>
+            <th class="num">{% translate "Изменено" %}</th>
+            <th>{% translate "Состояние" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for session in sessions %}
+            <tr>
+              <td><a href="{{ session.get_absolute_url }}">{{ session.name }}</a></td>
+              <td class="tabular">{{ session.held_on|date_ru }}</td>
+              <td class="text-sm text-muted">
+                {% if session.branch %}{{ session.branch.name }}{% elif session.department %}{{ session.department.name }}{% else %}{% translate "вся организация" %}{% endif %}
+              </td>
+              <td class="text-sm">{{ session.facilitator|person }}</td>
+              <td class="num tabular">{{ session.placements_total }}</td>
+              <td class="num tabular">{{ session.placements_adjusted }}</td>
+              <td>
+                {% if session.status == "completed" %}
+                  <span class="badge badge--ready">{{ session.get_status_display }}</span>
+                {% elif session.status == "cancelled" %}
+                  <span class="badge badge--outline">{{ session.get_status_display }}</span>
+                {% elif session.status == "in_progress" %}
+                  <span class="badge badge--info">{{ session.get_status_display }}</span>
+                {% else %}
+                  <span class="badge badge--develop">{{ session.get_status_display }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% include "components/pagination.html" %}
+  {% else %}
+    {% include "components/empty_state.html" with icon="users" title=_("Сессий калибровки нет") text=_("Без сверки оценки руководителей остаются несопоставимыми: каждый оценивает по своей внутренней шкале") %}
+  {% endif %}
+
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Корректировка размещения по итогам обсуждения. #}
+
+{% block title %}{% translate "Корректировка оценки" %} — {{ placement.employee.short_name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Сотрудник" %}</span>
+      <span class="metric__value text-md">{{ placement.employee.short_name }}</span>
+      <span class="metric__footer">{{ placement.employee.title }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Текущая ячейка" %}</span>
+      <span class="metric__value text-md">{{ placement.get_cell_display }}</span>
+      <span class="metric__footer tabular">
+        {{ placement.performance|score:1 }} / {{ placement.potential|score:1 }}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Происхождение оценки" %}</span>
+      <span class="metric__value text-md">
+        {% if placement.is_adjusted %}
+          {% translate "Калибровка" %}
+        {% elif placement.placed_by %}
+          {% translate "Руководитель" %}
+        {% else %}
+          {% translate "Система" %}
+        {% endif %}
+      </span>
+      <span class="metric__footer">
+        {% if placement.initial_performance is not None %}
+          {% blocktranslate with performance=placement.initial_performance|floatformat:0 potential=placement.initial_potential|floatformat:0 %}
+            до калибровки — {{ performance }} / {{ potential }}
+          {% endblocktranslate %}
+        {% else %}
+          <span class="line-clamp-2" title="{{ placement.comment }}">{{ placement.comment|default:"—" }}</span>
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  {% if session %}
+    <div class="alert alert--info mb-6">
+      <p>
+        {% blocktranslate with name=session.name %}Корректировка будет отнесена к сессии «{{ name }}».{% endblocktranslate %}
+      </p>
+    </div>
+  {% endif %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+    {% if session %}<input type="hidden" name="session" value="{{ session.pk }}">{% endif %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Новая оценка" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Расхождение исходной и итоговой оценки характеризует не сотрудника, а оценочную культуру организации: систематический сдвиг означает, что руководители оценивают по разным шкалам и выравниваются только на общем обсуждении." %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.performance %}
+        {% include "components/field.html" with field=form.potential %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.comment %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить корректировку" %}</button>
+      <a class="btn btn--ghost"
+         href="{% if session %}{{ session.get_absolute_url }}{% else %}{% url 'analytics:placements' %}{% endif %}">
+        {% translate "Отмена" %}
+      </a>
+    </div>
+  </form>
+
+{% endblock %}

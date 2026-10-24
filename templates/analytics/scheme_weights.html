@@ -1,0 +1,61 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Экспертное назначение весов критериев. #}
+
+{% block title %}{% translate "Экспертные веса" %} — {{ scheme.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="alert alert--info mb-6">
+    <p>
+      {% translate "Введите важность каждого критерия в баллах от 0 до 100. Система приведёт сумму к единице сама и сохранит введённые значения рядом с нормированными — чтобы через год было видно, из каких суждений веса получены." %}
+    </p>
+  </div>
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{{ scheme.name }}</h2>
+      <p class="form-section__hint">{{ scheme.description }}</p>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Критерий" %}</th>
+              <th>{% translate "Что измеряет" %}</th>
+              <th class="num">{% translate "Важность" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for criterion, field in form.rows %}
+              <tr>
+                <td class="text-semibold">{{ criterion.name }}</td>
+                <td class="text-xs text-muted">{{ criterion.description }}</td>
+                <td class="num">
+                  {{ field }}
+                  {% field_errors field %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить веса" %}</button>
+      <a class="btn btn--ghost" href="{{ scheme.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Парные сравнения критериев по шкале Саати. #}
+
+{% block title %}{% translate "Парные сравнения" %} — {{ scheme.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="alert alert--info mb-6">
+    <p>
+      {% blocktranslate with limit=threshold %}
+        По каждой паре критериев укажите, какой из них важнее и во сколько раз. Веса
+        рассчитываются как главный собственный вектор построенной матрицы. Отношение
+        согласованности выше {{ limit }} означает противоречивость суждений: веса будут
+        сохранены, но к расчёту схема допущена не будет.
+      {% endblocktranslate %}
+    </p>
+  </div>
+
+  {% if scheme.consistency_ratio is not None %}
+    <div class="grid grid--3 mb-6">
+      <div class="metric {% if not scheme.is_consistent %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Отношение согласованности" %}</span>
+        <span class="metric__value">{{ scheme.consistency_ratio|score:4 }}</span>
+        <span class="metric__footer">
+          {% if scheme.is_consistent %}
+            {% translate "суждения непротиворечивы" %}
+          {% else %}
+            {% translate "суждения противоречивы: схема к расчёту не допускается" %}
+          {% endif %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Наибольшее собственное значение" %}</span>
+        <span class="metric__value">{{ scheme.pairwise_matrix.lambda_max|default:"—" }}</span>
+        <span class="metric__footer">
+          {% translate "для идеально согласованной матрицы равно числу критериев" %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Индекс согласованности" %}</span>
+        <span class="metric__value">{{ scheme.pairwise_matrix.consistency_index|default:"—" }}</span>
+        <span class="metric__footer">CI = (λmax − n) / (n − 1)</span>
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Суждения о важности" %}</h2>
+      <p class="form-section__hint">
+        {% blocktranslate with count=form.pairs|length %}Пар для сравнения: {{ count }}{% endblocktranslate %}
+      </p>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Первый критерий" %}</th>
+              <th>{% translate "Второй критерий" %}</th>
+              <th>{% translate "Суждение" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for first, second, field in form.pairs %}
+              <tr>
+                <td class="text-semibold">{{ first.name }}</td>
+                <td class="text-semibold">{{ second.name }}</td>
+                <td>
+                  {{ field }}
+                  {% field_errors field %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-grid mt-4">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.note %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Рассчитать веса" %}</button>
+      <a class="btn btn--ghost" href="{{ scheme.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

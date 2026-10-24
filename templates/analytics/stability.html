@@ -1,0 +1,130 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Анализ устойчивости ранжирования к неточности весов. #}
+
+{% block title %}{% translate "Устойчивость ранжирования" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=form.scheme %}
+      {% include "components/field.html" with field=form.magnitude %}
+      {% include "components/field.html" with field=form.top %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Проверить" %}</button>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:stability' %}">{% translate "Сбросить" %}</a>
+    </div>
+  </form>
+
+  {% if error %}
+    <div class="alert alert--warning mb-6"><p>{{ error }}</p></div>
+  {% endif %}
+
+  {% if report %}
+    <div class="grid grid--4 mb-6">
+      <div class="metric {% if not report.is_robust %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Худшая корреляция" %}</span>
+        <span class="metric__value">{{ report.worst_correlation|score:3 }}</span>
+        <span class="metric__footer">
+          {% if report.is_robust %}
+            {% translate "ранжирование устойчиво" %}
+          {% else %}
+            {% translate "ранжирование зависит от точности весов" %}
+          {% endif %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Сохранили ранг" %}</span>
+        <span class="metric__value">{{ report.average_stability|score:2 }}</span>
+        <span class="metric__footer">{% translate "средняя доля по всем возмущениям" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Критериев в матрице" %}</span>
+        <span class="metric__value">{{ case.criteria|length }}</span>
+        <span class="metric__footer">
+          {% if case.dropped_criteria %}
+            {% blocktranslate with count=case.dropped_criteria|length %}исключено по покрытию — {{ count }}{% endblocktranslate %}
+          {% else %}
+            {% translate "все критерии обеспечены данными" %}
+          {% endif %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Записей в матрице" %}</span>
+        <span class="metric__value">{{ case.entries|length }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with total=case.entries_total share=case.entries_share %}из {{ total }} — {{ share }} %{% endblocktranslate %}
+        </span>
+      </div>
+    </div>
+
+    {% if critical %}
+      <div class="alert alert--info mb-6">
+        <p class="alert__title">{% translate "Наименее устойчивый критерий" %}</p>
+        <p>
+          {% blocktranslate with name=critical.name %}
+            Возмущение веса критерия «{{ name }}» сильнее прочих меняет порядок кандидатов.
+            Именно его вес требует обоснования в первую очередь: спор о нём имеет
+            практические последствия, спор об остальных — нет.
+          {% endblocktranslate %}
+        </p>
+      </div>
+    {% endif %}
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Чувствительность по критериям" %}</h2>
+        <p class="section__lead">
+          {% translate "Для каждого критерия приведён худший случай из всех возмущений его веса в обе стороны" %}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Критерий" %}</th>
+              <th class="num">{% translate "Худшая корреляция" %}</th>
+              <th class="num">{% translate "При возмущении" %}</th>
+              <th class="num">{% translate "Сохранили ранг" %}</th>
+              <th class="num">{% translate "Совпадение головы" %}</th>
+              <th class="num">{% translate "Наибольший сдвиг ранга" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td>{{ row.criterion.name }}</td>
+                <td class="num tabular">{{ row.worst_correlation|score:3 }}</td>
+                <td class="num tabular">{{ row.worst_delta|delta:2 }}</td>
+                <td class="num tabular">{{ row.stable_share|score:2 }}</td>
+                <td class="num tabular">{{ row.top_agreement|score:2 }}</td>
+                <td class="num tabular">{{ row.max_shift|score:0 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {% if case.dropped_criteria %}
+      <div class="alert alert--warning">
+        <p class="alert__title">{% translate "Не вошли в матрицу решений" %}</p>
+        <p>
+          {% for criterion in case.dropped_criteria %}
+            {{ criterion.name }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </p>
+        <p class="text-xs text-muted mt-1">
+          {% translate "Критерий, обеспеченный данными менее чем у трёх четвертей выборки, для сравнения кандидатов между собой непригоден: сравнивалась бы полнота оценки, а не люди." %}
+        </p>
+      </div>
+    {% endif %}
+  {% elif not error %}
+    {% include "components/empty_state.html" with icon="chart" title=_("Анализ не выполнен") text=_("Для проверки устойчивости нужны рассчитанные индексы не менее чем по двум записям резерва") %}
+  {% endif %}
+
+{% endblock %}

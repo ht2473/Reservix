@@ -1,0 +1,158 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Матрица «результативность — потенциал». #}
+
+{% block title %}{% translate "Матрица 9-box" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Размещено сотрудников" %}</span>
+      <span class="metric__value">{{ grid.total }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=grid.unplaced %}без оценки — {{ count }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Источник резерва" %}</span>
+      <span class="metric__value">{{ grid.talent_pool }}</span>
+      <span class="metric__footer">{{ grid.talent_share|percent:1 }} {% translate "в трёх верхних ячейках" %}</span>
+    </div>
+    <div class="metric {% if not grid.is_discriminating %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Концентрация" %}</span>
+      <span class="metric__value">{{ grid.concentration|percent:1 }}</span>
+      <span class="metric__footer">
+        {% if grid.is_discriminating %}
+          {% translate "оценка различает сотрудников" %}
+        {% else %}
+          {% translate "оценка почти не различает сотрудников" %}
+        {% endif %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Скорректировано на калибровке" %}</span>
+      <span class="metric__value">{{ grid.adjusted }}</span>
+      <span class="metric__footer">{% translate "оценок изменено при сверке" %}</span>
+    </div>
+  </div>
+
+  <div class="cluster cluster--between mb-4">
+    <div class="cluster cluster--sm">
+      <a class="btn btn--secondary btn--sm" href="{% url 'analytics:placements' %}">
+        {% translate "Список размещений" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:calibrations' %}">
+        {% translate "Сессии калибровки" %}
+      </a>
+    </div>
+    {% if can_edit_methodology %}
+      <div class="cluster cluster--sm">
+        <a class="btn btn--ghost btn--sm" href="{% url 'analytics:placement_create' %}">
+          {% translate "Оценить сотрудника" %}
+        </a>
+        <form method="post" action="{% url 'analytics:placement_auto' %}">
+          {% csrf_token %}
+          <button class="btn btn--ghost btn--sm" type="submit">
+            {% translate "Предварительное размещение по данным" %}
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.branch %}
+      {% include "components/field.html" with field=filter_form.department %}
+      {% include "components/field.html" with field=filter_form.cell %}
+      {% include "components/field.html" with field=filter_form.origin %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'analytics:ninebox' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="ninebox">
+    <div class="ninebox__axis-y">{% translate "Результативность" %}</div>
+    {% for row in grid.rows %}
+      {% for cell in row %}
+        <div class="ninebox__cell ninebox__cell--zone-{{ cell.zone }}{% if cell.is_talent %} ninebox__cell--pool{% endif %}">
+          <span class="ninebox__cell-name">{{ cell.label }}</span>
+          <span class="ninebox__cell-count">{{ cell.count }}</span>
+          <span class="ninebox__cell-share">{{ cell.share|percent:1 }}</span>
+        </div>
+      {% endfor %}
+    {% endfor %}
+    <div class="ninebox__axis-x">{% translate "Потенциал" %}</div>
+  </div>
+
+  <div class="ninebox-legend">
+    <span class="ninebox-legend__item">
+      <span class="ninebox-legend__swatch" style="background-color: var(--box-zone-star)"></span>
+      {% translate "Источник кадрового резерва" %}
+    </span>
+    <span class="ninebox-legend__item">
+      {% blocktranslate with low=thresholds.low mid=thresholds.mid %}
+        Границы зон: до {{ low }} — низкая, до {{ mid }} — средняя, выше — высокая
+      {% endblocktranslate %}
+    </span>
+  </div>
+
+  {# --- Состав ячеек ---------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Состав ячеек" %}</h2>
+      <p class="section__lead">
+        {% translate "Название ячейки отражает управленческое решение, а не координату: «зона риска» означает не плохого человека, а несоответствие текущей роли" %}
+      </p>
+    </div>
+
+    <div class="grid grid--3">
+      {% for row in grid.rows %}
+        {% for cell in row %}
+          <div class="card ninebox-card">
+            <div class="card__header card__header--plain">
+              <h3 class="card__title">{{ cell.label }}</h3>
+              <p class="card__subtitle tabular">{{ cell.count }} · {{ cell.share|percent:1 }}</p>
+            </div>
+            <div class="card__body">
+              {% if cell.placements %}
+                <ul class="ninebox-members">
+                  {% for placement in cell.placements|slice:":8" %}
+                    <li class="ninebox-members__row">
+                      <span class="ninebox-members__name" title="{{ placement.employee.full_name }}">{{ placement.employee.short_name }}</span>
+                      <span class="ninebox-members__mark">
+                        {% if placement.is_adjusted %}
+                          <span class="badge badge--info">{% translate "калибровано" %}</span>
+                        {% elif not placement.placed_by %}
+                          <span class="badge badge--outline">{% translate "предварительно" %}</span>
+                        {% endif %}
+                      </span>
+                      <span class="ninebox-members__score">{{ placement.performance|score:0 }} / {{ placement.potential|score:0 }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+                {% if cell.count > 8 %}
+                  <p class="ninebox-card__more">
+                    <a href="{% url 'analytics:placements' %}?cell={{ cell.code }}">
+                      {% blocktranslate with rest=cell.count|add:"-8" %}ещё {{ rest }} — весь список{% endblocktranslate %}
+                    </a>
+                  </p>
+                {% endif %}
+              {% else %}
+                <p class="text-sm text-subtle">{% translate "В ячейке нет сотрудников" %}</p>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </section>
+
+{% endblock %}

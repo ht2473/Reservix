@@ -1,0 +1,109 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Построение весов энтропийным методом. #}
+
+{% block title %}{% translate "Энтропийные веса" %} — {{ scheme.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="alert alert--info mb-6">
+    <p>
+      {% translate "Вес критерия тем больше, чем сильнее критерий различает кандидатов. Мера различения — отклонение энтропии распределения значений от максимальной. В матрицу входят критерии, обеспеченные данными не менее чем у трёх четвертей выборки, и записи, полные по этим критериям: энтропия столбца с пропусками измеряла бы полноту заполнения базы, а не различия между людьми." %}
+    </p>
+  </div>
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Выборка для расчёта" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Веса, выведенные по выборке в десяток записей, отражают случайность её состава, а не различающую способность критериев." %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.scope %}
+        {% include "components/field.html" with field=form.branch %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.note %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Вывести веса из данных" %}</button>
+      <a class="btn btn--ghost" href="{{ scheme.get_absolute_url }}">{% translate "К карточке схемы" %}</a>
+    </div>
+  </form>
+
+  {% if outcome %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Результат расчёта" %}</h2>
+        <p class="section__lead">
+          {% blocktranslate with used=outcome.sample total=outcome.sample_total share=outcome.sample_share %}
+            В матрицу вошли {{ used }} записей из {{ total }} — {{ share }} % выборки.
+          {% endblocktranslate %}
+        </p>
+      </div>
+
+      {% if outcome.result.is_degenerate %}
+        <div class="alert alert--warning mb-4">
+          <p>{% translate "Ни один критерий не различает кандидатов: веса назначены равными за отсутствием оснований для различия. Это утверждение о данных, а не о людях — оценка не работает как измерительный инструмент." %}</p>
+        </div>
+      {% endif %}
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Критерий" %}</th>
+              <th class="num">{% translate "Энтропия" %}</th>
+              <th class="num">{% translate "Различающая способность" %}</th>
+              <th class="num">{% translate "Вес" %}</th>
+              <th>{% translate "Доля" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in outcome.rows %}
+              <tr>
+                <td>
+                  {{ row.criterion.name }}
+                  {% if row.is_indiscriminate %}
+                    <span class="badge badge--develop badge--pill">{% translate "не различает" %}</span>
+                  {% endif %}
+                </td>
+                <td class="num tabular">{{ row.entropy|score:4 }}</td>
+                <td class="num tabular">{{ row.divergence|score:4 }}</td>
+                <td class="num tabular text-semibold">{{ row.weight|score:5 }}</td>
+                <td>{% progress_bar row.weight 1 row.criterion.name "neutral" %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if outcome.excluded %}
+        <div class="alert alert--warning mt-4">
+          <p class="alert__title">{% translate "Исключены по недостаточному покрытию данными" %}</p>
+          <p>
+            {% for criterion in outcome.excluded %}
+              {{ criterion.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+          </p>
+          <p class="text-xs text-muted mt-1">
+            {% translate "Эти критерии получили нулевой вес. Исключение записано в описание схемы: молчаливое выпадение критерия из методики недопустимо." %}
+          </p>
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+
+{% endblock %}

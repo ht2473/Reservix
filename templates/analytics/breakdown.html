@@ -1,0 +1,241 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Разбор индекса готовности одной записи резерва. #}
+
+{% block title %}{{ entry.employee.short_name }} — {% translate "разбор индекса" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="cluster cluster--between mb-4">
+    <div class="cluster cluster--sm">
+      {% for item in schemes %}
+        <a class="btn btn--sm {% if item == scheme %}btn--secondary{% else %}btn--ghost{% endif %}"
+           href="?scheme={{ item.code }}">{{ item.name }}</a>
+      {% endfor %}
+    </div>
+    <a class="btn btn--ghost btn--sm" href="{{ entry.get_absolute_url }}">
+      {% translate "Карточка резервиста" %}
+    </a>
+  </div>
+
+  {% if error %}
+    <div class="alert alert--warning mb-6"><p>{{ error }}</p></div>
+  {% endif %}
+
+  {% if breakdown %}
+    <div class="grid grid--3 mb-6">
+      <div class="card">
+        <div class="card__body">
+          {% include "components/readiness.html" with value=breakdown.index_value level=breakdown.level label=entry.target_position.name %}
+        </div>
+      </div>
+      <div class="metric {% if not breakdown.is_reliable %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Обеспеченность данными" %}</span>
+        <span class="metric__value">{{ breakdown.coverage_percent|percent:1 }}</span>
+        <span class="metric__footer">
+          {% if breakdown.is_reliable %}
+            {% translate "данных достаточно для кадрового решения" %}
+          {% else %}
+            {% translate "менее двух третей веса: индекс отражает полноту оценки, а не только готовность" %}
+          {% endif %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Ранг среди претендентов" %}</span>
+        <span class="metric__value">
+          {% if breakdown.rank %}{{ breakdown.rank }}{% else %}—{% endif %}
+        </span>
+        <span class="metric__footer">
+          {% if breakdown.candidates_total %}
+            {% blocktranslate with total=breakdown.candidates_total %}из {{ total }} на эту должность{% endblocktranslate %}
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    {# --- Вклад критериев ---------------------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Из чего сложился индекс" %}</h2>
+        <p class="section__lead">
+          {% blocktranslate with scheme=scheme.name aggregation=scheme.get_aggregation_display|lower %}
+            Схема «{{ scheme }}», свёртка — {{ aggregation }}. Столбец «баллов итога» показывает,
+            сколько дал критерий: работать нужно над тем, что дороже обходится, а не над тем,
+            что ниже само по себе.
+          {% endblocktranslate %}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Критерий" %}</th>
+              <th class="num">{% translate "Оценка" %}</th>
+              <th class="num">{% translate "Применённый вес" %}</th>
+              <th class="num">{% translate "Баллов итога" %}</th>
+              <th>{% translate "Пояснение" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in breakdown.contributions %}
+              {% if item.value.has_data %}
+                <tr>
+                  <td>
+                    <span class="cluster cluster--sm">
+                      {% signal_dot item.signal %}
+                      {{ item.name }}
+                    </span>
+                    {% if item.value.components %}
+                      <ul class="text-xs text-muted mt-1">
+                        {% for label, value in item.value.components %}
+                          <li>{{ label }} — {{ value|score:0 }}</li>
+                        {% endfor %}
+                      </ul>
+                    {% endif %}
+                  </td>
+                  <td class="num tabular">{{ item.value.normalized|score:1 }}</td>
+                  <td class="num tabular">{{ item.share|percent:1 }}</td>
+                  <td class="num tabular text-semibold">{{ item.points|score:1 }}</td>
+                  <td class="text-xs text-muted">{{ item.value.note }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {% if breakdown.missing %}
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Критерии без данных" %}</h2>
+          <p class="section__lead">
+            {% translate "Не участвуют в расчёте, их вес распределён между остальными. Отсутствие данных не приравнивается к нулю: это означало бы наказание сотрудника за незавершённую кадровую процедуру" %}
+          </p>
+        </div>
+        <ul class="stack stack--sm">
+          {% for item in breakdown.missing %}
+            <li class="panel panel--outlined">
+              <span class="text-semibold">{{ item.name }}</span>
+              <span class="text-sm text-muted"> — {{ item.value.note }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {# --- Что тянет вниз ----------------------------------------------------- #}
+    {% if breakdown.weakest %}
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Что закрывать в первую очередь" %}</h2>
+          <p class="section__lead">
+            {% translate "Порядок задан недобранными баллами итога, а не значением критерия" %}
+          </p>
+        </div>
+        <div class="grid grid--3">
+          {% for item in breakdown.weakest %}
+            <div class="card">
+              <div class="card__header card__header--plain">
+                <h3 class="card__title">{{ item.name }}</h3>
+                <p class="card__subtitle">{{ item.value.normalized|score:1 }} {% translate "из 100" %}</p>
+              </div>
+              <div class="card__body">
+                {% progress_bar item.value.normalized 100 item.name %}
+                <p class="text-xs text-muted mt-2">{{ item.value.note }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+
+  {# --- Прогноз и история ---------------------------------------------------- #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Срок достижения готовности" %}</h2>
+        <p class="section__lead">
+          {% translate "Линейная экстраполяция по истории расчётов: утверждение, которое можно проверить на бумаге и оспорить" %}
+        </p>
+      </div>
+
+      {% if forecast.is_available %}
+        <div class="panel">
+          <p class="text-lg text-semibold">{{ forecast.expected_date|date_ru }}</p>
+          <p class="text-sm text-muted">
+            {% blocktranslate with slope=forecast.slope_per_month months=forecast.months_to_target target=forecast.target_index %}
+              Индекс растёт на {{ slope }} балла в месяц; до порога {{ target }} осталось
+              около {{ months }} месяцев.
+            {% endblocktranslate %}
+          </p>
+          <p class="text-xs text-muted mt-2">
+            {% blocktranslate with count=forecast.observations %}Расчётов в истории: {{ count }}{% endblocktranslate %}
+          </p>
+        </div>
+      {% else %}
+        <div class="alert alert--info">
+          <p>{{ forecast.note }}</p>
+        </div>
+      {% endif %}
+
+      {% if placement %}
+        <div class="panel mt-4">
+          <p class="text-sm text-semibold">{% translate "Матрица 9-box" %}</p>
+          <p class="text-sm">
+            {{ placement.get_cell_display }} —
+            {% translate "результативность" %} {{ placement.performance|score:0 }},
+            {% translate "потенциал" %} {{ placement.potential|score:0 }}
+          </p>
+          <p class="text-xs text-muted">
+            {% if placement.is_adjusted %}
+              {% translate "Скорректировано на сессии калибровки" %}
+            {% elif placement.placed_by %}
+              {% translate "Выставлено руководителем" %}
+            {% else %}
+              {% translate "Предварительная оценка по данным системы" %}
+            {% endif %}
+          </p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "История расчётов" %}</h2>
+        <p class="section__lead">{% translate "Динамика индекса — самостоятельный результат: она показывает, работает ли подготовка" %}</p>
+      </div>
+
+      {% if history %}
+        <div class="table-wrap">
+          <table class="table table--compact">
+            <thead>
+              <tr>
+                <th>{% translate "Дата" %}</th>
+                <th>{% translate "Схема" %}</th>
+                <th class="num">{% translate "Индекс" %}</th>
+                <th>{% translate "Уровень" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in history %}
+                <tr>
+                  <td class="tabular">{{ row.calculated_at|date_ru }}</td>
+                  <td class="text-sm">{{ row.scheme.name }}</td>
+                  <td class="num tabular">{{ row.index_value|score:1 }}</td>
+                  <td>{% readiness_badge row.readiness_level %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="chart" title=_("Истории расчётов нет") %}
+      {% endif %}
+    </section>
+  </div>
+
+{% endblock %}

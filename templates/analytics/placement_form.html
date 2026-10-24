@@ -1,0 +1,60 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Ручная оценка результативности и потенциала. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="alert alert--info mb-6">
+    <p>
+      {% translate "Результативность — что человек сделал за период. Потенциал — способность освоить более сложную роль. Разделение существенно: высокая результативность при низком потенциале означает хорошего специалиста на своём месте, а не будущего руководителя." %}
+    </p>
+  </div>
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Сотрудник и период" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Прежняя оценка сотрудника сохранится в истории со снятым признаком действующей: перемещение между ячейками за год — самостоятельный результат talent review." %}
+      </p>
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.employee %}
+        </div>
+        {% include "components/field.html" with field=form.period_start %}
+        {% include "components/field.html" with field=form.period_end %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Оценка" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Шкала 0–100. Ячейка матрицы определится по координатам и границам зон, принятым в организации." %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.performance %}
+        {% include "components/field.html" with field=form.potential %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.comment %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить оценку" %}</button>
+      <a class="btn btn--ghost" href="{% url 'analytics:ninebox' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Сравнение ранжирований, полученных разными схемами весов. #}
+
+{% block title %}{% translate "Сравнение схем оценивания" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=form.schemes %}
+      {% include "components/field.html" with field=form.top %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Сравнить" %}</button>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:comparison' %}">{% translate "Сбросить" %}</a>
+    </div>
+  </form>
+
+  {% if error %}
+    <div class="alert alert--warning mb-6"><p>{{ error }}</p></div>
+  {% endif %}
+
+  {% if comparison %}
+    <div class="grid grid--3 mb-6">
+      <div class="metric">
+        <span class="metric__label">{% translate "Наименьшая корреляция" %}</span>
+        <span class="metric__value">{{ comparison.min_correlation|score:3 }}</span>
+        <span class="metric__footer">{% translate "по всем парам схем" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Сравнивалось записей" %}</span>
+        <span class="metric__value">{{ sample }}</span>
+        <span class="metric__footer">{% translate "одни и те же исходные данные для всех схем" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Схем в сравнении" %}</span>
+        <span class="metric__value">{{ schemes|length }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with top=comparison.top_size %}головная часть — {{ top }} мест{% endblocktranslate %}
+        </span>
+      </div>
+    </div>
+
+    <div class="alert alert--info mb-6">
+      <p class="alert__title">{% translate "Вывод" %}</p>
+      <p>{{ comparison.verdict }}</p>
+    </div>
+
+    {# --- Попарные сравнения ------------------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Согласие ранжирований" %}</h2>
+        <p class="section__lead">
+          {% translate "Корреляция Спирмена отвечает, совпадает ли порядок в целом; совпадение первой десятки — изменится ли состав тех, кого рассматривают первыми" %}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Первая схема" %}</th>
+              <th>{% translate "Вторая схема" %}</th>
+              <th class="num">{% translate "Корреляция Спирмена" %}</th>
+              <th class="num">{% translate "Совпадение головы списка" %}</th>
+              <th>{% translate "Толкование" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pair in pairs %}
+              <tr>
+                <td class="text-mono text-sm">{{ pair.left }}</td>
+                <td class="text-mono text-sm">{{ pair.right }}</td>
+                <td class="num tabular">{{ pair.correlation|score:3 }}</td>
+                <td class="num tabular">{{ pair.top_agreement|score:2 }}</td>
+                <td class="text-xs text-muted">
+                  {% if pair.correlation >= 0.9 and pair.top_agreement >= 0.8 %}
+                    {% translate "Схемы взаимозаменяемы: и порядок, и состав головы списка совпадают" %}
+                  {% elif pair.correlation >= 0.9 %}
+                    {% translate "Порядок совпадает, но состав первых мест различается — выбор схемы влияет там, где это важно" %}
+                  {% else %}
+                    {% translate "Схемы дают разные выводы: выбор методики требует обоснования" %}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {# --- Наиболее чувствительные записи -------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Кого затрагивает выбор схемы" %}</h2>
+        <p class="section__lead">
+          {% translate "Резервисты с наибольшим разбросом рангов между схемами: спор о методике имеет последствия ровно для них" %}
+        </p>
+      </div>
+
+      {% if volatile %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Резервист" %}</th>
+                <th>{% translate "Целевая должность" %}</th>
+                {% for scheme in schemes %}
+                  <th class="num" title="{{ scheme.name }}">{{ scheme.name|shorten:18 }}</th>
+                {% endfor %}
+                <th class="num">{% translate "Разброс рангов" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in volatile %}
+                <tr>
+                  <td>
+                    <a href="{% url 'analytics:breakdown' row.entry.public_id %}">
+                      {{ row.entry.employee.short_name }}
+                    </a>
+                  </td>
+                  <td class="text-sm">{{ row.entry.target_position.name|shorten:32 }}</td>
+                  {% for item in row.ranks %}
+                    <td class="num tabular">
+                      {% if item.rank %}{{ item.rank|score:0 }}{% else %}—{% endif %}
+                    </td>
+                  {% endfor %}
+                  <td class="num tabular text-semibold">{{ row.spread|score:0 }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="chart" title=_("Расхождений нет") text=_("Все схемы расставили резервистов одинаково") %}
+      {% endif %}
+    </section>
+  {% elif not error %}
+    {% include "components/empty_state.html" with icon="chart" title=_("Выберите схемы для сравнения") text=_("Сравнение имеет смысл при двух и более схемах: одна схема согласуется сама с собой тождественно") %}
+  {% endif %}
+
+{% endblock %}

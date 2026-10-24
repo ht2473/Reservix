@@ -1,0 +1,88 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка частного критерия. #}
+
+{% block title %}{{ criterion.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Среднее по резерву" %}</span>
+      <span class="metric__value">
+        {% if average %}{{ average.average|score:1 }}{% else %}—{% endif %}
+      </span>
+      <span class="metric__footer">
+        {% if average %}
+          {% blocktranslate with measured=average.measured %}измерено у {{ measured }} записей{% endblocktranslate %}
+        {% else %}
+          {% translate "расчётов ещё не было" %}
+        {% endif %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Покрытие данными" %}</span>
+      <span class="metric__value">
+        {% if average %}{{ average.coverage|percent:0 }}{% else %}—{% endif %}
+      </span>
+      <span class="metric__footer">{% translate "доля записей, где критерий измерен" %}</span>
+    </div>
+    <div class="metric {% if not is_implemented %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Функция расчёта" %}</span>
+      <span class="metric__value text-md">
+        {% if is_implemented %}{% translate "Есть" %}{% else %}{% translate "Отсутствует" %}{% endif %}
+      </span>
+      <span class="metric__footer text-mono">{{ criterion.source }}</span>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Методика расчёта" %}</h2>
+      <p class="section__lead">{% translate "Описание отражает поведение кода, а не представление о нём: оно обновляется сверкой справочника" %}</p>
+    </div>
+    <div class="panel">
+      <p>{{ criterion.methodology|default:_("Методика не описана") }}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Вес критерия в схемах оценивания" %}</h2>
+      <p class="section__lead">
+        {% translate "Разброс весов одного критерия между схемами и есть предмет сравнения: он показывает, насколько по-разному способы назначения весов оценивают его значимость" %}
+      </p>
+    </div>
+
+    {% if weights %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Схема" %}</th>
+              <th>{% translate "Способ получения весов" %}</th>
+              <th class="num">{% translate "Вес" %}</th>
+              <th class="num">{% translate "Ранг важности" %}</th>
+              <th>{% translate "Обоснование" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for weight in weights %}
+              <tr>
+                <td><a href="{{ weight.scheme.get_absolute_url }}">{{ weight.scheme.name }}</a></td>
+                <td class="text-sm">{{ weight.scheme.get_method_display }}</td>
+                <td class="num tabular">{{ weight.percent|percent:1 }}</td>
+                <td class="num tabular">{{ weight.rank|default:"—" }}</td>
+                <td class="text-xs text-muted">{{ weight.comment|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="sliders" title=_("Критерий не входит ни в одну схему") text=_("Пока ни одна схема не назначила ему вес, он в расчёте не участвует") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

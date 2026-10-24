@@ -1,0 +1,172 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка схемы оценивания. #}
+
+{% block title %}{{ scheme.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Способ получения весов" %}</span>
+      <span class="metric__value text-md">{{ scheme.get_method_display }}</span>
+      <span class="metric__footer">{{ scheme.get_aggregation_display }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Критериев в схеме" %}</span>
+      <span class="metric__value">{{ weights|length }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=scheme.weight_sum|score:3 %}сумма весов — {{ total }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric {% if not scheme.is_consistent %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Отношение согласованности" %}</span>
+      <span class="metric__value">
+        {% if scheme.consistency_ratio is not None %}{{ scheme.consistency_ratio|score:3 }}{% else %}—{% endif %}
+      </span>
+      <span class="metric__footer">
+        {% blocktranslate with limit=scheme.consistency_threshold %}порог — {{ limit }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Расчётов по схеме" %}</span>
+      <span class="metric__value">{{ snapshots }}</span>
+      <span class="metric__footer">
+        {% if scheme.calculated_at %}
+          {{ scheme.calculated_at|date_ru:"d.m.Y" }}
+        {% else %}
+          {% translate "веса не рассчитывались" %}
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  {% if not scheme.is_ready %}
+    <div class="alert alert--warning mb-6">
+      <p class="alert__title">{% translate "Схема к расчёту не допускается" %}</p>
+      <p>
+        {% if not scheme.is_consistent %}
+          {% translate "Суждения эксперта противоречивы: отношение согласованности выше порога. Веса сохранены, чтобы эксперт мог найти и исправить противоречащие друг другу пары, но применять их к кадровым решениям нельзя." %}
+        {% elif not weights %}
+          {% translate "Веса критериев не заданы." %}
+        {% else %}
+          {% translate "Сумма весов отличается от единицы: веса не образуют распределения." %}
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% if can_edit_methodology %}
+    <div class="cluster cluster--sm mb-6">
+      <a class="btn btn--secondary btn--sm" href="{% url 'analytics:scheme_edit' scheme.pk %}">
+        {% translate "Правка описания" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:scheme_weights' scheme.pk %}">
+        {% translate "Экспертные веса" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:scheme_ahp' scheme.pk %}">
+        {% translate "Метод анализа иерархий" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:scheme_entropy' scheme.pk %}">
+        {% translate "Энтропийный метод" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'analytics:ranking' %}?scheme={{ scheme.code }}">
+        {% translate "Рейтинг по схеме" %}
+      </a>
+    </div>
+  {% endif %}
+
+  {% if scheme.source_note %}
+    <div class="panel mb-6">
+      <p class="text-sm text-semibold">{% translate "Происхождение весов" %}</p>
+      <p class="text-sm">{{ scheme.source_note }}</p>
+    </div>
+  {% endif %}
+
+  {# --- Веса ---------------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Веса критериев" %}</h2>
+      <p class="section__lead">
+        {% translate "Исходное значение сохраняется рядом с нормированным: по доле 0,187 восстановить суждение эксперта «важность 7 из 10» невозможно" %}
+      </p>
+    </div>
+
+    {% if weights %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="num">{% translate "Ранг" %}</th>
+              <th>{% translate "Критерий" %}</th>
+              <th class="num">{% translate "Вес" %}</th>
+              <th class="num">{% translate "Исходное значение" %}</th>
+              <th>{% translate "Доля" %}</th>
+              <th>{% translate "Обоснование" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for weight in weights %}
+              <tr>
+                <td class="num tabular">{{ weight.rank|default:"—" }}</td>
+                <td>
+                  <a href="{% url 'analytics:criterion_detail' weight.criterion.pk %}">
+                    {{ weight.criterion.name }}
+                  </a>
+                </td>
+                <td class="num tabular">{{ weight.weight|score:5 }}</td>
+                <td class="num tabular">
+                  {% if weight.raw_value is not None %}{{ weight.raw_value|score:3 }}{% else %}—{% endif %}
+                </td>
+                <td>{% progress_bar weight.percent 100 weight.criterion.name "neutral" %}</td>
+                <td class="text-xs text-muted">{{ weight.comment|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="sliders" title=_("Веса не заданы") text=_("Схема без весов в расчёте не участвует") %}
+    {% endif %}
+  </section>
+
+  {# --- Матрица парных сравнений --------------------------------------------- #}
+  {% if matrix %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Матрица парных сравнений" %}</h2>
+        <p class="section__lead">
+          {% blocktranslate with lambda_max=scheme.pairwise_matrix.lambda_max ci=scheme.pairwise_matrix.consistency_index %}
+            Наибольшее собственное значение — {{ lambda_max }}, индекс согласованности — {{ ci }}.
+            Значение ячейки показывает, во сколько раз критерий строки важнее критерия столбца.
+          {% endblocktranslate %}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Критерий" %}</th>
+              {% for row in matrix %}
+                <th class="num" title="{{ row.label }}">{{ row.label|shorten:14 }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in matrix %}
+              <tr>
+                <th scope="row" class="text-sm">{{ row.label }}</th>
+                {% for value in row.values %}
+                  <td class="num tabular">{{ value|score:2 }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}

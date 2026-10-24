@@ -1,0 +1,63 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Назначение и правка сессии калибровки. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Сессия" %}</h2>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.name %}
+        {% include "components/field.html" with field=form.held_on %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.description %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Область и участники" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Сверка выравнивает шкалы руководителей внутри сопоставимой группы. Оставьте филиал и подразделение пустыми, если сессия охватывает организацию целиком." %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.branch %}
+        {% include "components/field.html" with field=form.department %}
+        {% include "components/field.html" with field=form.facilitator %}
+        {% include "components/field.html" with field=form.campaign %}
+        {% include "components/field.html" with field=form.status %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Повестка" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Повестка определяет, какие расхождения выносятся на обсуждение. Сессия без неё превращается в перечисление фамилий." %}
+      </p>
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.agenda %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{% url 'analytics:calibrations' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Схемы оценивания: три способа получения весов рядом. #}
+
+{% block title %}{% translate "Схемы оценивания" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if can_edit_methodology %}
+    <div class="cluster cluster--between mb-4">
+      <a class="btn btn--primary btn--sm" href="{% url 'analytics:scheme_create' %}">
+        {% translate "Новая схема" %}
+      </a>
+      <form class="cluster cluster--sm" method="post" action="{% url 'analytics:recalculate' %}">
+        {% csrf_token %}
+        {% include "components/field.html" with field=recalculation_form.scheme %}
+        <button class="btn btn--secondary btn--sm" type="submit">
+          {% translate "Пересчитать индексы" %}
+        </button>
+      </form>
+    </div>
+    <p class="text-xs text-muted mb-6">
+      {% translate "Пересчёт по схеме по умолчанию меняет рабочие уровни готовности всего резерва и порождает уведомления резервистам. Пересчёт по любой другой схеме только сохраняет расчёты для сравнения." %}
+    </p>
+  {% endif %}
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.method %}
+      {% include "components/field.html" with field=filter_form.aggregation %}
+      {% include "components/field.html" with field=filter_form.state %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'analytics:schemes' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if schemes %}
+    <div class="table-wrap mb-6">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Схема" %}</th>
+            <th>{% translate "Способ" %}</th>
+            <th>{% translate "Свёртка" %}</th>
+            {% for criterion in criteria %}
+              <th class="num" title="{{ criterion.name }}">{{ criterion.name|shorten:16 }}</th>
+            {% endfor %}
+            <th class="num">{% translate "CR" %}</th>
+            <th>{% translate "Состояние" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for scheme in schemes %}
+            <tr>
+              <td>
+                <a href="{{ scheme.get_absolute_url }}">{{ scheme.name }}</a>
+                {% if scheme.is_default %}
+                  <span class="badge badge--accent badge--pill">{% translate "по умолчанию" %}</span>
+                {% endif %}
+              </td>
+              <td class="text-sm">{{ scheme.get_method_display }}</td>
+              <td class="text-sm">{{ scheme.get_aggregation_display }}</td>
+              {% for criterion in criteria %}
+                {% with weight=scheme.weight_map|get_item:criterion.code %}
+                  <td class="num tabular">
+                    {% if weight %}{{ weight|score:3 }}{% else %}—{% endif %}
+                  </td>
+                {% endwith %}
+              {% endfor %}
+              <td class="num tabular">
+                {% if scheme.consistency_ratio is not None %}
+                  {{ scheme.consistency_ratio|score:3 }}
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% if not scheme.is_active %}
+                  <span class="badge badge--outline">{% translate "выведена" %}</span>
+                {% elif not scheme.is_consistent %}
+                  <span class="badge badge--risk">{% translate "суждения противоречивы" %}</span>
+                {% elif scheme.is_ready %}
+                  <span class="badge badge--ready">{% translate "пригодна" %}</span>
+                {% else %}
+                  <span class="badge badge--develop">{% translate "веса неполны" %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="stack stack--lg">
+      {% for scheme in schemes %}
+        <article class="card">
+          <div class="card__header">
+            <div>
+              <h2 class="card__title"><a href="{{ scheme.get_absolute_url }}">{{ scheme.name }}</a></h2>
+              <p class="card__subtitle">{{ scheme.description }}</p>
+            </div>
+            {% if can_edit_methodology %}
+              <div class="cluster cluster--sm">
+                {% if scheme.method == "ahp" %}
+                  <a class="btn btn--ghost btn--sm" href="{% url 'analytics:scheme_ahp' scheme.pk %}">
+                    {% translate "Парные сравнения" %}
+                  </a>
+                {% elif scheme.method == "entropy" %}
+                  <a class="btn btn--ghost btn--sm" href="{% url 'analytics:scheme_entropy' scheme.pk %}">
+                    {% translate "Пересчитать по данным" %}
+                  </a>
+                {% else %}
+                  <a class="btn btn--ghost btn--sm" href="{% url 'analytics:scheme_weights' scheme.pk %}">
+                    {% translate "Задать веса" %}
+                  </a>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+          {% if scheme.source_note %}
+            <div class="card__body">
+              <p class="text-sm text-muted">{{ scheme.source_note }}</p>
+            </div>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    {% include "components/empty_state.html" with icon="sliders" title=_("Схем оценивания нет") text=_("Без схемы весов индекс готовности не определён: система не сможет ответить, из чего он складывается") %}
+  {% endif %}
+
+{% endblock %}
