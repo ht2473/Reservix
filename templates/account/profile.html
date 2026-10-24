@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Личные данные пользователя. #}
+
+{% block title %}{% translate "Мой профиль" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+    {% include "components/page_header.html" %}
+
+    <div class="split">
+      <div class="stack">
+
+        <div class="card">
+          <div class="card__header">
+            <p class="card__title">{% translate "Контактные данные" %}</p>
+          </div>
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="card__body">
+              {% for field in form %}
+                {% include "components/field.html" with field=field %}
+              {% endfor %}
+            </div>
+            <div class="card__footer">
+              <div class="cluster cluster--end">
+                <button type="submit" class="btn btn--primary">{% translate "Сохранить" %}</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card__header">
+            <p class="card__title">{% translate "Сведения кадрового учёта" %}</p>
+            <span class="badge badge--outline">{% translate "только просмотр" %}</span>
+          </div>
+          <div class="card__body">
+            <dl class="definition-list">
+              <dt>{% translate "ФИО" %}</dt>
+              <dd>{{ user.full_name }}</dd>
+
+              <dt>{% translate "Роль в системе" %}</dt>
+              <dd>{{ current_role_label }}</dd>
+
+              <dt>{% translate "Филиал" %}</dt>
+              <dd>{{ user.branch|default:"—" }}</dd>
+
+              <dt>{% translate "Подразделение" %}</dt>
+              <dd>{{ user.department|default:"—" }}</dd>
+
+              <dt>{% translate "Область видимости" %}</dt>
+              <dd>{{ user.get_scope_level_display }}</dd>
+
+              {% if user.is_department_head %}
+                <dt>{% translate "Полномочия" %}</dt>
+                <dd><span class="badge badge--accent">{% translate "Руководитель подразделения" %}</span></dd>
+              {% endif %}
+            </dl>
+          </div>
+          <div class="card__footer">
+            {% translate "Изменения в этих сведениях вносит кадровая служба. Обратитесь к ней при расхождении данных." %}
+          </div>
+        </div>
+      </div>
+
+      <aside class="stack">
+        <div class="card">
+          <div class="card__body text-center">
+            <span class="avatar avatar--xl" style="margin:0 auto">{{ user.initials }}</span>
+            <p class="text-semibold mt-4">{{ user.short_name }}</p>
+            <p class="text-xs text-subtle">{{ user.email }}</p>
+          </div>
+          <div class="card__footer">
+            <div class="stack stack--sm">
+              <a class="action-link" href="{% url 'accounts:preferences' %}">
+                {% icon "settings" 14 %} {% translate "Настройки интерфейса" %}
+              </a>
+              <a class="action-link" href="{% url 'accounts:security' %}">
+                {% icon "shield" 14 %} {% translate "Безопасность" %}
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+{% endblock %}

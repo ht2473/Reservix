@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Настройки" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+    {% include "components/page_header.html" %}
+
+    <form method="post" enctype="multipart/form-data" novalidate class="card">
+      {% csrf_token %}
+
+      <div class="card__body">
+        <section class="form-section">
+          <h2 class="form-section__title">{% translate "Профиль" %}</h2>
+          <p class="form-section__hint">
+            {% translate "Фотография и должность выводятся в печатных формах и письмах." %}
+          </p>
+          <div class="form-grid form-grid--2">
+            {% include "components/field.html" with field=form.photo %}
+            {% include "components/field.html" with field=form.position_title %}
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section__title">{% translate "Регион и язык" %}</h2>
+          <p class="form-section__hint">
+            {% translate "Часовой пояс влияет на отображение сроков мероприятий развития. Пустое значение означает часовой пояс организации." %}
+          </p>
+          <div class="form-grid form-grid--2">
+            {% include "components/field.html" with field=form.timezone %}
+            {% include "components/field.html" with field=form.language %}
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section__title">{% translate "Оформление" %}</h2>
+          <div class="form-grid form-grid--2">
+            {% include "components/field.html" with field=form.theme %}
+            {% include "components/field.html" with field=form.density %}
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section__title">{% translate "Уведомления" %}</h2>
+          <p class="form-section__hint">
+            {% translate "Сообщения о включении и исключении из кадрового резерва отправляются всегда: это кадровые решения, затрагивающие вас напрямую." %}
+          </p>
+          {% include "components/field.html" with field=form.email_notifications inline=True %}
+          {% include "components/field.html" with field=form.digest_notifications inline=True %}
+        </section>
+      </div>
+
+      <div class="card__footer">
+        <div class="cluster cluster--end">
+          <button type="submit" class="btn btn--primary">{% translate "Сохранить настройки" %}</button>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}

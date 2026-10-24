@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Безопасность учётной записи. #}
+
+{% block title %}{% translate "Безопасность" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+    {% include "components/page_header.html" %}
+
+    <div class="grid grid--3 mb-6">
+      <div class="metric">
+        <span class="metric__label">{% translate "Пароль изменён" %}</span>
+        <span class="metric__value" style="font-size: var(--text-lg)">
+          {{ password_changed_at|date_ru:"d.m.Y"|default:"—" }}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Двухфакторная аутентификация" %}</span>
+        <span class="metric__value" style="font-size: var(--text-lg)">
+          {% if two_factor_enabled %}
+            <span class="text-ready">{% translate "включена" %}</span>
+          {% else %}
+            <span class="text-subtle">{% translate "выключена" %}</span>
+          {% endif %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Неудачных попыток входа" %}</span>
+        <span class="metric__value {% if failed_count %}text-risk{% endif %}"
+              style="font-size: var(--text-lg)">{{ failed_count }}</span>
+        <span class="metric__footer">{% translate "за последние 50 событий" %}</span>
+      </div>
+    </div>
+
+    <div class="cluster mb-6">
+      <a class="btn btn--primary" href="{% url 'accounts:password_change' %}">
+        {% icon "lock" 18 %}
+        {% translate "Изменить пароль" %}
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card__header">
+        <p class="card__title">{% translate "История входов" %}</p>
+      </div>
+      <div class="card__body card__body--flush">
+        {% if login_records %}
+          <div class="table-wrap" style="border:0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">{% translate "Дата и время" %}</th>
+                  <th scope="col">{% translate "Результат" %}</th>
+                  <th scope="col">{% translate "IP-адрес" %}</th>
+                  <th scope="col">{% translate "Клиент" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in login_records %}
+                  <tr>
+                    <td class="text-mono text-sm">{{ record.created_at|date_ru:"d.m.Y H:i" }}</td>
+                    <td>
+                      {% if record.outcome == "success" %}
+                        <span class="badge badge--ready">{{ record.get_outcome_display }}</span>
+                      {% elif record.outcome == "failed" or record.outcome == "blocked" %}
+                        <span class="badge badge--risk">{{ record.get_outcome_display }}</span>
+                      {% else %}
+                        <span class="badge badge--neutral">{{ record.get_outcome_display }}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-mono text-sm">{{ record.ip_address|default:"—" }}</td>
+                    <td class="text-xs text-subtle">{{ record.user_agent|shorten:52 }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "components/empty_state.html" with icon="shield" title=_("История пуста") text=_("Записи о входах появятся здесь после первой авторизации.") %}
+        {% endif %}
+      </div>
+      <div class="card__footer">
+        {% translate "Если вы видите вход, который не совершали, немедленно смените пароль и сообщите администратору." %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

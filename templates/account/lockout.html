@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Блокировка после серии неудачных попыток входа. #}
+
+{% block title %}{% translate "Доступ временно ограничен" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--narrow">
+    <div class="card mt-8">
+      <div class="card__body text-center">
+        <span class="badge badge--risk badge--pill mb-4">{% icon "shield" 16 %}</span>
+
+        <h1 class="page-header__title mb-3">{% translate "Доступ временно ограничен" %}</h1>
+
+        <p class="text-muted mb-2">
+          {% translate "Превышено число попыток входа. Вход с этого адреса заблокирован на один час." %}
+        </p>
+        <p class="text-sm text-subtle mb-6">
+          {% translate "Ограничение защищает учётные записи от подбора пароля. Событие зафиксировано в журнале безопасности." %}
+        </p>
+
+        <a class="btn btn--primary" href="{{ reset_url }}">
+          {% translate "Восстановить пароль" %}
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Форма входа в систему. #}
+
+{% block title %}{% translate "Вход в систему" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--narrow">
+    <div class="card mt-8">
+
+      <div class="card__header">
+        <div>
+          <p class="card__title">{% translate "Вход в систему" %}</p>
+          <p class="card__subtitle">{% translate "Используйте рабочий адрес электронной почты" %}</p>
+        </div>
+        {% icon "lock" 20 "text-subtle" %}
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <div class="card__body">
+          {% if form.non_field_errors %}
+            <div class="form-errors" role="alert" tabindex="-1">
+              <p class="form-errors__title">{% translate "Не удалось войти" %}</p>
+              <ul>
+                {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          {% include "components/field.html" with field=form.username %}
+          {% include "components/field.html" with field=form.password %}
+          {% include "components/field.html" with field=form.remember_me inline=True %}
+
+          <div class="mt-6">
+            <button type="submit" class="btn btn--primary btn--block btn--lg">
+              {% translate "Войти" %}
+            </button>
+          </div>
+
+          <p class="text-center mt-4">
+            <a class="text-sm" href="{% url 'accounts:password_reset' %}">
+              {% translate "Забыли пароль?" %}
+            </a>
+          </p>
+        </div>
+      </form>
+
+      <div class="card__footer">
+        <p class="text-xs">
+          {% translate "Учётные записи создаёт администратор системы. Если доступа нет, обратитесь в кадровую службу вашего филиала." %}
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
