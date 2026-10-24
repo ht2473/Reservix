@@ -1,0 +1,97 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка отчёта с формой запуска. #}
+
+{% block title %}{{ report_template.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Назначение" %}</h2>
+      </div>
+      <p class="prose">{{ report_template.description|linebreaksbr }}</p>
+
+      <dl class="definition-list mt-4">
+        <dt>{% translate "Раздел" %}</dt>
+        <dd>{{ report_template.get_category_display }}</dd>
+        <dt>{% translate "Формат" %}</dt>
+        <dd>{{ report_template.get_output_format_display }}</dd>
+        <dt>{% translate "Способ формирования" %}</dt>
+        <dd>
+          {% if report_template.is_async %}
+            {% translate "фоновая задача — файл появится в списке выгрузок" %}
+          {% else %}
+            {% translate "немедленно" %}
+          {% endif %}
+        </dd>
+      </dl>
+
+      {% if needs_font and not pdf_available %}
+        <div class="alert alert--warning mt-4" role="status">
+          <p class="alert__title">{% translate "Формат PDF недоступен" %}</p>
+          <p>{% translate "В системе не найден шрифт с поддержкой кириллицы. Обратитесь к администратору." %}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Параметры отбора" %}</h2>
+        <p class="section__lead">
+          {% translate "Незаполненные параметры означают отбор без ограничения" %}
+        </p>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-grid">
+          {% for field in form %}
+            {% include "components/field.html" with field=field %}
+          {% empty %}
+            <p class="text-muted text-sm form-grid__full">
+              {% translate "Отчёт не требует параметров: он формируется по всей доступной вам выборке" %}
+            </p>
+          {% endfor %}
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn--primary" type="submit">
+            {% icon "download" 16 %}{% translate "Сформировать" %}
+          </button>
+          <a class="btn btn--ghost" href="{% url 'reporting:index' %}">{% translate "К каталогу" %}</a>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  {% if previous %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Ранее сформированные" %}</h2>
+      </div>
+      <ul class="timeline">
+        {% for report in previous %}
+          <li class="timeline__item">
+            <span class="timeline__dot {% if report.is_ready %}timeline__dot--ready{% elif report.status == 'failed' %}timeline__dot--risk{% endif %}"></span>
+            <span class="timeline__time">{{ report.created_at|date_ru:"d.m.Y H:i" }}</span>
+            <a class="timeline__title" href="{{ report.get_absolute_url }}">{{ report.title }}</a>
+            <p class="timeline__body">
+              {{ report.get_status_display }} · {{ report.requested_by|person }}
+              {% if report.row_count %} · {{ report.row_count }} {% translate "строк" %}{% endif %}
+            </p>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

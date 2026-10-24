@@ -1,0 +1,105 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Каталог отчётов. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if not pdf_available %}
+    <div class="alert alert--warning" role="status">
+      <p class="alert__title">{% translate "Выгрузка в PDF недоступна" %}</p>
+      <p>
+        {% translate "В системе не найден шрифт с поддержкой кириллицы. Отчёты в форматах .docx, .xlsx и .csv формируются как обычно." %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% for category, templates in catalog %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{{ category }}</h2>
+      </div>
+
+      <div class="grid grid--3">
+        {% for item in templates %}
+          <article class="card card--interactive">
+            <div class="card__header">
+              <h3 class="card__title">
+                <a href="{% url 'reporting:template_detail' item.pk %}">{{ item.name }}</a>
+              </h3>
+              <p class="card__subtitle">
+                <span class="badge badge--outline">{{ item.get_output_format_display }}</span>
+                {% if item.is_async %}
+                  <span class="badge badge--neutral">{% translate "формируется фоном" %}</span>
+                {% endif %}
+              </p>
+            </div>
+            <div class="card__body">
+              <p class="text-sm text-muted line-clamp-3">{{ item.description }}</p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% empty %}
+    {% include "components/empty_state.html" with icon="download" title=_("Отчёты не настроены") text=_("Перечень выгрузок ведёт администратор системы в разделе справочников") %}
+  {% endfor %}
+
+  {% if recent %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Последние выгрузки" %}</h2>
+        <a class="btn btn--ghost btn--sm" href="{% url 'reporting:history' %}">
+          {% translate "Вся история" %}
+        </a>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Отчёт" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th class="text-right">{% translate "Строк" %}</th>
+              <th>{% translate "Запустил" %}</th>
+              <th>{% translate "Сформирован" %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in recent %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ report.get_absolute_url }}">{{ report.title }}</a>
+                  <div class="table__secondary">{{ report.template.get_output_format_display }}</div>
+                </td>
+                <td>
+                  {% if report.status == "ready" %}
+                    <span class="badge badge--ready">{{ report.get_status_display }}</span>
+                  {% elif report.status == "failed" %}
+                    <span class="badge badge--risk">{{ report.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--develop">{{ report.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ report.row_count|default:"—" }}</td>
+                <td class="text-sm">{{ report.requested_by|person }}</td>
+                <td class="text-sm">{{ report.created_at|date_ru:"d.m.Y H:i" }}</td>
+                <td class="text-right">
+                  {% if report.is_ready %}
+                    <a class="btn btn--ghost btn--sm" href="{{ report.download_url }}">
+                      {% icon "download" 14 %}{% translate "Файл" %}
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}

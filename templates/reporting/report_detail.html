@@ -1,0 +1,96 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка сформированной выгрузки. #}
+
+{% block title %}{{ report.title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Состояние" %}</span>
+      <span class="metric__value text-lg">{{ report.get_status_display }}</span>
+      <span class="metric__footer">{{ report.template.get_output_format_display }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Строк в выгрузке" %}</span>
+      <span class="metric__value">{{ report.row_count|default:"—" }}</span>
+      <span class="metric__footer">
+        {% if report.duration_seconds %}
+          {% blocktranslate with seconds=report.duration_seconds|floatformat:1 %}сформирован за {{ seconds }} с{% endblocktranslate %}
+        {% endif %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Выгрузок файла" %}</span>
+      <span class="metric__value">{{ report.download_count }}</span>
+      <span class="metric__footer">{{ report.requested_by|person }}</span>
+    </div>
+  </div>
+
+  {% if report.error_message %}
+    <div class="alert alert--error" role="alert">
+      <p class="alert__title">{% translate "Отчёт не сформирован" %}</p>
+      <p>{{ report.error_message }}</p>
+    </div>
+  {% endif %}
+
+  <div class="cluster cluster--sm mb-6">
+    {% if report.is_ready %}
+      <a class="btn btn--primary btn--sm" href="{{ report.download_url }}">
+        {% icon "download" 16 %}{% translate "Выгрузить файл" %}
+      </a>
+    {% endif %}
+    <a class="btn btn--secondary btn--sm" href="{% url 'reporting:template_detail' report.template.pk %}">
+      {% translate "Сформировать заново" %}
+    </a>
+    <form method="post" action="{% url 'reporting:report_delete' report.public_id %}">
+      {% csrf_token %}
+      <button class="btn btn--danger-soft btn--sm" type="submit">
+        {% icon "trash" 16 %}{% translate "Удалить" %}
+      </button>
+    </form>
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Параметры запуска" %}</h2>
+      </div>
+      {% if parameters %}
+        <dl class="definition-list">
+          {% for label, value in parameters %}
+            <dt>{{ label }}</dt>
+            <dd>{{ value }}</dd>
+          {% endfor %}
+        </dl>
+      {% else %}
+        <p class="text-muted text-sm">{% translate "Отбор не применялся: выгрузка сделана по всей доступной выборке" %}</p>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Реквизиты" %}</h2>
+      </div>
+      <dl class="definition-list">
+        <dt>{% translate "Отчёт" %}</dt>
+        <dd>
+          <a href="{% url 'reporting:template_detail' report.template.pk %}">{{ report.template.name }}</a>
+        </dd>
+        <dt>{% translate "Запрошен" %}</dt>
+        <dd>{{ report.created_at|date_ru:"d.m.Y H:i" }}</dd>
+        <dt>{% translate "Сформирован" %}</dt>
+        <dd>
+          {% if report.finished_at %}{{ report.finished_at|date_ru:"d.m.Y H:i" }}{% else %}—{% endif %}
+        </dd>
+        <dt>{% translate "Размер файла" %}</dt>
+        <dd class="tabular">
+          {% if report.size_bytes %}{{ report.size_bytes|filesizeformat }}{% else %}—{% endif %}
+        </dd>
+      </dl>
+    </section>
+  </div>
+
+{% endblock %}
