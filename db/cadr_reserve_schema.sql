@@ -1,0 +1,1007 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict pMCx22PfdYIan6NTkuE1FjyecK7t9K5Pqh0Tc1D9MS21Z1X1LwDQaFVPgdCfmGb
+
+-- Dumped from database version 18.3
+-- Dumped by pg_dump version 18.3
+
+-- Started on 2026-05-11 16:20:31
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 237 (class 1255 OID 16871)
+-- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_updated_at_column() OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 224 (class 1259 OID 16675)
+-- Name: User; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."User" (
+    id integer NOT NULL,
+    last_name character varying(100) NOT NULL,
+    first_name character varying(100) NOT NULL,
+    middle_name character varying(100),
+    email character varying(255) NOT NULL,
+    phone character varying(20),
+    password_hash character varying(255) NOT NULL,
+    role character varying(50) NOT NULL,
+    branch_id integer,
+    department_id integer,
+    is_department_head boolean DEFAULT false NOT NULL,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "User_role_check" CHECK (((role)::text = ANY ((ARRAY['admin'::character varying, 'hr'::character varying, 'manager'::character varying, 'employee'::character varying])::text[])))
+);
+
+
+ALTER TABLE public."User" OWNER TO postgres;
+
+--
+-- TOC entry 223 (class 1259 OID 16674)
+-- Name: User_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."User_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."User_id_seq" OWNER TO postgres;
+
+--
+-- TOC entry 5052 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: User_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."User_id_seq" OWNED BY public."User".id;
+
+
+--
+-- TOC entry 230 (class 1259 OID 16764)
+-- Name: assessment; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.assessment (
+    id integer NOT NULL,
+    candidate_id integer NOT NULL,
+    competency_name character varying(255) NOT NULL,
+    score numeric(5,2),
+    assessment_method character varying(50),
+    assessment_date date NOT NULL,
+    assessed_by integer,
+    comment text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT assessment_assessment_method_check CHECK (((assessment_method)::text = ANY ((ARRAY['test'::character varying, 'interview'::character varying, '360'::character varying, 'exam'::character varying])::text[]))),
+    CONSTRAINT assessment_score_check CHECK (((score >= (0)::numeric) AND (score <= (100)::numeric)))
+);
+
+
+ALTER TABLE public.assessment OWNER TO postgres;
+
+--
+-- TOC entry 229 (class 1259 OID 16763)
+-- Name: assessment_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.assessment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.assessment_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5053 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: assessment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.assessment_id_seq OWNED BY public.assessment.id;
+
+
+--
+-- TOC entry 220 (class 1259 OID 16640)
+-- Name: branch; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    city character varying(100) NOT NULL,
+    address text,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.branch OWNER TO postgres;
+
+--
+-- TOC entry 219 (class 1259 OID 16639)
+-- Name: branch_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.branch_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5054 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: branch_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+
+--
+-- TOC entry 226 (class 1259 OID 16708)
+-- Name: candidate; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.candidate (
+    id integer NOT NULL,
+    last_name character varying(100) NOT NULL,
+    first_name character varying(100) NOT NULL,
+    middle_name character varying(100),
+    birth_date date,
+    email character varying(255),
+    phone character varying(20),
+    education text,
+    current_position character varying(255),
+    branch_id integer,
+    department_id integer,
+    hire_date date,
+    photo_url text,
+    notes text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.candidate OWNER TO postgres;
+
+--
+-- TOC entry 225 (class 1259 OID 16707)
+-- Name: candidate_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.candidate_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.candidate_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5055 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: candidate_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.candidate_id_seq OWNED BY public.candidate.id;
+
+
+--
+-- TOC entry 222 (class 1259 OID 16656)
+-- Name: department; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.department (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    branch_id integer NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.department OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 16655)
+-- Name: department_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.department_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.department_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5056 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: department_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.department_id_seq OWNED BY public.department.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 16817)
+-- Name: developmentactivity; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.developmentactivity (
+    id integer NOT NULL,
+    plan_id integer NOT NULL,
+    title character varying(255) NOT NULL,
+    type character varying(50),
+    description text,
+    start_date date,
+    due_date date NOT NULL,
+    completion_date date,
+    status character varying(50) DEFAULT 'pending'::character varying,
+    responsible_user_id integer,
+    mentor_id integer,
+    result text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT developmentactivity_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'overdue'::character varying])::text[]))),
+    CONSTRAINT developmentactivity_type_check CHECK (((type)::text = ANY ((ARRAY['training'::character varying, 'mentoring'::character varying, 'task'::character varying, 'course'::character varying, 'conference'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.developmentactivity OWNER TO postgres;
+
+--
+-- TOC entry 233 (class 1259 OID 16816)
+-- Name: developmentactivity_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.developmentactivity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.developmentactivity_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5057 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: developmentactivity_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.developmentactivity_id_seq OWNED BY public.developmentactivity.id;
+
+
+--
+-- TOC entry 232 (class 1259 OID 16790)
+-- Name: developmentplan; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.developmentplan (
+    id integer NOT NULL,
+    reserve_id integer NOT NULL,
+    title character varying(255) NOT NULL,
+    start_date date NOT NULL,
+    end_date date NOT NULL,
+    status character varying(50) DEFAULT 'draft'::character varying,
+    created_by integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT developmentplan_check CHECK ((end_date >= start_date)),
+    CONSTRAINT developmentplan_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'active'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.developmentplan OWNER TO postgres;
+
+--
+-- TOC entry 231 (class 1259 OID 16789)
+-- Name: developmentplan_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.developmentplan_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.developmentplan_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5058 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: developmentplan_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.developmentplan_id_seq OWNED BY public.developmentplan.id;
+
+
+--
+-- TOC entry 228 (class 1259 OID 16734)
+-- Name: reserve; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.reserve (
+    id integer NOT NULL,
+    candidate_id integer NOT NULL,
+    target_position character varying(255) NOT NULL,
+    status character varying(50) DEFAULT 'active'::character varying,
+    readiness_level character varying(50),
+    inclusion_date date NOT NULL,
+    exclusion_date date,
+    exclusion_reason text,
+    created_by integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT reserve_readiness_level_check CHECK (((readiness_level)::text = ANY ((ARRAY['low'::character varying, 'medium'::character varying, 'high'::character varying])::text[]))),
+    CONSTRAINT reserve_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'inactive'::character varying, 'appointed'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.reserve OWNER TO postgres;
+
+--
+-- TOC entry 227 (class 1259 OID 16733)
+-- Name: reserve_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.reserve_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.reserve_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5059 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: reserve_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.reserve_id_seq OWNED BY public.reserve.id;
+
+
+--
+-- TOC entry 236 (class 1259 OID 16849)
+-- Name: reservestatushistory; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.reservestatushistory (
+    id integer NOT NULL,
+    reserve_id integer NOT NULL,
+    old_status character varying(50),
+    new_status character varying(50) NOT NULL,
+    changed_by integer,
+    reason text,
+    changed_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.reservestatushistory OWNER TO postgres;
+
+--
+-- TOC entry 235 (class 1259 OID 16848)
+-- Name: reservestatushistory_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.reservestatushistory_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.reservestatushistory_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5060 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: reservestatushistory_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.reservestatushistory_id_seq OWNED BY public.reservestatushistory.id;
+
+
+--
+-- TOC entry 4802 (class 2604 OID 16678)
+-- Name: User id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User" ALTER COLUMN id SET DEFAULT nextval('public."User_id_seq"'::regclass);
+
+
+--
+-- TOC entry 4814 (class 2604 OID 16767)
+-- Name: assessment id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment ALTER COLUMN id SET DEFAULT nextval('public.assessment_id_seq'::regclass);
+
+
+--
+-- TOC entry 4796 (class 2604 OID 16643)
+-- Name: branch id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval('public.branch_id_seq'::regclass);
+
+
+--
+-- TOC entry 4807 (class 2604 OID 16711)
+-- Name: candidate id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate ALTER COLUMN id SET DEFAULT nextval('public.candidate_id_seq'::regclass);
+
+
+--
+-- TOC entry 4799 (class 2604 OID 16659)
+-- Name: department id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.department ALTER COLUMN id SET DEFAULT nextval('public.department_id_seq'::regclass);
+
+
+--
+-- TOC entry 4820 (class 2604 OID 16820)
+-- Name: developmentactivity id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity ALTER COLUMN id SET DEFAULT nextval('public.developmentactivity_id_seq'::regclass);
+
+
+--
+-- TOC entry 4816 (class 2604 OID 16793)
+-- Name: developmentplan id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan ALTER COLUMN id SET DEFAULT nextval('public.developmentplan_id_seq'::regclass);
+
+
+--
+-- TOC entry 4810 (class 2604 OID 16737)
+-- Name: reserve id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve ALTER COLUMN id SET DEFAULT nextval('public.reserve_id_seq'::regclass);
+
+
+--
+-- TOC entry 4823 (class 2604 OID 16852)
+-- Name: reservestatushistory id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory ALTER COLUMN id SET DEFAULT nextval('public.reservestatushistory_id_seq'::regclass);
+
+
+--
+-- TOC entry 4840 (class 2606 OID 16696)
+-- Name: User User_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_email_key" UNIQUE (email);
+
+
+--
+-- TOC entry 4842 (class 2606 OID 16694)
+-- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4863 (class 2606 OID 16778)
+-- Name: assessment assessment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment
+    ADD CONSTRAINT assessment_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4835 (class 2606 OID 16654)
+-- Name: branch branch_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4848 (class 2606 OID 16722)
+-- Name: candidate candidate_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 4850 (class 2606 OID 16720)
+-- Name: candidate candidate_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4837 (class 2606 OID 16668)
+-- Name: department department_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4872 (class 2606 OID 16832)
+-- Name: developmentactivity developmentactivity_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4868 (class 2606 OID 16805)
+-- Name: developmentplan developmentplan_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan
+    ADD CONSTRAINT developmentplan_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4859 (class 2606 OID 16752)
+-- Name: reserve reserve_candidate_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_candidate_id_key UNIQUE (candidate_id);
+
+
+--
+-- TOC entry 4861 (class 2606 OID 16750)
+-- Name: reserve reserve_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4879 (class 2606 OID 16860)
+-- Name: reservestatushistory reservestatushistory_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory
+    ADD CONSTRAINT reservestatushistory_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4873 (class 1259 OID 16895)
+-- Name: idx_activity_mentor; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_activity_mentor ON public.developmentactivity USING btree (mentor_id);
+
+
+--
+-- TOC entry 4874 (class 1259 OID 16893)
+-- Name: idx_activity_plan; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_activity_plan ON public.developmentactivity USING btree (plan_id);
+
+
+--
+-- TOC entry 4875 (class 1259 OID 16894)
+-- Name: idx_activity_responsible; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_activity_responsible ON public.developmentactivity USING btree (responsible_user_id);
+
+
+--
+-- TOC entry 4864 (class 1259 OID 16889)
+-- Name: idx_assessment_assessed_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_assessment_assessed_by ON public.assessment USING btree (assessed_by);
+
+
+--
+-- TOC entry 4865 (class 1259 OID 16888)
+-- Name: idx_assessment_candidate; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_assessment_candidate ON public.assessment USING btree (candidate_id);
+
+
+--
+-- TOC entry 4866 (class 1259 OID 16890)
+-- Name: idx_assessment_date; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_assessment_date ON public.assessment USING btree (assessment_date);
+
+
+--
+-- TOC entry 4851 (class 1259 OID 16882)
+-- Name: idx_candidate_branch; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_candidate_branch ON public.candidate USING btree (branch_id);
+
+
+--
+-- TOC entry 4852 (class 1259 OID 16883)
+-- Name: idx_candidate_department; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_candidate_department ON public.candidate USING btree (department_id);
+
+
+--
+-- TOC entry 4853 (class 1259 OID 16881)
+-- Name: idx_candidate_email; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_candidate_email ON public.candidate USING btree (email);
+
+
+--
+-- TOC entry 4838 (class 1259 OID 16880)
+-- Name: idx_department_branch; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_department_branch ON public.department USING btree (branch_id);
+
+
+--
+-- TOC entry 4869 (class 1259 OID 16892)
+-- Name: idx_development_plan_created_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_development_plan_created_by ON public.developmentplan USING btree (created_by);
+
+
+--
+-- TOC entry 4870 (class 1259 OID 16891)
+-- Name: idx_development_plan_reserve; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_development_plan_reserve ON public.developmentplan USING btree (reserve_id);
+
+
+--
+-- TOC entry 4854 (class 1259 OID 16884)
+-- Name: idx_reserve_candidate; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_candidate ON public.reserve USING btree (candidate_id);
+
+
+--
+-- TOC entry 4855 (class 1259 OID 16886)
+-- Name: idx_reserve_created_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_created_by ON public.reserve USING btree (created_by);
+
+
+--
+-- TOC entry 4856 (class 1259 OID 16887)
+-- Name: idx_reserve_readiness; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_readiness ON public.reserve USING btree (readiness_level);
+
+
+--
+-- TOC entry 4857 (class 1259 OID 16885)
+-- Name: idx_reserve_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_status ON public.reserve USING btree (status);
+
+
+--
+-- TOC entry 4876 (class 1259 OID 16897)
+-- Name: idx_rsh_changed_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_rsh_changed_by ON public.reservestatushistory USING btree (changed_by);
+
+
+--
+-- TOC entry 4877 (class 1259 OID 16896)
+-- Name: idx_rsh_reserve; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_rsh_reserve ON public.reservestatushistory USING btree (reserve_id);
+
+
+--
+-- TOC entry 4843 (class 1259 OID 16877)
+-- Name: idx_user_branch; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_branch ON public."User" USING btree (branch_id);
+
+
+--
+-- TOC entry 4844 (class 1259 OID 16878)
+-- Name: idx_user_department; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_department ON public."User" USING btree (department_id);
+
+
+--
+-- TOC entry 4845 (class 1259 OID 16876)
+-- Name: idx_user_email; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_email ON public."User" USING btree (email);
+
+
+--
+-- TOC entry 4846 (class 1259 OID 16879)
+-- Name: idx_user_role; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_role ON public."User" USING btree (role);
+
+
+--
+-- TOC entry 4897 (class 2620 OID 16873)
+-- Name: candidate update_candidate_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_candidate_updated_at BEFORE UPDATE ON public.candidate FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4899 (class 2620 OID 16875)
+-- Name: developmentplan update_development_plan_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_development_plan_updated_at BEFORE UPDATE ON public.developmentplan FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4898 (class 2620 OID 16874)
+-- Name: reserve update_reserve_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_reserve_updated_at BEFORE UPDATE ON public.reserve FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4896 (class 2620 OID 16872)
+-- Name: User update_user_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_user_updated_at BEFORE UPDATE ON public."User" FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4881 (class 2606 OID 16697)
+-- Name: User User_branch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_branch_id_fkey" FOREIGN KEY (branch_id) REFERENCES public.branch(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4882 (class 2606 OID 16702)
+-- Name: User User_department_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_department_id_fkey" FOREIGN KEY (department_id) REFERENCES public.department(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4887 (class 2606 OID 16784)
+-- Name: assessment assessment_assessed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment
+    ADD CONSTRAINT assessment_assessed_by_fkey FOREIGN KEY (assessed_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4888 (class 2606 OID 16779)
+-- Name: assessment assessment_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment
+    ADD CONSTRAINT assessment_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.candidate(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4883 (class 2606 OID 16723)
+-- Name: candidate candidate_branch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES public.branch(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4884 (class 2606 OID 16728)
+-- Name: candidate candidate_department_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.department(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4880 (class 2606 OID 16669)
+-- Name: department department_branch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES public.branch(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4891 (class 2606 OID 16843)
+-- Name: developmentactivity developmentactivity_mentor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_mentor_id_fkey FOREIGN KEY (mentor_id) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4892 (class 2606 OID 16833)
+-- Name: developmentactivity developmentactivity_plan_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.developmentplan(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4893 (class 2606 OID 16838)
+-- Name: developmentactivity developmentactivity_responsible_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_responsible_user_id_fkey FOREIGN KEY (responsible_user_id) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4889 (class 2606 OID 16811)
+-- Name: developmentplan developmentplan_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan
+    ADD CONSTRAINT developmentplan_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4890 (class 2606 OID 16806)
+-- Name: developmentplan developmentplan_reserve_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan
+    ADD CONSTRAINT developmentplan_reserve_id_fkey FOREIGN KEY (reserve_id) REFERENCES public.reserve(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4885 (class 2606 OID 16753)
+-- Name: reserve reserve_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.candidate(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4886 (class 2606 OID 16758)
+-- Name: reserve reserve_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4894 (class 2606 OID 16866)
+-- Name: reservestatushistory reservestatushistory_changed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory
+    ADD CONSTRAINT reservestatushistory_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4895 (class 2606 OID 16861)
+-- Name: reservestatushistory reservestatushistory_reserve_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory
+    ADD CONSTRAINT reservestatushistory_reserve_id_fkey FOREIGN KEY (reserve_id) REFERENCES public.reserve(id) ON DELETE CASCADE;
+
+
+-- Completed on 2026-05-11 16:20:31
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict pMCx22PfdYIan6NTkuE1FjyecK7t9K5Pqh0Tc1D9MS21Z1X1LwDQaFVPgdCfmGb
+

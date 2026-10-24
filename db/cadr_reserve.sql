@@ -1,0 +1,1606 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 9b8CWgMoYTesUokmaZtR9ZkHNe3ALSx9vBGfUxcMF4nIJKok6WQcdgaCxzhbQzC
+
+-- Dumped from database version 18.3
+-- Dumped by pg_dump version 18.3
+
+-- Started on 2026-05-11 16:20:53
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- TOC entry 237 (class 1255 OID 16871)
+-- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_updated_at_column() OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 224 (class 1259 OID 16675)
+-- Name: User; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."User" (
+    id integer NOT NULL,
+    last_name character varying(100) NOT NULL,
+    first_name character varying(100) NOT NULL,
+    middle_name character varying(100),
+    email character varying(255) NOT NULL,
+    phone character varying(20),
+    password_hash character varying(255) NOT NULL,
+    role character varying(50) NOT NULL,
+    branch_id integer,
+    department_id integer,
+    is_department_head boolean DEFAULT false NOT NULL,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "User_role_check" CHECK (((role)::text = ANY ((ARRAY['admin'::character varying, 'hr'::character varying, 'manager'::character varying, 'employee'::character varying])::text[])))
+);
+
+
+ALTER TABLE public."User" OWNER TO postgres;
+
+--
+-- TOC entry 223 (class 1259 OID 16674)
+-- Name: User_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."User_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."User_id_seq" OWNER TO postgres;
+
+--
+-- TOC entry 5070 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: User_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."User_id_seq" OWNED BY public."User".id;
+
+
+--
+-- TOC entry 230 (class 1259 OID 16764)
+-- Name: assessment; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.assessment (
+    id integer NOT NULL,
+    candidate_id integer NOT NULL,
+    competency_name character varying(255) NOT NULL,
+    score numeric(5,2),
+    assessment_method character varying(50),
+    assessment_date date NOT NULL,
+    assessed_by integer,
+    comment text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT assessment_assessment_method_check CHECK (((assessment_method)::text = ANY ((ARRAY['test'::character varying, 'interview'::character varying, '360'::character varying, 'exam'::character varying])::text[]))),
+    CONSTRAINT assessment_score_check CHECK (((score >= (0)::numeric) AND (score <= (100)::numeric)))
+);
+
+
+ALTER TABLE public.assessment OWNER TO postgres;
+
+--
+-- TOC entry 229 (class 1259 OID 16763)
+-- Name: assessment_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.assessment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.assessment_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5071 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: assessment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.assessment_id_seq OWNED BY public.assessment.id;
+
+
+--
+-- TOC entry 220 (class 1259 OID 16640)
+-- Name: branch; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    city character varying(100) NOT NULL,
+    address text,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.branch OWNER TO postgres;
+
+--
+-- TOC entry 219 (class 1259 OID 16639)
+-- Name: branch_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.branch_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5072 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: branch_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+
+--
+-- TOC entry 226 (class 1259 OID 16708)
+-- Name: candidate; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.candidate (
+    id integer NOT NULL,
+    last_name character varying(100) NOT NULL,
+    first_name character varying(100) NOT NULL,
+    middle_name character varying(100),
+    birth_date date,
+    email character varying(255),
+    phone character varying(20),
+    education text,
+    current_position character varying(255),
+    branch_id integer,
+    department_id integer,
+    hire_date date,
+    photo_url text,
+    notes text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.candidate OWNER TO postgres;
+
+--
+-- TOC entry 225 (class 1259 OID 16707)
+-- Name: candidate_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.candidate_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.candidate_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5073 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: candidate_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.candidate_id_seq OWNED BY public.candidate.id;
+
+
+--
+-- TOC entry 222 (class 1259 OID 16656)
+-- Name: department; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.department (
+    id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    branch_id integer NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.department OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 16655)
+-- Name: department_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.department_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.department_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5074 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: department_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.department_id_seq OWNED BY public.department.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 16817)
+-- Name: developmentactivity; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.developmentactivity (
+    id integer NOT NULL,
+    plan_id integer NOT NULL,
+    title character varying(255) NOT NULL,
+    type character varying(50),
+    description text,
+    start_date date,
+    due_date date NOT NULL,
+    completion_date date,
+    status character varying(50) DEFAULT 'pending'::character varying,
+    responsible_user_id integer,
+    mentor_id integer,
+    result text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT developmentactivity_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'overdue'::character varying])::text[]))),
+    CONSTRAINT developmentactivity_type_check CHECK (((type)::text = ANY ((ARRAY['training'::character varying, 'mentoring'::character varying, 'task'::character varying, 'course'::character varying, 'conference'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.developmentactivity OWNER TO postgres;
+
+--
+-- TOC entry 233 (class 1259 OID 16816)
+-- Name: developmentactivity_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.developmentactivity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.developmentactivity_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5075 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: developmentactivity_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.developmentactivity_id_seq OWNED BY public.developmentactivity.id;
+
+
+--
+-- TOC entry 232 (class 1259 OID 16790)
+-- Name: developmentplan; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.developmentplan (
+    id integer NOT NULL,
+    reserve_id integer NOT NULL,
+    title character varying(255) NOT NULL,
+    start_date date NOT NULL,
+    end_date date NOT NULL,
+    status character varying(50) DEFAULT 'draft'::character varying,
+    created_by integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT developmentplan_check CHECK ((end_date >= start_date)),
+    CONSTRAINT developmentplan_status_check CHECK (((status)::text = ANY ((ARRAY['draft'::character varying, 'active'::character varying, 'completed'::character varying, 'cancelled'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.developmentplan OWNER TO postgres;
+
+--
+-- TOC entry 231 (class 1259 OID 16789)
+-- Name: developmentplan_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.developmentplan_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.developmentplan_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5076 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: developmentplan_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.developmentplan_id_seq OWNED BY public.developmentplan.id;
+
+
+--
+-- TOC entry 228 (class 1259 OID 16734)
+-- Name: reserve; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.reserve (
+    id integer NOT NULL,
+    candidate_id integer NOT NULL,
+    target_position character varying(255) NOT NULL,
+    status character varying(50) DEFAULT 'active'::character varying,
+    readiness_level character varying(50),
+    inclusion_date date NOT NULL,
+    exclusion_date date,
+    exclusion_reason text,
+    created_by integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT reserve_readiness_level_check CHECK (((readiness_level)::text = ANY ((ARRAY['low'::character varying, 'medium'::character varying, 'high'::character varying])::text[]))),
+    CONSTRAINT reserve_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'inactive'::character varying, 'appointed'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.reserve OWNER TO postgres;
+
+--
+-- TOC entry 227 (class 1259 OID 16733)
+-- Name: reserve_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.reserve_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.reserve_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5077 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: reserve_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.reserve_id_seq OWNED BY public.reserve.id;
+
+
+--
+-- TOC entry 236 (class 1259 OID 16849)
+-- Name: reservestatushistory; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.reservestatushistory (
+    id integer NOT NULL,
+    reserve_id integer NOT NULL,
+    old_status character varying(50),
+    new_status character varying(50) NOT NULL,
+    changed_by integer,
+    reason text,
+    changed_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.reservestatushistory OWNER TO postgres;
+
+--
+-- TOC entry 235 (class 1259 OID 16848)
+-- Name: reservestatushistory_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.reservestatushistory_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.reservestatushistory_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5078 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: reservestatushistory_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.reservestatushistory_id_seq OWNED BY public.reservestatushistory.id;
+
+
+--
+-- TOC entry 4802 (class 2604 OID 16678)
+-- Name: User id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User" ALTER COLUMN id SET DEFAULT nextval('public."User_id_seq"'::regclass);
+
+
+--
+-- TOC entry 4814 (class 2604 OID 16767)
+-- Name: assessment id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment ALTER COLUMN id SET DEFAULT nextval('public.assessment_id_seq'::regclass);
+
+
+--
+-- TOC entry 4796 (class 2604 OID 16643)
+-- Name: branch id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval('public.branch_id_seq'::regclass);
+
+
+--
+-- TOC entry 4807 (class 2604 OID 16711)
+-- Name: candidate id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate ALTER COLUMN id SET DEFAULT nextval('public.candidate_id_seq'::regclass);
+
+
+--
+-- TOC entry 4799 (class 2604 OID 16659)
+-- Name: department id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.department ALTER COLUMN id SET DEFAULT nextval('public.department_id_seq'::regclass);
+
+
+--
+-- TOC entry 4820 (class 2604 OID 16820)
+-- Name: developmentactivity id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity ALTER COLUMN id SET DEFAULT nextval('public.developmentactivity_id_seq'::regclass);
+
+
+--
+-- TOC entry 4816 (class 2604 OID 16793)
+-- Name: developmentplan id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan ALTER COLUMN id SET DEFAULT nextval('public.developmentplan_id_seq'::regclass);
+
+
+--
+-- TOC entry 4810 (class 2604 OID 16737)
+-- Name: reserve id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve ALTER COLUMN id SET DEFAULT nextval('public.reserve_id_seq'::regclass);
+
+
+--
+-- TOC entry 4823 (class 2604 OID 16852)
+-- Name: reservestatushistory id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory ALTER COLUMN id SET DEFAULT nextval('public.reservestatushistory_id_seq'::regclass);
+
+
+--
+-- TOC entry 5052 (class 0 OID 16675)
+-- Dependencies: 224
+-- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."User" (id, last_name, first_name, middle_name, email, phone, password_hash, role, branch_id, department_id, is_department_head, is_active, created_at, updated_at) FROM stdin;
+1	Администратор	Системный	Иванович	admin@company.ru	\N	hash123	admin	1	1	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+2	Иванова	Мария	Сергеевна	maria.ivanova@company.ru	\N	hash123	hr	1	2	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+3	Сидоров	Алексей	Петрович	alexey.sidorov@company.ru	\N	hash123	hr	1	2	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+4	Кузнецова	Ольга	Игоревна	olga.kuznetsova@company.ru	\N	hash123	hr	1	2	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+5	Петров	Дмитрий	Олегович	dmitry.petrov@company.ru	\N	hash123	manager	1	1	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+6	Смирнов	Игорь	Владимирович	igor.smirnov@company.ru	\N	hash123	employee	1	1	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+7	Кузнецов	Андрей	Дмитриевич	andrey.kuznetsov@company.ru	\N	hash123	employee	1	1	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+8	Васильев	Сергей	Андреевич	sergey.vasiliev@company.ru	\N	hash123	employee	1	1	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+9	Попов	Александр	Сергеевич	alex.popov@company.ru	\N	hash123	employee	1	1	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+10	Соколова	Анна	Павловна	anna.sokolova@company.ru	\N	hash123	employee	1	1	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+11	Лебедев	Максим	Юрьевич	maxim.lebedev@company.ru	\N	hash123	employee	1	1	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+12	Новикова	Елена	Викторовна	elena.novikova@company.ru	\N	hash123	employee	1	1	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+13	Морозов	Иван	Николаевич	ivan.morozov@company.ru	\N	hash123	manager	1	3	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+14	Волков	Артем	Александрович	artem.volkov@company.ru	\N	hash123	employee	1	3	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+15	Зайцев	Кирилл	Дмитриевич	kirill.zaitsev@company.ru	\N	hash123	employee	1	3	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+16	Орлов	Денис	Николаевич	denis.orlov@company.ru	\N	hash123	employee	1	3	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+17	Федорова	Татьяна	Михайловна	tatiana.fedorova@company.ru	\N	hash123	manager	1	4	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+18	Егорова	Вера	Андреевна	vera.egorova@company.ru	\N	hash123	employee	1	4	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+19	Козлова	Светлана	Олеговна	svetlana.kozlova@company.ru	\N	hash123	employee	1	4	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+20	Белов	Андрей	Иванович	andrey.belov@company.ru	\N	hash123	manager	1	5	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+21	Макарова	Дарья	Владимировна	darya.makarova@company.ru	\N	hash123	employee	1	5	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+22	Чернова	Алиса	Николаевна	alisa.chernova@company.ru	\N	hash123	employee	1	5	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+23	Жуков	Олег	Петрович	oleg.zhukov@company.ru	\N	hash123	manager	1	14	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+24	Семенов	Виктор	Григорьевич	viktor.semenov@company.ru	\N	hash123	employee	1	14	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+25	Николаев	Павел	Сергеевич	pavel.nikolaev@company.ru	\N	hash123	manager	2	6	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+26	Степанова	Ирина	Владимировна	irina.stepanova@company.ru	\N	hash123	employee	2	6	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+27	Андреев	Михаил	Андреевич	mikhail.andreev@company.ru	\N	hash123	employee	2	6	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+28	Григорьев	Сергей	Иванович	sergey.grigoriev@company.ru	\N	hash123	manager	2	7	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+29	Романов	Дмитрий	Алексеевич	dmitry.romanov@company.ru	\N	hash123	employee	2	7	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+30	Тихонов	Иван	Петрович	ivan.tikhonov@company.ru	\N	hash123	manager	2	8	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+31	Киселев	Антон	Юрьевич	anton.kiselev@company.ru	\N	hash123	employee	2	8	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+32	Власов	Егор	Васильевич	egor.vlasov@company.ru	\N	hash123	manager	3	9	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+33	Гаврилова	Наталья	Сергеевна	natalya.gavrilova@company.ru	\N	hash123	employee	3	9	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+34	Дмитриев	Алексей	Игоревич	alexey.dmitriev@company.ru	\N	hash123	employee	3	9	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+35	Воробьева	Елена	Александровна	elena.vorobyeva@company.ru	\N	hash123	manager	3	10	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+36	Лазарев	Константин	Петрович	konstantin.lazarev@company.ru	\N	hash123	manager	4	11	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+37	Медведева	Ольга	Дмитриевна	olga.medvedeva@company.ru	\N	hash123	employee	4	11	f	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+38	Ершов	Владимир	Николаевич	vladimir.ershov@company.ru	\N	hash123	manager	4	12	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+39	Калинин	Сергей	Валерьевич	sergey.kalinin@company.ru	\N	hash123	manager	4	13	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+40	Савельева	Анна	Михайловна	anna.savelieva@company.ru	\N	hash123	manager	1	15	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+41	Фролова	Мария	Ивановна	maria.frolova@company.ru	\N	hash123	manager	1	16	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+42	Тарасов	Денис	Алексеевич	denis.tarasov@company.ru	\N	hash123	manager	1	17	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+43	Богданов	Игорь	Петрович	igor.bogdanov@company.ru	\N	hash123	manager	1	18	t	t	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5058 (class 0 OID 16764)
+-- Dependencies: 230
+-- Data for Name: assessment; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.assessment (id, candidate_id, competency_name, score, assessment_method, assessment_date, assessed_by, comment, created_at) FROM stdin;
+1	1	Technical Skills	90.00	test	2023-09-15	4	\N	2026-05-11 16:07:57.991311
+2	1	Teamwork	85.00	360	2023-09-20	2	\N	2026-05-11 16:07:57.991311
+3	1	Problem Solving	88.00	interview	2023-09-25	4	\N	2026-05-11 16:07:57.991311
+4	2	Coding Standards	75.00	exam	2023-11-01	4	\N	2026-05-11 16:07:57.991311
+5	2	Communication	80.00	interview	2023-11-05	2	\N	2026-05-11 16:07:57.991311
+6	2	Learning Agility	85.00	test	2023-11-10	4	\N	2026-05-11 16:07:57.991311
+7	3	Sales Strategy	95.00	test	2023-12-10	11	\N	2026-05-11 16:07:57.991311
+8	3	Leadership	88.00	360	2023-12-15	2	\N	2026-05-11 16:07:57.991311
+9	3	Negotiation	92.00	interview	2023-12-20	11	\N	2026-05-11 16:07:57.991311
+10	4	Team Management	82.00	360	2024-02-10	2	\N	2026-05-11 16:07:57.991311
+11	4	Strategic Thinking	85.00	test	2024-02-15	11	\N	2026-05-11 16:07:57.991311
+12	4	Client Relations	90.00	interview	2024-02-20	11	\N	2026-05-11 16:07:57.991311
+13	5	Architecture Design	95.00	exam	2024-02-20	4	\N	2026-05-11 16:07:57.991311
+14	5	Mentoring	90.00	360	2024-02-25	4	\N	2026-05-11 16:07:57.991311
+15	5	Code Review	98.00	test	2024-03-01	4	\N	2026-05-11 16:07:57.991311
+16	6	Technical Skills	65.00	test	2024-03-10	4	\N	2026-05-11 16:07:57.991311
+17	6	Communication	70.00	interview	2024-03-15	2	\N	2026-05-11 16:07:57.991311
+18	7	Sales Management	85.00	test	2024-03-25	11	\N	2026-05-11 16:07:57.991311
+19	7	Team Leadership	80.00	360	2024-03-30	11	\N	2026-05-11 16:07:57.991311
+20	8	Account Management	90.00	test	2024-04-10	11	\N	2026-05-11 16:07:57.991311
+21	8	Cross-functional	85.00	360	2024-04-15	11	\N	2026-05-11 16:07:57.991311
+22	9	Technical Leadership	92.00	360	2024-04-20	4	\N	2026-05-11 16:07:57.991311
+23	9	Project Management	88.00	test	2024-04-25	4	\N	2026-05-11 16:07:57.991311
+24	10	Marketing Strategy	85.00	test	2024-05-10	18	\N	2026-05-11 16:07:57.991311
+25	10	Content Creation	90.00	exam	2024-05-15	18	\N	2026-05-11 16:07:57.991311
+26	11	SMM Skills	88.00	test	2024-05-25	18	\N	2026-05-11 16:07:57.991311
+27	11	Analytics	80.00	exam	2024-05-30	18	\N	2026-05-11 16:07:57.991311
+28	12	System Administration	95.00	exam	2024-06-10	30	\N	2026-05-11 16:07:57.991311
+29	12	Network Security	90.00	test	2024-06-15	30	\N	2026-05-11 16:07:57.991311
+30	13	Data Analysis	92.00	test	2024-06-25	14	\N	2026-05-11 16:07:57.991311
+31	13	Financial Modeling	88.00	exam	2024-06-30	14	\N	2026-05-11 16:07:57.991311
+32	14	Accounting	70.00	exam	2024-07-10	33	\N	2026-05-11 16:07:57.991311
+33	14	Tax Law	65.00	test	2024-07-15	33	\N	2026-05-11 16:07:57.991311
+34	15	Sales Leadership	85.00	test	2024-07-25	36	\N	2026-05-11 16:07:57.991311
+35	15	Regional Management	80.00	interview	2024-07-30	36	\N	2026-05-11 16:07:57.991311
+36	16	Logistics Planning	82.00	test	2024-08-10	34	\N	2026-05-11 16:07:57.991311
+37	16	Process Optimization	85.00	exam	2024-08-15	34	\N	2026-05-11 16:07:57.991311
+38	17	Warehouse Management	75.00	test	2024-08-25	34	\N	2026-05-11 16:07:57.991311
+39	17	Inventory Control	70.00	exam	2024-08-30	34	\N	2026-05-11 16:07:57.991311
+40	18	System Design	95.00	interview	2024-01-15	4	\N	2026-05-11 16:07:57.991311
+41	18	Leadership	85.00	360	2024-01-20	2	\N	2026-05-11 16:07:57.991311
+42	19	Product Strategy	90.00	test	2024-02-01	18	\N	2026-05-11 16:07:57.991311
+43	19	User Research	85.00	exam	2024-02-05	18	\N	2026-05-11 16:07:57.991311
+44	20	HR Strategy	95.00	interview	2024-03-10	2	\N	2026-05-11 16:07:57.991311
+45	20	Talent Management	90.00	test	2024-03-15	2	\N	2026-05-11 16:07:57.991311
+46	21	HR Operations	85.00	test	2024-04-05	2	\N	2026-05-11 16:07:57.991311
+47	21	Employee Relations	80.00	interview	2024-04-10	2	\N	2026-05-11 16:07:57.991311
+48	22	DevOps Tools	95.00	exam	2024-05-10	4	\N	2026-05-11 16:07:57.991311
+49	22	Cloud Infrastructure	90.00	test	2024-05-15	4	\N	2026-05-11 16:07:57.991311
+50	23	UX Design	75.00	exam	2024-06-01	18	\N	2026-05-11 16:07:57.991311
+51	23	Prototyping	70.00	test	2024-06-05	18	\N	2026-05-11 16:07:57.991311
+52	24	Data Science	85.00	test	2024-06-15	14	\N	2026-05-11 16:07:57.991311
+53	24	Machine Learning	80.00	exam	2024-06-20	14	\N	2026-05-11 16:07:57.991311
+54	25	Corporate Law	90.00	exam	2024-07-01	35	\N	2026-05-11 16:07:57.991311
+55	25	Compliance	85.00	test	2024-07-05	35	\N	2026-05-11 16:07:57.991311
+56	26	Brand Management	90.00	test	2024-07-10	18	\N	2026-05-11 16:07:57.991311
+57	26	Digital Marketing	85.00	exam	2024-07-15	18	\N	2026-05-11 16:07:57.991311
+58	27	Financial Analysis	95.00	exam	2024-08-01	14	\N	2026-05-11 16:07:57.991311
+59	27	Strategic Planning	90.00	test	2024-08-05	14	\N	2026-05-11 16:07:57.991311
+60	28	Warehouse Ops	80.00	test	2024-08-15	34	\N	2026-05-11 16:07:57.991311
+61	28	Team Management	75.00	interview	2024-08-20	34	\N	2026-05-11 16:07:57.991311
+62	29	Logistics Strategy	90.00	test	2024-09-01	34	\N	2026-05-11 16:07:57.991311
+63	29	Supply Chain	85.00	exam	2024-09-05	34	\N	2026-05-11 16:07:57.991311
+64	30	IT Management	85.00	test	2024-09-15	30	\N	2026-05-11 16:07:57.991311
+65	30	Infrastructure	80.00	exam	2024-09-20	30	\N	2026-05-11 16:07:57.991311
+66	31	Tech Leadership	95.00	interview	2024-10-01	4	\N	2026-05-11 16:07:57.991311
+67	31	Team Building	90.00	360	2024-10-05	4	\N	2026-05-11 16:07:57.991311
+68	32	Financial Leadership	95.00	exam	2024-10-15	14	\N	2026-05-11 16:07:57.991311
+69	32	Risk Management	90.00	test	2024-10-20	14	\N	2026-05-11 16:07:57.991311
+70	33	Facility Management	75.00	test	2024-11-01	34	\N	2026-05-11 16:07:57.991311
+71	33	Budgeting	70.00	exam	2024-11-05	34	\N	2026-05-11 16:07:57.991311
+72	34	Security Management	85.00	test	2024-11-15	37	\N	2026-05-11 16:07:57.991311
+73	34	Risk Assessment	80.00	exam	2024-11-20	37	\N	2026-05-11 16:07:57.991311
+74	35	Legal Leadership	90.00	exam	2024-12-15	35	\N	2026-05-11 16:07:57.991311
+75	35	Litigation	85.00	test	2024-12-20	35	\N	2026-05-11 16:07:57.991311
+76	36	Sales Leadership	90.00	test	2024-12-20	36	\N	2026-05-11 16:07:57.991311
+77	36	Regional Expansion	85.00	interview	2024-12-25	36	\N	2026-05-11 16:07:57.991311
+78	37	Warehouse Leadership	85.00	test	2024-12-25	34	\N	2026-05-11 16:07:57.991311
+79	37	Process Improvement	80.00	exam	2024-12-30	34	\N	2026-05-11 16:07:57.991311
+80	38	Procurement Strategy	85.00	test	2025-01-01	38	\N	2026-05-11 16:07:57.991311
+81	38	Vendor Management	80.00	exam	2025-01-02	38	\N	2026-05-11 16:07:57.991311
+82	39	Branch Management	90.00	test	2025-01-03	36	\N	2026-05-11 16:07:57.991311
+83	39	Strategic Leadership	85.00	interview	2025-01-05	36	\N	2026-05-11 16:07:57.991311
+84	40	Technical Expertise	70.00	exam	2025-01-06	4	\N	2026-05-11 16:07:57.991311
+85	40	Problem Solving	65.00	test	2025-01-07	4	\N	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5048 (class 0 OID 16640)
+-- Dependencies: 220
+-- Data for Name: branch; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.branch (id, name, city, address, is_active, created_at) FROM stdin;
+1	Головной офис	Москва	ул. Тверская, 12	t	2026-05-11 16:07:57.991311
+2	Филиал Санкт-Петербург	Санкт-Петербург	Невский пр., 100	t	2026-05-11 16:07:57.991311
+3	Филиал Новосибирск	Новосибирск	Красный пр., 55	t	2026-05-11 16:07:57.991311
+4	Филиал Екатеринбург	Екатеринбург	ул. Малышева, 30	t	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5054 (class 0 OID 16708)
+-- Dependencies: 226
+-- Data for Name: candidate; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.candidate (id, last_name, first_name, middle_name, birth_date, email, phone, education, current_position, branch_id, department_id, hire_date, photo_url, notes, created_at, updated_at) FROM stdin;
+1	Смирнов	Игорь	Владимирович	1992-05-14	igor.smirnov@company.ru	+79001112233	МГТУ им. Баумана, магистр	Middle Developer	1	1	2020-03-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+2	Кузнецов	Андрей	Дмитриевич	1993-02-20	andrey.kuznetsov@company.ru	+79004445566	СПбГУ, бакалавр	Junior Developer	1	1	2021-01-10	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+3	Волков	Артем	Александрович	1990-11-11	artem.volkov@company.ru	+79007778899	РЭУ Плеханова, магистр	Менеджер по продажам	1	3	2019-06-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+4	Зайцев	Кирилл	Дмитриевич	1994-08-14	kirill.zaitsev@company.ru	+79002223344	СПбГУЭФ, специалист	Старший менеджер	1	3	2020-09-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+5	Лебедев	Максим	Юрьевич	1988-12-05	maxim.lebedev@company.ru	+79005556677	НГУ, PhD	Team Lead	3	9	2018-04-20	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+6	Гаврилова	Наталья	Сергеевна	1995-07-22	natalya.gavrilova@company.ru	+79006667788	НГУ, бакалавр	Middle Developer	3	9	2021-02-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+7	Степанова	Ирина	Владимировна	1991-03-10	irina.stepanova@company.ru	+79008889900	СПбГУ, магистр	Менеджер	2	6	2019-11-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+8	Андреев	Михаил	Андреевич	1993-06-18	mikhail.andreev@company.ru	+79009990011	УрФУ, специалист	Менеджер	2	6	2022-05-20	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+9	Дмитриев	Алексей	Игоревич	1990-09-30	alexey.dmitriev@company.ru	+79001112244	НГУ, магистр	Senior Developer	3	9	2017-08-10	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+10	Макарова	Дарья	Владимировна	1992-01-15	darya.makarova@company.ru	+79002223355	МГУ, бакалавр	Маркетолог	1	5	2020-12-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+11	Чернова	Алиса	Николаевна	1994-04-25	alisa.chernova@company.ru	+79003334466	РАНХиГС, магистр	SMM-менеджер	1	5	2021-06-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+12	Киселев	Антон	Юрьевич	1989-11-05	anton.kiselev@company.ru	+79004445577	СПбГЭУ, специалист	Сисадмин	2	8	2018-09-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+13	Егорова	Вера	Андреевна	1991-07-12	vera.egorova@company.ru	+79005556688	Финансовый университет, магистр	Финансовый аналитик	1	4	2019-03-20	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+14	Козлова	Светлана	Олеговна	1993-12-20	svetlana.kozlova@company.ru	+79006667799	Финансовый университет, бакалавр	Бухгалтер	1	4	2022-01-10	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+15	Медведева	Ольга	Дмитриевна	1990-05-08	olga.medvedeva@company.ru	+79007778800	УрФУ, магистр	Менеджер	4	11	2019-07-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+16	Семенов	Виктор	Григорьевич	1988-08-14	viktor.semenov@company.ru	+79008889911	МГТУ им. Баумана, специалист	Логист	1	14	2018-11-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+17	Романов	Дмитрий	Алексеевич	1992-03-22	dmitry.romanov@company.ru	+79009990022	СПбГУ, бакалавр	Кладовщик	2	7	2020-06-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+18	Попов	Виктор	Сергеевич	1991-07-10	popov.viktor@mail.ru	+79160001122	МФТИ, магистр	Senior Dev (Yandex)	\N	\N	2024-01-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+19	Соколова	Вера	Андреевна	1993-03-22	sokolova.vera@inbox.ru	+79163334455	ВШЭ, бакалавр	Product Manager (Mail.ru)	\N	\N	2024-02-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+20	Михайлов	Егор	Павлович	1989-09-14	mikhailov.egor@list.ru	+79166667788	СПбГЭУ, магистр	HR Director	\N	\N	2024-03-10	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+21	Федорова	Светлана	Олеговна	1996-11-30	fedorova.s@gmail.com	+79169990011	РАНХиГС, специалист	HRBP	\N	\N	2024-04-05	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+22	Козлов	Андрей	Иванович	1992-04-18	kozlov.andrey@yahoo.com	+79251234567	МГТУ им. Баумана, магистр	DevOps Engineer	\N	\N	2024-05-12	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+23	Новикова	Дарья	Владимировна	1994-06-25	novikova.daria@outlook.com	+79257654321	МГУ, бакалавр	UX Designer	\N	\N	2024-06-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+24	Зайцев	Кирилл	Дмитриевич	1990-01-09	zaitsev.kirill@mail.ru	+79261112233	ВШЭ, бакалавр	Data Analyst	\N	\N	2024-06-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+25	Макарова	Татьяна	Сергеевна	1993-08-14	makarova.t@yandex.ru	+79264445566	МГИМО, специалист	Legal Counsel	\N	\N	2024-07-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+26	Белов	Иван	Петрович	1991-12-20	belov.ivan@gmail.com	+79267778899	СПбГУ, магистр	Marketing Manager	\N	\N	2024-07-10	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+27	Чернова	Алиса	Николаевна	1995-05-05	chernova.alisa@mail.ru	+79260001122	РАНХиГС, магистр	Finance Analyst	\N	\N	2024-08-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+28	Жуков	Олег	Петрович	1990-08-14	zhukov.oleg@inbox.ru	+79263334455	МГТУ им. Баумана, специалист	Складской менеджер	\N	\N	2024-08-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+29	Григорьев	Сергей	Иванович	1989-11-20	grigoriev.sergey@list.ru	+79266667788	СПбГУЭФ, бакалавр	Логист	\N	\N	2024-09-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+30	Тихонов	Иван	Петрович	1992-02-10	tikhonov.ivan@mail.ru	+79269990011	МГТУ им. Баумана, магистр	Сисадмин	\N	\N	2024-09-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+31	Власов	Егор	Васильевич	1991-05-25	vlasov.egor@gmail.com	+79261112233	НГУ, PhD	Team Lead	\N	\N	2024-10-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+32	Воробьева	Елена	Александровна	1993-07-14	vorobyeva.elena@yandex.ru	+79264445566	Финансовый университет, специалист	Главный бухгалтер	\N	\N	2024-10-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+33	Фролова	Мария	Ивановна	1990-12-30	frolova.maria@mail.ru	+79267778899	Финансовый университет, магистр	Финансовый директор	\N	\N	2024-11-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+34	Тарасов	Денис	Алексеевич	1989-03-18	tarasov.denis@inbox.ru	+79260001122	МГСУ, специалист	Инженер	\N	\N	2024-11-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+35	Богданов	Игорь	Петрович	1988-06-22	bogdanov.igor@list.ru	+79263334455	МГТУ им. Баумана, магистр	Специалист по ОТ	\N	\N	2024-12-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+36	Савельева	Анна	Михайловна	1991-09-10	savelieva.anna@gmail.com	+79266667788	МГЮА, специалист	Юрист	\N	\N	2024-12-15	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+37	Лазарев	Константин	Петрович	1992-11-05	lazarev.konstantin@mail.ru	+79269990011	УрФУ, бакалавр	Менеджер	\N	\N	2024-12-20	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+38	Ершов	Владимир	Николаевич	1990-04-12	ershov.vladimir@yandex.ru	+79261112233	УрФУ, специалист	Заведующий складом	\N	\N	2024-12-25	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+39	Калинин	Сергей	Валерьевич	1993-08-20	kalinin.sergey@inbox.ru	+79264445566	УрФУ, бакалавр	Снабженец	\N	\N	2024-12-28	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+40	Николаев	Павел	Сергеевич	1991-01-15	nikolaev.pavel@mail.ru	+79267778899	СПбГУ, магистр	Директор филиала	\N	\N	2025-01-01	\N	\N	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5050 (class 0 OID 16656)
+-- Dependencies: 222
+-- Data for Name: department; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.department (id, name, branch_id, is_active, created_at) FROM stdin;
+1	Департамент разработки	1	t	2026-05-11 16:07:57.991311
+2	Отдел кадров (HR)	1	t	2026-05-11 16:07:57.991311
+3	Департамент продаж	1	t	2026-05-11 16:07:57.991311
+4	Финансовый отдел	1	t	2026-05-11 16:07:57.991311
+5	Отдел маркетинга	1	t	2026-05-11 16:07:57.991311
+6	Отдел продаж (СПб)	2	t	2026-05-11 16:07:57.991311
+7	Складская логистика	2	t	2026-05-11 16:07:57.991311
+8	Отдел IT-поддержки	2	t	2026-05-11 16:07:57.991311
+9	Департамент разработки (НСК)	3	t	2026-05-11 16:07:57.991311
+10	Бухгалтерия (НСК)	3	t	2026-05-11 16:07:57.991311
+11	Отдел продаж (ЕКБ)	4	t	2026-05-11 16:07:57.991311
+12	Склад (ЕКБ)	4	t	2026-05-11 16:07:57.991311
+13	Отдел снабжения	4	t	2026-05-11 16:07:57.991311
+14	Юридический отдел	1	t	2026-05-11 16:07:57.991311
+15	Бухгалтерия (Центр)	1	t	2026-05-11 16:07:57.991311
+16	АХО	1	t	2026-05-11 16:07:57.991311
+17	Охрана труда	1	t	2026-05-11 16:07:57.991311
+18	Служба безопасности	1	t	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5062 (class 0 OID 16817)
+-- Dependencies: 234
+-- Data for Name: developmentactivity; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.developmentactivity (id, plan_id, title, type, description, start_date, due_date, completion_date, status, responsible_user_id, mentor_id, result, created_at) FROM stdin;
+1	1	Курс по System Design	course	Пройти курс на Stepik	2024-01-15	2024-02-15	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+2	1	Менторство Junior-ов	mentoring	Курировать 2-х новых сотрудников	2024-02-01	2024-06-30	\N	in_progress	2	4	\N	2026-05-11 16:07:57.991311
+3	1	Участие в архитектурном комитете	task	Посещать встречи и предлагать решения	2024-03-01	2024-06-30	\N	pending	2	4	\N	2026-05-11 16:07:57.991311
+4	1	Презентация технического решения	task	Подготовить и защитить решение	2024-04-01	2024-04-15	\N	overdue	2	4	\N	2026-05-11 16:07:57.991311
+5	2	Углубленный курс SQL	course	Пройти курс на Coursera	2024-02-01	2024-03-01	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+6	2	Чтение книги "Clean Architecture"	task	Прочитать и сделать конспект	2024-02-15	2024-03-15	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+7	2	Рефакторинг модуля	task	Провести рефакторинг legacy кода	2024-03-01	2024-05-31	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+8	3	Тренинг "Управление командой"	training	Внутренний тренинг	2024-02-20	2024-02-22	\N	completed	2	11	\N	2026-05-11 16:07:57.991311
+9	3	Презентация квартального отчета	task	Подготовить отчет для совета директоров	2024-03-01	2024-03-15	\N	overdue	2	11	\N	2026-05-11 16:07:57.991311
+10	3	Наставничество над менеджером	mentoring	Курировать нового менеджера	2024-03-15	2024-08-15	\N	in_progress	2	11	\N	2026-05-11 16:07:57.991311
+11	4	Курс "Стратегические продажи"	course	Онлайн курс	2024-03-05	2024-04-05	\N	completed	2	11	\N	2026-05-11 16:07:57.991311
+12	4	Анализ конкурентов	task	Подготовить отчет по конкурентам	2024-04-01	2024-05-01	\N	completed	2	11	\N	2026-05-11 16:07:57.991311
+13	4	Ведение сложных переговоров	mentoring	Участие в переговорах с ключевыми клиентами	2024-05-01	2024-09-30	\N	in_progress	2	11	\N	2026-05-11 16:07:57.991311
+14	5	Конференция по архитектуре	conference	Посетить HighLoad++	2024-03-20	2024-03-22	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+15	5	Внутренний воркшоп	training	Провести воркшоп по микросервисам	2024-04-15	2024-04-30	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+16	5	Разработка стандартов кода	task	Подготовить гайдлайны	2024-05-01	2024-09-15	\N	in_progress	2	4	\N	2026-05-11 16:07:57.991311
+17	6	Курс коммуникаций	course	Базовый курс	2024-04-01	2024-05-01	\N	completed	2	2	\N	2026-05-11 16:07:57.991311
+18	6	Ролевая игра "Продажи"	training	Участие в ролевой игре	2024-05-15	2024-05-20	\N	completed	2	2	\N	2026-05-11 16:07:57.991311
+19	6	Обратная связь от команды	task	Собрать фидбек	2024-06-01	2024-06-30	\N	completed	2	2	\N	2026-05-11 16:07:57.991311
+20	7	Курс "Управление филиалом"	course	Онлайн курс	2024-04-20	2024-05-20	\N	completed	2	29	\N	2026-05-11 16:07:57.991311
+21	7	Аудит процессов филиала	task	Провести аудит и составить отчет	2024-05-25	2024-06-25	\N	completed	2	29	\N	2026-05-11 16:07:57.991311
+22	7	Наставничество над РОПом	mentoring	Курировать РОПа	2024-06-30	2024-10-15	\N	in_progress	2	29	\N	2026-05-11 16:07:57.991311
+23	8	Курс "Ключевые клиенты"	course	Онлайн курс	2024-05-05	2024-06-05	\N	completed	2	11	\N	2026-05-11 16:07:57.991311
+24	8	Развитие портфеля клиентов	task	Увеличить портфель на 10%	2024-06-10	2024-11-30	\N	in_progress	2	11	\N	2026-05-11 16:07:57.991311
+25	8	Участие в выставке	conference	Представлять компанию	2024-08-01	2024-08-03	\N	pending	2	11	\N	2026-05-11 16:07:57.991311
+26	9	Подготовка к роли Tech Lead	training	Индивидуальные сессии	2024-01-10	2024-02-10	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+27	9	Управление проектом	task	Взять лидство над проектом	2024-02-15	2024-04-15	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+28	9	Оценка 360	task	Пройти оценку	2024-04-20	2024-04-30	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+29	10	Курс "Маркетинговые кампании"	course	Онлайн курс	2024-06-05	2024-07-05	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+30	10	Запуск новой кампании	task	Запустить и проанализировать	2024-07-10	2024-12-31	\N	in_progress	2	18	\N	2026-05-11 16:07:57.991311
+31	10	Анализ ROI	task	Подготовить отчет	2024-10-01	2024-10-15	\N	pending	2	18	\N	2026-05-11 16:07:57.991311
+32	11	Курс SMM	course	Онлайн курс	2024-06-20	2024-07-20	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+33	11	Ведение корпоративных соцсетей	task	Постить контент	2024-07-25	2024-12-15	\N	in_progress	2	18	\N	2026-05-11 16:07:57.991311
+34	11	Конкурс для подписчиков	task	Организовать конкурс	2024-09-01	2024-09-15	\N	overdue	2	18	\N	2026-05-11 16:07:57.991311
+35	12	Сертификация Cisco	course	Подготовка и сдача	2024-07-05	2024-10-31	\N	in_progress	2	30	\N	2026-05-11 16:07:57.991311
+36	12	Внедрение мониторинга	task	Настроить Zabbix	2024-08-01	2024-09-30	\N	completed	2	30	\N	2026-05-11 16:07:57.991311
+37	12	Аудит безопасности	task	Провести аудит	2024-10-01	2024-10-15	\N	pending	2	30	\N	2026-05-11 16:07:57.991311
+38	13	Курс CFA Level 1	course	Подготовка к экзамену	2024-07-20	2024-12-15	\N	in_progress	2	14	\N	2026-05-11 16:07:57.991311
+39	13	Разработка финмодели	task	Создать модель для нового продукта	2024-08-15	2024-10-15	\N	completed	2	14	\N	2026-05-11 16:07:57.991311
+40	13	Презентация для инвесторов	task	Подготовить питч	2024-11-01	2024-11-15	\N	pending	2	14	\N	2026-05-11 16:07:57.991311
+41	14	Курс по налоговому праву	course	Онлайн курс	2024-08-05	2024-09-05	\N	completed	2	33	\N	2026-05-11 16:07:57.991311
+42	14	Оптимизация налогов	task	Предложить схему оптимизации	2024-09-10	2024-10-31	\N	completed	2	33	\N	2026-05-11 16:07:57.991311
+43	15	Курс "Региональные продажи"	course	Онлайн курс	2024-08-20	2024-09-20	\N	completed	2	36	\N	2026-05-11 16:07:57.991311
+44	15	Анализ рынка ЕКБ	task	Подготовить отчет	2024-09-25	2024-10-25	\N	completed	2	36	\N	2026-05-11 16:07:57.991311
+45	15	Планирование продаж на 2025	task	Составить план	2024-11-01	2025-02-15	\N	in_progress	2	36	\N	2026-05-11 16:07:57.991311
+46	16	Курс "Логистика"	course	Онлайн курс	2024-09-05	2024-10-05	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+47	16	Оптимизация маршрутов	task	Внедрить новую схему	2024-10-10	2025-03-01	\N	in_progress	2	34	\N	2026-05-11 16:07:57.991311
+48	16	Снижение издержек	task	Сократить расходы на 5%	2024-11-01	2025-02-01	\N	pending	2	34	\N	2026-05-11 16:07:57.991311
+49	17	Курс "Складской менеджмент"	course	Онлайн курс	2024-09-20	2024-10-20	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+50	17	Внедрение WMS	task	Внедрить систему учета	2024-10-25	2025-03-15	\N	in_progress	2	34	\N	2026-05-11 16:07:57.991311
+51	17	Инвентаризация	task	Провести полную инвентаризацию	2024-12-01	2024-12-15	\N	overdue	2	34	\N	2026-05-11 16:07:57.991311
+52	18	Онбординг Senior Dev	training	Знакомство с процессами	2024-01-25	2024-02-15	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+53	18	Код-ревью первого модуля	task	Провести ревью	2024-02-20	2024-03-10	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+54	18	Презентация опыта	task	Рассказать о прошлом опыте	2024-03-15	2024-04-01	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+55	19	Онбординг PM	training	Знакомство с продуктом	2024-02-10	2024-03-01	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+56	19	Анализ пользователей	task	Провести CustDev	2024-03-05	2024-04-05	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+57	19	Дорожная карта продукта	task	Составить roadmap	2024-04-10	2024-05-10	\N	in_progress	2	18	\N	2026-05-11 16:07:57.991311
+58	20	Онбординг HR Director	training	Знакомство с HR процессами	2024-03-20	2024-04-10	\N	completed	2	2	\N	2026-05-11 16:07:57.991311
+59	20	Аудит HR системы	task	Оценить текущее состояние	2024-04-15	2024-05-15	\N	completed	2	2	\N	2026-05-11 16:07:57.991311
+60	20	Стратегия HR на год	task	Разработать стратегию	2024-05-20	2024-06-20	\N	completed	2	2	\N	2026-05-11 16:07:57.991311
+61	21	Онбординг HRBP	training	Знакомство с бизнесом	2024-04-15	2024-05-05	\N	completed	2	2	\N	2026-05-11 16:07:57.991311
+62	21	Встречи с руководителями	task	Провести 1-на-1	2024-05-10	2024-07-15	\N	in_progress	2	2	\N	2026-05-11 16:07:57.991311
+63	21	Опрос удовлетворенности	task	Запустить eNPS	2024-06-01	2024-06-30	\N	pending	2	2	\N	2026-05-11 16:07:57.991311
+64	22	Онбординг DevOps	training	Знакомство с инфраструктурой	2024-05-20	2024-06-10	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+65	22	Аудит CI/CD	task	Оценить пайплайны	2024-06-15	2024-07-15	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+66	22	Внедрение Kubernetes	task	Мигрировать сервисы	2024-07-20	2024-08-20	\N	in_progress	2	4	\N	2026-05-11 16:07:57.991311
+67	23	Онбординг UX	training	Знакомство с дизайн-системой	2024-06-10	2024-06-30	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+68	23	Редизайн лендинга	task	Обновить дизайн	2024-07-05	2024-09-10	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+69	24	Онбординг Data Analyst	training	Знакомство с данными	2024-06-25	2024-07-15	\N	completed	2	14	\N	2026-05-11 16:07:57.991311
+70	24	Дашборд продаж	task	Создать дашборд	2024-07-20	2024-08-20	\N	completed	2	14	\N	2026-05-11 16:07:57.991311
+71	24	Прогнозная модель	task	Разработать модель	2024-08-25	2024-09-25	\N	in_progress	2	14	\N	2026-05-11 16:07:57.991311
+72	25	Онбординг Legal	training	Знакомство с договорами	2024-07-10	2024-07-30	\N	completed	2	35	\N	2026-05-11 16:07:57.991311
+73	25	Аудит договоров	task	Проверить типовые формы	2024-08-05	2024-09-05	\N	completed	2	35	\N	2026-05-11 16:07:57.991311
+74	25	Политика комплаенс	task	Разработать политику	2024-09-10	2024-10-10	\N	in_progress	2	35	\N	2026-05-11 16:07:57.991311
+75	26	Онбординг Marketing Dir	training	Знакомство с брендом	2024-07-20	2024-08-10	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+76	26	Аудит маркетинга	task	Оценить каналы	2024-08-15	2024-09-15	\N	completed	2	18	\N	2026-05-11 16:07:57.991311
+77	26	Стратегия бренда	task	Разработать стратегию	2024-09-20	2024-10-20	\N	in_progress	2	18	\N	2026-05-11 16:07:57.991311
+78	27	Онбординг Finance Dir	training	Знакомство с финансами	2024-08-10	2024-08-30	\N	completed	2	14	\N	2026-05-11 16:07:57.991311
+79	27	Бюджетирование	task	Составить бюджет на год	2024-09-05	2024-10-05	\N	completed	2	14	\N	2026-05-11 16:07:57.991311
+80	27	Оптимизация затрат	task	Найти точки роста	2024-10-10	2024-11-10	\N	in_progress	2	14	\N	2026-05-11 16:07:57.991311
+81	28	Онбординг Warehouse Mgr	training	Знакомство со складом	2024-08-25	2024-09-15	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+82	28	Аудит склада	task	Проверить процессы	2024-09-20	2024-10-20	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+83	28	Обучение персонала	task	Провести тренинг	2024-10-25	2024-11-25	\N	in_progress	2	34	\N	2026-05-11 16:07:57.991311
+84	29	Онбординг Logistics Dir	training	Знакомство с логистикой	2024-09-10	2024-09-30	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+85	29	Анализ поставщиков	task	Оценить партнеров	2024-10-05	2024-11-05	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+86	29	Оптимизация цепочки	task	Улучшить процессы	2024-11-10	2024-12-10	\N	in_progress	2	34	\N	2026-05-11 16:07:57.991311
+87	30	Онбординг IT Manager	training	Знакомство с IT	2024-09-25	2024-10-15	\N	completed	2	30	\N	2026-05-11 16:07:57.991311
+88	30	Аудит инфраструктуры	task	Проверить сервера	2024-10-20	2024-11-20	\N	completed	2	30	\N	2026-05-11 16:07:57.991311
+89	30	План развития IT	task	Составить roadmap	2024-11-25	2024-12-25	\N	in_progress	2	30	\N	2026-05-11 16:07:57.991311
+90	31	Онбординг Tech Lead	training	Знакомство с командой	2024-10-10	2024-10-30	\N	completed	2	4	\N	2026-05-11 16:07:57.991311
+91	31	Архитектурный надзор	task	Контролировать решения	2024-11-05	2025-01-10	\N	in_progress	2	4	\N	2026-05-11 16:07:57.991311
+92	31	Менторство	mentoring	Курировать мидлов	2024-11-20	2025-01-10	\N	in_progress	2	4	\N	2026-05-11 16:07:57.991311
+93	32	Онбординг CFO	training	Знакомство с финансами	2024-10-25	2024-11-15	\N	completed	2	14	\N	2026-05-11 16:07:57.991311
+94	32	Финансовый аудит	task	Проверить отчетность	2024-11-20	2024-12-20	\N	completed	2	14	\N	2026-05-11 16:07:57.991311
+95	32	Стратегия финансирования	task	Разработать план	2024-12-25	2025-01-25	\N	in_progress	2	14	\N	2026-05-11 16:07:57.991311
+96	33	Онбординг AHO	training	Знакомство с объектами	2024-11-10	2024-11-30	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+97	33	Инвентаризация имущества	task	Проверить активы	2024-12-05	2025-01-05	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+98	34	Онбординг Security	training	Знакомство с безопасностью	2024-11-25	2024-12-15	\N	completed	2	37	\N	2026-05-11 16:07:57.991311
+99	34	Аудит безопасности	task	Проверить системы	2024-12-20	2025-01-20	\N	in_progress	2	37	\N	2026-05-11 16:07:57.991311
+100	34	Обучение персонала	task	Провести тренинг	2025-01-25	2025-02-25	\N	pending	2	37	\N	2026-05-11 16:07:57.991311
+101	35	Онбординг Head of Legal	training	Знакомство с юристами	2024-12-25	2025-01-15	\N	completed	2	35	\N	2026-05-11 16:07:57.991311
+102	35	Аудит судебной работы	task	Проверить дела	2025-01-20	2025-02-20	\N	in_progress	2	35	\N	2026-05-11 16:07:57.991311
+103	35	Стратегия юрзащиты	task	Разработать план	2025-02-25	2025-03-25	\N	pending	2	35	\N	2026-05-11 16:07:57.991311
+104	36	Онбординг Sales Dir EKB	training	Знакомство с филиалом	2024-12-30	2025-01-20	\N	completed	2	36	\N	2026-05-11 16:07:57.991311
+105	36	Анализ продаж	task	Оценить результаты	2025-01-25	2025-02-25	\N	in_progress	2	36	\N	2026-05-11 16:07:57.991311
+106	36	План продаж 2025	task	Составить план	2025-03-01	2025-03-30	\N	pending	2	36	\N	2026-05-11 16:07:57.991311
+107	37	Онбординг Warehouse Chief	training	Знакомство со складом	2025-01-05	2025-01-25	\N	completed	2	34	\N	2026-05-11 16:07:57.991311
+108	37	Аудит склада	task	Проверить процессы	2025-01-30	2025-03-01	\N	in_progress	2	34	\N	2026-05-11 16:07:57.991311
+109	37	Оптимизация	task	Улучшить эффективность	2025-03-05	2025-04-05	\N	pending	2	34	\N	2026-05-11 16:07:57.991311
+110	38	Онбординг Procurement	training	Знакомство с закупками	2025-01-07	2025-01-27	\N	completed	2	38	\N	2026-05-11 16:07:57.991311
+111	38	Анализ поставщиков	task	Оценить базу	2025-02-01	2025-03-03	\N	in_progress	2	38	\N	2026-05-11 16:07:57.991311
+112	38	Тендерная кампания	task	Провести тендер	2025-03-08	2025-04-07	\N	pending	2	38	\N	2026-05-11 16:07:57.991311
+113	39	Онбординг Branch Dir SPb	training	Знакомство с филиалом	2025-01-10	2025-01-30	\N	completed	2	36	\N	2026-05-11 16:07:57.991311
+114	39	Аудит филиала	task	Оценить состояние	2025-02-05	2025-03-07	\N	in_progress	2	36	\N	2026-05-11 16:07:57.991311
+115	39	Стратегия филиала	task	Разработать план	2025-03-12	2025-04-10	\N	pending	2	36	\N	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5060 (class 0 OID 16790)
+-- Dependencies: 232
+-- Data for Name: developmentplan; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.developmentplan (id, reserve_id, title, start_date, end_date, status, created_by, created_at, updated_at) FROM stdin;
+1	1	Подготовка к грейду Senior	2024-01-01	2024-06-30	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+2	2	Углубленный курс SQL и Architecture	2024-02-01	2024-05-31	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+3	3	Программа лидерства	2024-02-15	2024-08-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+4	4	Стратегическое управление продажами	2024-03-01	2024-09-30	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+5	5	Техническое лидерство	2024-03-15	2024-09-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+6	6	Базовый курс коммуникаций	2024-04-01	2024-06-30	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+7	7	Управление филиалом	2024-04-15	2024-10-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+8	8	Управление ключевыми клиентами	2024-05-01	2024-11-30	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+9	9	Подготовка к назначению (Архив)	2024-01-01	2024-04-30	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+10	10	Управление маркетинговыми кампаниями	2024-06-01	2024-12-31	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+11	11	Развитие SMM компетенций	2024-06-15	2024-12-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+12	12	Сертификация по сетевой безопасности	2024-07-01	2024-10-31	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+13	13	Продвинутый финансовый анализ	2024-07-15	2024-12-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+14	14	Курс по налоговому праву	2024-08-01	2024-10-31	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+15	15	Региональное управление продажами	2024-08-15	2025-02-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+16	16	Оптимизация логистических процессов	2024-09-01	2025-03-01	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+17	17	Управление складскими операциями	2024-09-15	2025-03-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+18	18	Адаптационный план Senior Dev	2024-01-25	2024-04-25	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+19	19	Адаптационный план Product Manager	2024-02-10	2024-05-10	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+20	20	Адаптационный план HR Director	2024-03-20	2024-06-20	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+21	21	Адаптационный план HRBP	2024-04-15	2024-07-15	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+22	22	Адаптационный план DevOps	2024-05-20	2024-08-20	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+23	23	Адаптационный план UX Lead	2024-06-10	2024-09-10	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+24	24	Адаптационный план Data Analyst	2024-06-25	2024-09-25	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+25	25	Адаптационный план Legal Counsel	2024-07-10	2024-10-10	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+26	26	Адаптационный план Marketing Director	2024-07-20	2024-10-20	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+27	27	Адаптационный план Finance Director	2024-08-10	2024-11-10	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+28	28	Адаптационный план Warehouse Manager	2024-08-25	2024-11-25	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+29	29	Адаптационный план Logistics Director	2024-09-10	2024-12-10	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+30	30	Адаптационный план IT Manager	2024-09-25	2024-12-25	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+31	31	Адаптационный план Tech Lead	2024-10-10	2025-01-10	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+32	32	Адаптационный план CFO	2024-10-25	2025-01-25	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+33	33	Адаптационный план AHO Manager	2024-11-10	2025-02-10	completed	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+34	34	Адаптационный план Security Chief	2024-11-25	2025-02-25	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+35	35	Адаптационный план Head of Legal	2024-12-25	2025-03-25	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+36	36	Адаптационный план Sales Director EKB	2024-12-30	2025-03-30	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+37	37	Адаптационный план Warehouse Chief EKB	2025-01-05	2025-04-05	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+38	38	Адаптационный план Procurement Manager	2025-01-07	2025-04-07	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+39	39	Адаптационный план Branch Director SPb	2025-01-10	2025-04-10	active	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5056 (class 0 OID 16734)
+-- Dependencies: 228
+-- Data for Name: reserve; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.reserve (id, candidate_id, target_position, status, readiness_level, inclusion_date, exclusion_date, exclusion_reason, created_by, created_at, updated_at) FROM stdin;
+1	1	Senior Developer	active	high	2023-10-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+2	2	Middle Developer	active	medium	2023-11-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+3	3	Team Lead Sales	active	high	2024-01-10	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+4	4	Head of Sales	active	medium	2024-02-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+5	5	Tech Lead	active	high	2024-03-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+6	6	Middle Developer	inactive	low	2024-03-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+7	7	Head of Sales SPb	active	medium	2024-04-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+8	8	Senior Manager	active	high	2024-04-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+9	9	Senior Developer	appointed	high	2024-05-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+10	10	Marketing Manager	active	medium	2024-05-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+11	11	SMM Lead	active	medium	2024-06-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+12	12	Senior Sysadmin	active	high	2024-06-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+13	13	Senior Analyst	active	high	2024-07-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+14	14	Chief Accountant	inactive	low	2024-07-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+15	15	Sales Director EKB	active	medium	2024-08-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+16	16	Logistics Manager	active	medium	2024-08-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+17	17	Warehouse Manager	active	low	2024-09-01	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+18	18	Senior Developer	active	high	2024-01-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+19	19	Product Manager	active	high	2024-02-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+20	20	HR Director	appointed	high	2024-03-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+21	21	HRBP	active	medium	2024-04-10	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+22	22	DevOps Engineer	active	high	2024-05-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+23	23	UX/UI Lead	inactive	low	2024-06-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+24	24	Data Analyst	active	medium	2024-06-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+25	25	Legal Counsel	active	high	2024-07-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+26	26	Marketing Director	active	high	2024-07-15	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+27	27	Finance Director	active	high	2024-08-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+28	28	Warehouse Manager	active	medium	2024-08-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+29	29	Logistics Director	active	high	2024-09-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+30	30	IT Manager SPb	active	medium	2024-09-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+31	31	Tech Lead NSK	active	high	2024-10-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+32	32	CFO	active	high	2024-10-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+33	33	AHO Manager	inactive	low	2024-11-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+34	34	Security Chief	active	medium	2024-11-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+35	35	Head of Legal	active	high	2024-12-20	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+36	36	Sales Director EKB	active	high	2024-12-25	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+37	37	Warehouse Chief EKB	active	medium	2024-12-30	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+38	38	Procurement Manager	active	medium	2025-01-02	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+39	39	Branch Director SPb	active	high	2025-01-05	\N	\N	2	2026-05-11 16:07:57.991311	2026-05-11 16:07:57.991311
+\.
+
+
+--
+-- TOC entry 5064 (class 0 OID 16849)
+-- Dependencies: 236
+-- Data for Name: reservestatushistory; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.reservestatushistory (id, reserve_id, old_status, new_status, changed_by, reason, changed_at) FROM stdin;
+1	1	\N	active	2	Включен в резерв по итогам года	2023-10-01 10:00:00
+2	2	\N	active	2	Потенциал для роста	2023-11-15 14:30:00
+3	3	\N	active	2	Включен в резерв	2024-01-10 09:00:00
+4	4	\N	active	2	Включен в резерв	2024-02-20 11:00:00
+5	5	\N	active	2	Включен в резерв	2024-03-01 10:00:00
+6	6	\N	active	2	Включен в резерв	2024-03-15 15:00:00
+7	6	active	inactive	2	Низкий прогресс	2024-06-01 10:00:00
+8	7	\N	active	2	Включен в резерв	2024-04-01 09:00:00
+9	8	\N	active	2	Включен в резерв	2024-04-15 14:00:00
+10	9	\N	active	2	Включен в резерв	2024-05-01 10:00:00
+11	9	active	appointed	2	Успешное прохождение	2024-08-01 12:00:00
+12	10	\N	active	2	Включен в резерв	2024-05-15 11:00:00
+13	11	\N	active	2	Включен в резерв	2024-06-01 09:00:00
+14	12	\N	active	2	Включен в резерв	2024-06-15 10:00:00
+15	13	\N	active	2	Включен в резерв	2024-07-01 14:00:00
+16	14	\N	active	2	Включен в резерв	2024-07-15 11:00:00
+17	14	active	inactive	2	Отказ кандидата	2024-10-01 09:00:00
+18	15	\N	active	2	Включен в резерв	2024-08-01 10:00:00
+19	16	\N	active	2	Включен в резерв	2024-08-15 15:00:00
+20	17	\N	active	2	Включен в резерв	2024-09-01 09:00:00
+21	18	\N	active	2	Включен в резерв	2024-01-20 10:00:00
+22	19	\N	active	2	Включен в резерв	2024-02-05 14:00:00
+23	20	\N	active	2	Включен в резерв	2024-03-15 09:00:00
+24	20	active	appointed	2	Успешное прохождение	2024-06-20 12:00:00
+25	21	\N	active	2	Включен в резерв	2024-04-10 11:00:00
+26	22	\N	active	2	Включен в резерв	2024-05-15 10:00:00
+27	23	\N	active	2	Включен в резерв	2024-06-05 15:00:00
+28	23	active	inactive	2	Низкий прогресс	2024-09-01 09:00:00
+29	24	\N	active	2	Включен в резерв	2024-06-20 10:00:00
+30	25	\N	active	2	Включен в резерв	2024-07-05 14:00:00
+31	26	\N	active	2	Включен в резерв	2024-07-15 11:00:00
+32	27	\N	active	2	Включен в резерв	2024-08-05 09:00:00
+33	28	\N	active	2	Включен в резерв	2024-08-20 10:00:00
+34	29	\N	active	2	Включен в резерв	2024-09-05 15:00:00
+35	30	\N	active	2	Включен в резерв	2024-09-20 11:00:00
+36	31	\N	active	2	Включен в резерв	2024-10-05 09:00:00
+37	32	\N	active	2	Включен в резерв	2024-10-20 10:00:00
+38	33	\N	active	2	Включен в резерв	2024-11-05 14:00:00
+39	33	active	inactive	2	Отказ кандидата	2024-12-01 09:00:00
+40	34	\N	active	2	Включен в резерв	2024-11-20 10:00:00
+41	35	\N	active	2	Включен в резерв	2024-12-20 15:00:00
+42	36	\N	active	2	Включен в резерв	2024-12-25 11:00:00
+43	37	\N	active	2	Включен в резерв	2024-12-30 09:00:00
+44	38	\N	active	2	Включен в резерв	2025-01-02 10:00:00
+45	39	\N	active	2	Включен в резерв	2025-01-05 14:00:00
+\.
+
+
+--
+-- TOC entry 5079 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: User_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."User_id_seq"', 43, true);
+
+
+--
+-- TOC entry 5080 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: assessment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.assessment_id_seq', 85, true);
+
+
+--
+-- TOC entry 5081 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: branch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.branch_id_seq', 4, true);
+
+
+--
+-- TOC entry 5082 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: candidate_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.candidate_id_seq', 40, true);
+
+
+--
+-- TOC entry 5083 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: department_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.department_id_seq', 18, true);
+
+
+--
+-- TOC entry 5084 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: developmentactivity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.developmentactivity_id_seq', 115, true);
+
+
+--
+-- TOC entry 5085 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: developmentplan_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.developmentplan_id_seq', 39, true);
+
+
+--
+-- TOC entry 5086 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: reserve_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.reserve_id_seq', 39, true);
+
+
+--
+-- TOC entry 5087 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: reservestatushistory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.reservestatushistory_id_seq', 45, true);
+
+
+--
+-- TOC entry 4840 (class 2606 OID 16696)
+-- Name: User User_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_email_key" UNIQUE (email);
+
+
+--
+-- TOC entry 4842 (class 2606 OID 16694)
+-- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_pkey" PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4863 (class 2606 OID 16778)
+-- Name: assessment assessment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment
+    ADD CONSTRAINT assessment_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4835 (class 2606 OID 16654)
+-- Name: branch branch_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4848 (class 2606 OID 16722)
+-- Name: candidate candidate_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 4850 (class 2606 OID 16720)
+-- Name: candidate candidate_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4837 (class 2606 OID 16668)
+-- Name: department department_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4872 (class 2606 OID 16832)
+-- Name: developmentactivity developmentactivity_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4868 (class 2606 OID 16805)
+-- Name: developmentplan developmentplan_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan
+    ADD CONSTRAINT developmentplan_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4859 (class 2606 OID 16752)
+-- Name: reserve reserve_candidate_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_candidate_id_key UNIQUE (candidate_id);
+
+
+--
+-- TOC entry 4861 (class 2606 OID 16750)
+-- Name: reserve reserve_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4879 (class 2606 OID 16860)
+-- Name: reservestatushistory reservestatushistory_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory
+    ADD CONSTRAINT reservestatushistory_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4873 (class 1259 OID 16895)
+-- Name: idx_activity_mentor; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_activity_mentor ON public.developmentactivity USING btree (mentor_id);
+
+
+--
+-- TOC entry 4874 (class 1259 OID 16893)
+-- Name: idx_activity_plan; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_activity_plan ON public.developmentactivity USING btree (plan_id);
+
+
+--
+-- TOC entry 4875 (class 1259 OID 16894)
+-- Name: idx_activity_responsible; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_activity_responsible ON public.developmentactivity USING btree (responsible_user_id);
+
+
+--
+-- TOC entry 4864 (class 1259 OID 16889)
+-- Name: idx_assessment_assessed_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_assessment_assessed_by ON public.assessment USING btree (assessed_by);
+
+
+--
+-- TOC entry 4865 (class 1259 OID 16888)
+-- Name: idx_assessment_candidate; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_assessment_candidate ON public.assessment USING btree (candidate_id);
+
+
+--
+-- TOC entry 4866 (class 1259 OID 16890)
+-- Name: idx_assessment_date; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_assessment_date ON public.assessment USING btree (assessment_date);
+
+
+--
+-- TOC entry 4851 (class 1259 OID 16882)
+-- Name: idx_candidate_branch; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_candidate_branch ON public.candidate USING btree (branch_id);
+
+
+--
+-- TOC entry 4852 (class 1259 OID 16883)
+-- Name: idx_candidate_department; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_candidate_department ON public.candidate USING btree (department_id);
+
+
+--
+-- TOC entry 4853 (class 1259 OID 16881)
+-- Name: idx_candidate_email; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_candidate_email ON public.candidate USING btree (email);
+
+
+--
+-- TOC entry 4838 (class 1259 OID 16880)
+-- Name: idx_department_branch; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_department_branch ON public.department USING btree (branch_id);
+
+
+--
+-- TOC entry 4869 (class 1259 OID 16892)
+-- Name: idx_development_plan_created_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_development_plan_created_by ON public.developmentplan USING btree (created_by);
+
+
+--
+-- TOC entry 4870 (class 1259 OID 16891)
+-- Name: idx_development_plan_reserve; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_development_plan_reserve ON public.developmentplan USING btree (reserve_id);
+
+
+--
+-- TOC entry 4854 (class 1259 OID 16884)
+-- Name: idx_reserve_candidate; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_candidate ON public.reserve USING btree (candidate_id);
+
+
+--
+-- TOC entry 4855 (class 1259 OID 16886)
+-- Name: idx_reserve_created_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_created_by ON public.reserve USING btree (created_by);
+
+
+--
+-- TOC entry 4856 (class 1259 OID 16887)
+-- Name: idx_reserve_readiness; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_readiness ON public.reserve USING btree (readiness_level);
+
+
+--
+-- TOC entry 4857 (class 1259 OID 16885)
+-- Name: idx_reserve_status; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_reserve_status ON public.reserve USING btree (status);
+
+
+--
+-- TOC entry 4876 (class 1259 OID 16897)
+-- Name: idx_rsh_changed_by; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_rsh_changed_by ON public.reservestatushistory USING btree (changed_by);
+
+
+--
+-- TOC entry 4877 (class 1259 OID 16896)
+-- Name: idx_rsh_reserve; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_rsh_reserve ON public.reservestatushistory USING btree (reserve_id);
+
+
+--
+-- TOC entry 4843 (class 1259 OID 16877)
+-- Name: idx_user_branch; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_branch ON public."User" USING btree (branch_id);
+
+
+--
+-- TOC entry 4844 (class 1259 OID 16878)
+-- Name: idx_user_department; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_department ON public."User" USING btree (department_id);
+
+
+--
+-- TOC entry 4845 (class 1259 OID 16876)
+-- Name: idx_user_email; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_email ON public."User" USING btree (email);
+
+
+--
+-- TOC entry 4846 (class 1259 OID 16879)
+-- Name: idx_user_role; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_user_role ON public."User" USING btree (role);
+
+
+--
+-- TOC entry 4897 (class 2620 OID 16873)
+-- Name: candidate update_candidate_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_candidate_updated_at BEFORE UPDATE ON public.candidate FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4899 (class 2620 OID 16875)
+-- Name: developmentplan update_development_plan_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_development_plan_updated_at BEFORE UPDATE ON public.developmentplan FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4898 (class 2620 OID 16874)
+-- Name: reserve update_reserve_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_reserve_updated_at BEFORE UPDATE ON public.reserve FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4896 (class 2620 OID 16872)
+-- Name: User update_user_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER update_user_updated_at BEFORE UPDATE ON public."User" FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- TOC entry 4881 (class 2606 OID 16697)
+-- Name: User User_branch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_branch_id_fkey" FOREIGN KEY (branch_id) REFERENCES public.branch(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4882 (class 2606 OID 16702)
+-- Name: User User_department_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_department_id_fkey" FOREIGN KEY (department_id) REFERENCES public.department(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4887 (class 2606 OID 16784)
+-- Name: assessment assessment_assessed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment
+    ADD CONSTRAINT assessment_assessed_by_fkey FOREIGN KEY (assessed_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4888 (class 2606 OID 16779)
+-- Name: assessment assessment_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.assessment
+    ADD CONSTRAINT assessment_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.candidate(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4883 (class 2606 OID 16723)
+-- Name: candidate candidate_branch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES public.branch(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4884 (class 2606 OID 16728)
+-- Name: candidate candidate_department_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.candidate
+    ADD CONSTRAINT candidate_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.department(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4880 (class 2606 OID 16669)
+-- Name: department department_branch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES public.branch(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4891 (class 2606 OID 16843)
+-- Name: developmentactivity developmentactivity_mentor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_mentor_id_fkey FOREIGN KEY (mentor_id) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4892 (class 2606 OID 16833)
+-- Name: developmentactivity developmentactivity_plan_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.developmentplan(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4893 (class 2606 OID 16838)
+-- Name: developmentactivity developmentactivity_responsible_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentactivity
+    ADD CONSTRAINT developmentactivity_responsible_user_id_fkey FOREIGN KEY (responsible_user_id) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4889 (class 2606 OID 16811)
+-- Name: developmentplan developmentplan_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan
+    ADD CONSTRAINT developmentplan_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4890 (class 2606 OID 16806)
+-- Name: developmentplan developmentplan_reserve_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developmentplan
+    ADD CONSTRAINT developmentplan_reserve_id_fkey FOREIGN KEY (reserve_id) REFERENCES public.reserve(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4885 (class 2606 OID 16753)
+-- Name: reserve reserve_candidate_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_candidate_id_fkey FOREIGN KEY (candidate_id) REFERENCES public.candidate(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4886 (class 2606 OID 16758)
+-- Name: reserve reserve_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reserve
+    ADD CONSTRAINT reserve_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4894 (class 2606 OID 16866)
+-- Name: reservestatushistory reservestatushistory_changed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory
+    ADD CONSTRAINT reservestatushistory_changed_by_fkey FOREIGN KEY (changed_by) REFERENCES public."User"(id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4895 (class 2606 OID 16861)
+-- Name: reservestatushistory reservestatushistory_reserve_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reservestatushistory
+    ADD CONSTRAINT reservestatushistory_reserve_id_fkey FOREIGN KEY (reserve_id) REFERENCES public.reserve(id) ON DELETE CASCADE;
+
+
+-- Completed on 2026-05-11 16:20:53
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 9b8CWgMoYTesUokmaZtR9ZkHNe3ALSx9vBGfUxcMF4nIJKok6WQcdgaCxzhbQzC
+

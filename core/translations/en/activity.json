@@ -1,0 +1,21 @@
+{
+  "Круговая оценка департамента разработки (Новосибирск)": "360° review of the Software Development Department (Novosibirsk)",
+  "Обратная связь коллег, подчинённых и руководителя для сотрудников департамента перед формированием планов развития на следующий год.": "Feedback from peers, direct reports and the manager for department employees before next year's development plans are drawn up.",
+  "Оценивайте наблюдаемое поведение за последние полгода. Уровень ставится по описанию шкалы, а не по общему впечатлению.": "Rate the behavior observed over the last six months. Choose the level by the scale description, not by an overall impression.",
+  "Калибровка 9-box — департамент разработки": "9-box calibration: Software Development Department",
+  "Сверка размещений в матрице «результативность — потенциал» по итогам годовой оценки перед утверждением резерва на следующий год.": "Reconciling placements in the performance/potential matrix after the annual review, before next year's talent pool is approved.",
+  "1. Расхождения между предварительным размещением и мнением руководителей.\n2. Кандидаты зоны «высокий потенциал».\n3. Сотрудники с риском ухода в зонах 7–9.": "1. Differences between the preliminary placement and the managers' view.\n2. Candidates in the high-potential zone.\n3. Employees with attrition risk in boxes 7–9.",
+  "Стабильно выполняет задачи уровня следующей должности, замещал руководителя в период отпуска, проявил себя в межфункциональном проекте.": "Consistently performs at the level of the next position, stood in for the manager during leave and stood out in a cross-functional project.",
+  "Запуск сервиса уведомлений; наставничество двух новых сотрудников.": "Launch of the notification service; mentoring two new employees.",
+  "Поддерживаю: сотрудник уже ведёт смежное направление.": "I support this: the employee already leads an adjacent area.",
+  "Соответствует требованиям программы, включён с пересмотром через полгода.": "Meets the program requirements; admitted with a review in six months.",
+  "Недостаточный управленческий опыт; рекомендовано повторное выдвижение.": "Insufficient management experience; renomination is recommended.",
+  "По двум компетенциям оценка ниже ожидаемой без комментария. Добавьте примеры поведения.": "Two competencies are rated below expectations without a comment. Please add behavioral examples.",
+  "Отчёт о выполнении": "Completion report",
+  "Результат обсуждён с руководителем на еженедельной встрече.": "The result was discussed with the manager at the weekly meeting.",
+  "Задача выполнена в срок, выводы оформлены в базе знаний отдела.": "The task was completed on time; the findings are recorded in the team knowledge base.",
+  "План развития на 2027 год": "Development plan for 2027",
+  "Подготовиться к роли ведущего разработчика: архитектурные решения, проведение ревью кода, наставничество младших коллег.": "Prepare for the lead developer role: architecture decisions, code reviews and mentoring junior colleagues.",
+  "Освоение платформенных сервисов и переход к самостоятельному дежурству.": "Learning the platform services and moving to independent on-call duty.",
+  "Разбор архитектурного решения и плана на следующие две недели.": "Review of an architecture decision and the plan for the next two weeks."
+}
