@@ -1,0 +1,253 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Рабочее место кадровой службы. #}
+
+{% block title %}{% translate "Дашборд" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {# --- Очередь работы ------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Требует решения" %}</h2>
+    </div>
+
+    <div class="grid grid--auto">
+      {% for item in queue %}
+        <a class="card card--interactive" href="{{ item.url }}">
+          <div class="card__body">
+            <p class="metric__value {% if item.count %}text-accent{% else %}text-muted{% endif %}">
+              {{ item.count }}
+            </p>
+            <p class="text-sm text-semibold">{{ item.label }}</p>
+            <p class="text-xs text-muted">{{ item.hint }}</p>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Состояние резерва ---------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Состояние резерва" %}</h2>
+      <a class="action-link" href="{% url 'analytics:index' %}">{% translate "аналитика" %}</a>
+    </div>
+
+    <div class="grid grid--4">
+      <div class="metric">
+        <span class="metric__label">{% translate "Состоят в резерве" %}</span>
+        <span class="metric__value">{{ health.entries }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with share=health.ready_share %}{{ share }} % готовы к назначению{% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Средний индекс" %}</span>
+        <span class="metric__value">{{ health.average_index|score:1 }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with coverage=health.average_coverage %}покрытие оценкой {{ coverage }} %{% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric {% if coverage.signal == 'risk' %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Обеспеченность должностей" %}</span>
+        <span class="metric__value">{{ coverage.coverage|percent:1 }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with depth=coverage.bench_depth %}глубина скамейки {{ depth }}{% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Назначено из резерва" %}</span>
+        <span class="metric__value">{{ health.reserve_conversion|percent:1 }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with total=health.appointments_year %}назначений за год — {{ total }}{% endblocktranslate %}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  {# --- Воронка -------------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Движение по процессу" %}</h2>
+    </div>
+
+    <div class="grid grid--4">
+      {% for stage in funnel %}
+        <div class="panel panel--outlined">
+          <p class="metric__value">{{ stage.count }}</p>
+          <p class="text-sm">{{ stage.label }}</p>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="text-xs text-muted mt-2">
+      {% translate "«Готовы к назначению» — состояние подготовки внутри резерва, а не отдельная стадия: эти записи учтены и в столбце «В резерве»." %}
+    </p>
+  </section>
+
+  {# --- Кадровый состав и развитие ------------------------------------------- #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Кадровый состав" %}</h2>
+        <a class="action-link" href="{% url 'people:list' %}">{% translate "справочник" %}</a>
+      </div>
+      <dl class="definition-list">
+        <dt>{% translate "В штате" %}</dt>
+        <dd class="tabular">{{ people.employed }}</dd>
+
+        <dt>{% translate "Оценены за год" %}</dt>
+        <dd class="tabular">
+          {{ people.assessed }} ({{ people.assessed_share|percent:1 }})
+        </dd>
+
+        <dt>{% translate "Ключевые сотрудники" %}</dt>
+        <dd class="tabular">{{ people.key_talent }}</dd>
+
+        <dt>{% translate "Высокий риск ухода" %}</dt>
+        <dd class="tabular">{{ people.at_risk }}</dd>
+
+        <dt>{% translate "Талант-пул матрицы" %}</dt>
+        <dd class="tabular">{{ health.talent_pool }}</dd>
+      </dl>
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Развитие" %}</h2>
+        <a class="action-link" href="{% url 'development:list' %}">{% translate "планы" %}</a>
+      </div>
+      <dl class="definition-list">
+        <dt>{% translate "Действующих планов" %}</dt>
+        <dd class="tabular">{{ development.active_plans }}</dd>
+
+        <dt>{% translate "Среднее выполнение" %}</dt>
+        <dd class="tabular">{{ development.average_completion|percent:1 }}</dd>
+
+        <dt>{% translate "Просроченных мероприятий" %}</dt>
+        <dd class="tabular">{{ development.overdue_activities }}</dd>
+
+        <dt>{% translate "Выполнено без подтверждения" %}</dt>
+        <dd class="tabular">{{ development.unconfirmed }}</dd>
+
+        <dt>{% translate "Пар наставничества" %}</dt>
+        <dd class="tabular">{{ development.mentorships }}</dd>
+      </dl>
+    </section>
+  </div>
+
+  {# --- Ближайшая работа ----------------------------------------------------- #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Должности без преемников" %}</h2>
+        <a class="action-link" href="{% url 'succession:coverage' %}">{% translate "обеспеченность" %}</a>
+      </div>
+      {% if uncovered %}
+        <ul class="stack stack--sm">
+          {% for item in uncovered %}
+            <li class="panel panel--outlined">
+              <a class="text-sm text-semibold" href="{{ item.get_absolute_url }}">
+                {{ item.position.name }}
+              </a>
+              <p class="text-xs text-muted">
+                {% blocktranslate with level=item.criticality %}критичность {{ level }}{% endblocktranslate %}
+                {% if item.incumbent %} · {{ item.incumbent.short_name }}{% endif %}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">
+          {% translate "У всех критичных должностей есть преемники" %}
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Просроченные мероприятия" %}</h2>
+        <a class="action-link" href="{% url 'development:activities' %}">{% translate "все мероприятия" %}</a>
+      </div>
+      {% if overdue_activities %}
+        <ul class="stack stack--sm">
+          {% for activity in overdue_activities %}
+            <li class="panel panel--outlined">
+              <a class="text-sm text-semibold" href="{{ activity.get_absolute_url }}">
+                {{ activity.title|shorten:60 }}
+              </a>
+              <p class="text-xs text-muted">
+                {{ activity.plan.employee.short_name }} · {{ activity.due_date|deadline }}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Просроченных мероприятий нет" %}</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# --- Рейтинг и кампании --------------------------------------------------- #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Наиболее готовые резервисты" %}</h2>
+        <a class="action-link" href="{% url 'analytics:ranking' %}">{% translate "полный рейтинг" %}</a>
+      </div>
+      {% if top_entries %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Резервист" %}</th>
+                <th>{% translate "Целевая должность" %}</th>
+                <th class="text-right">{% translate "Индекс" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in top_entries %}
+                <tr>
+                  <td class="table__primary">
+                    <a href="{{ entry.get_absolute_url }}">{{ entry.employee.short_name }}</a>
+                  </td>
+                  <td class="text-sm">{{ entry.target_position.name|shorten:40 }}</td>
+                  <td class="text-right tabular">{{ entry.readiness_index|score:1 }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-sm text-muted">
+          {% translate "Индекс ещё не рассчитан ни по одной записи" %}
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Кампании с близким сроком" %}</h2>
+        <a class="action-link" href="{% url 'assessment:list' %}">{% translate "все кампании" %}</a>
+      </div>
+      {% if campaigns %}
+        <ul class="stack stack--sm">
+          {% for campaign in campaigns %}
+            <li class="panel panel--outlined">
+              <a class="text-sm text-semibold" href="{{ campaign.get_absolute_url }}">
+                {{ campaign.name|shorten:60 }}
+              </a>
+              <p class="text-xs text-muted">
+                {{ campaign.get_status_display }} · {{ campaign.deadline|deadline }}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Кампаний с близким сроком нет" %}</p>
+      {% endif %}
+    </section>
+  </div>
+
+{% endblock %}

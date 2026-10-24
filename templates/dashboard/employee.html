@@ -1,0 +1,187 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Личный кабинет сотрудника. #}
+
+{% block title %}{% translate "Мой кабинет" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if not employee %}
+    {% include "components/empty_state.html" with icon="user" title=_("Кадровая карточка не заведена") text=_("Учётная запись создана, но не связана с карточкой сотрудника. Обратитесь в кадровую службу: без карточки недоступны оценка, резерв и планы развития.") %}
+  {% else %}
+
+    {# --- Мой план развития -------------------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Мой план развития" %}</h2>
+        <a class="action-link" href="{% url 'development:my_plan' %}">{% translate "открыть план" %}</a>
+      </div>
+
+      {% if plan %}
+        <div class="panel">
+          <div class="cluster cluster--between">
+            <div>
+              <p class="text-semibold">{{ plan.title }}</p>
+              <p class="text-sm text-muted">
+                {{ plan.start_date|date_ru }} — {{ plan.end_date|date_ru }} ·
+                {{ plan.get_status_display }}
+              </p>
+            </div>
+            <div class="text-right">
+              <span class="text-lg tabular">{{ plan.completion_rate|percent:0 }}</span>
+              <p class="text-xs text-muted">{% translate "выполнено" %}</p>
+            </div>
+          </div>
+          {% progress_bar plan.completion_rate 100 %}
+        </div>
+
+        {% if activities %}
+          <ul class="stack stack--sm mt-4">
+            {% for activity in activities %}
+              <li class="panel panel--outlined">
+                <div class="cluster cluster--between">
+                  <div>
+                    <a class="text-sm text-semibold" href="{{ activity.get_absolute_url }}">
+                      {{ activity.title|shorten:70 }}
+                    </a>
+                    <p class="text-xs text-muted">
+                      {{ activity.get_activity_type_display }}
+                      {% if activity.competency %} · {{ activity.competency.name }}{% endif %}
+                    </p>
+                  </div>
+                  <span class="text-sm">{{ activity.due_date|deadline }}</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-muted mt-4">
+            {% translate "Все мероприятия плана закрыты" %}
+          </p>
+        {% endif %}
+      {% else %}
+        {% include "components/empty_state.html" with icon="target" title=_("Плана развития пока нет") text=_("План составляется руководителем или кадровой службой от ваших разрывов по целевой должности") %}
+      {% endif %}
+    </section>
+
+    {# --- Мои разрывы -------------------------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Что стоит развивать" %}</h2>
+        <a class="action-link" href="{% url 'competencies:my_profile' %}">{% translate "полный профиль" %}</a>
+      </div>
+
+      {% if profile.competency_model %}
+        <p class="text-sm text-muted mb-4">
+          {% if target_entry %}
+            {% blocktranslate with position=target_entry.target_position.name %}
+              Требования целевой должности «{{ position }}»
+            {% endblocktranslate %}
+          {% else %}
+            {% translate "Требования занимаемой должности" %}
+          {% endif %}
+          ·
+          {% blocktranslate with coverage=profile.coverage %}оценкой покрыто {{ coverage }} % требований{% endblocktranslate %}
+        </p>
+
+        {% if gaps %}
+          <div class="stack stack--sm">
+            {% for gap in gaps %}
+              {% include "components/gap_row.html" with gap=gap %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-sm text-muted">
+            {% translate "Требования должности выполнены полностью" %}
+          </p>
+        {% endif %}
+      {% else %}
+        <p class="text-sm text-muted">
+          {% translate "Для вашей должности не задана модель компетенций — разрывы не рассчитываются." %}
+        </p>
+      {% endif %}
+    </section>
+
+    {# --- Резерв и оценки ---------------------------------------------------- #}
+    <div class="grid grid--2">
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Кадровый резерв" %}</h2>
+        </div>
+
+        {% if entries %}
+          <ul class="stack stack--sm">
+            {% for entry in entries %}
+              <li class="panel panel--outlined">
+                <p class="text-sm text-semibold">{{ entry.target_position.name }}</p>
+                <p class="text-xs text-muted">
+                  {{ entry.get_status_display }} ·
+                  {% translate "зачислен" %} {{ entry.inclusion_date|date_ru }}
+                </p>
+                <div class="mt-2">{% readiness_badge entry.readiness_level %}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% elif nominations %}
+          <ul class="stack stack--sm">
+            {% for nomination in nominations %}
+              <li class="panel panel--outlined">
+                <p class="text-sm text-semibold">{{ nomination.target_position.name }}</p>
+                <p class="text-xs text-muted">{{ nomination.get_status_display }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          {% url 'reserve:apply' as apply_url %}
+          {% include "components/empty_state.html" with icon="bookmark" title=_("Вы не состоите в резерве") text=_("Заявку можно подать самостоятельно: решение принимают руководитель и кадровая служба") action_url=apply_url action_label=_("Подать заявку") %}
+        {% endif %}
+      </section>
+
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Мои оценки" %}</h2>
+          <a class="action-link" href="{% url 'assessment:my_results' %}">{% translate "результаты" %}</a>
+        </div>
+
+        {% if sessions %}
+          <ul class="stack stack--sm">
+            {% for session in sessions %}
+              <li class="panel panel--outlined">
+                <p class="text-sm text-semibold">
+                  {{ session.campaign.name|default:_("Внеплановая оценка") }}
+                </p>
+                <p class="text-xs text-muted">
+                  {{ session.get_method_display }} · {{ session.submitted_at|date_ru }}
+                </p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-muted">
+            {% translate "Утверждённых оценок пока нет" %}
+          </p>
+        {% endif %}
+
+        {% if mentorships %}
+          <div class="mt-4">
+            <p class="text-sm text-semibold">{% translate "Наставничество" %}</p>
+            <ul class="stack stack--sm mt-2">
+              {% for pair in mentorships %}
+                <li class="person">
+                  <span class="avatar avatar--sm">{{ pair.mentor.initials }}</span>
+                  <span class="person__text">
+                    <span class="person__name">{{ pair.mentor.short_name }}</span>
+                    <span class="person__meta"><span class="line-clamp-2" title="{{ pair.goal }}">{{ pair.goal }}</span></span>
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+
+  {% endif %}
+
+{% endblock %}

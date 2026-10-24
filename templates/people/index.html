@@ -1,0 +1,126 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Кадровый справочник организации. #}
+
+{% block title %}{% translate "Сотрудники" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "В штате" %}</span>
+      <span class="metric__value">{{ summary.employed }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=summary.total %}карточек всего — {{ total }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric {% if summary.assessed_share < 50 %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Оценены за год" %}</span>
+      <span class="metric__value">{{ summary.assessed }}</span>
+      <span class="metric__footer">
+        {{ summary.assessed_share|percent:1 }} {% translate "штата" %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Состоят в резерве" %}</span>
+      <span class="metric__value">{{ summary.in_reserve }}</span>
+      <span class="metric__footer">
+        <a href="{% url 'reserve:list' %}">{% translate "кадровый резерв" %}</a>
+      </span>
+    </div>
+    <div class="metric {% if summary.at_risk %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Высокий риск ухода" %}</span>
+      <span class="metric__value">{{ summary.at_risk }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=summary.key_talent %}ключевых сотрудников — {{ count }}{% endblocktranslate %}
+      </span>
+    </div>
+  </div>
+
+  {# --- Отбор --------------------------------------------------------------- #}
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% if filter_form.branch %}
+        {% include "components/field.html" with field=filter_form.branch %}
+      {% endif %}
+      {% include "components/field.html" with field=filter_form.department %}
+      {% include "components/field.html" with field=filter_form.grade %}
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.education_level %}
+      {% include "components/field.html" with field=filter_form.scope %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'people:list' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# --- Перечень ------------------------------------------------------------ #}
+  <section class="section">
+    {% if employees %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>
+                <a class="table__sort" href="?{% query_replace sort='name' %}">{% translate "Сотрудник" %}</a>
+              </th>
+              <th>
+                <a class="table__sort" href="?{% query_replace sort='position' %}">{% translate "Должность" %}</a>
+              </th>
+              <th>
+                <a class="table__sort" href="?{% query_replace sort='department' %}">{% translate "Подразделение" %}</a>
+              </th>
+              <th class="text-right">
+                <a class="table__sort" href="?{% query_replace sort='hired' %}">{% translate "Стаж" %}</a>
+              </th>
+              <th class="text-right">{% translate "Резерв" %}</th>
+              <th>{% translate "Статус" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for employee in employees %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ employee.get_absolute_url }}">{{ employee.short_name }}</a>
+                  {% if employee.is_key_talent %}
+                    <span class="badge badge--accent badge--pill" title="{% translate 'Ключевой сотрудник' %}">
+                      {% translate "ключевой" %}
+                    </span>
+                  {% endif %}
+                  <div class="table__secondary">{{ employee.personnel_number }}</div>
+                </td>
+                <td class="text-sm">
+                  {{ employee.title }}
+                  {% if employee.position.grade %}
+                    <div class="table__secondary">{{ employee.position.grade.name }}</div>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ employee.department.name|default:"—" }}</td>
+                <td class="text-right text-sm tabular">{{ employee.tenure_display }}</td>
+                <td class="text-right tabular">
+                  {% if employee.reserve_count %}{{ employee.reserve_count }}{% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td class="text-sm">
+                  {{ employee.get_status_display }}
+                  {% if employee.attrition_risk == "high" %}
+                    {% signal_dot "risk" _("Высокий риск ухода") %}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="users" title=_("Сотрудники не найдены") text=_("Измените условия отбора: возможно, выбранное подразделение вне вашей области видимости") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

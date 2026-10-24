@@ -1,0 +1,97 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Состав подразделения — рабочее место руководителя. #}
+
+{% block title %}{% translate "Мои сотрудники" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "В подразделении" %}</span>
+      <span class="metric__value">{{ summary.employed }}</span>
+      <span class="metric__footer">{% translate "работающих сотрудников" %}</span>
+    </div>
+    <div class="metric {% if summary.assessed_share < 50 %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Оценены за год" %}</span>
+      <span class="metric__value">{{ summary.assessed }}</span>
+      <span class="metric__footer">{{ summary.assessed_share|percent:1 }} {% translate "состава" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "В кадровом резерве" %}</span>
+      <span class="metric__value">{{ summary.in_reserve }}</span>
+      <span class="metric__footer">
+        <a href="{% url 'reserve:team' %}">{% translate "мои резервисты" %}</a>
+      </span>
+    </div>
+    <div class="metric {% if summary.at_risk %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Риск ухода" %}</span>
+      <span class="metric__value">{{ summary.at_risk }}</span>
+      <span class="metric__footer">{% translate "оценка руководителя" %}</span>
+    </div>
+  </div>
+
+  <section class="section">
+    {% if employees %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Должность" %}</th>
+              <th class="text-right">{% translate "В должности" %}</th>
+              <th>{% translate "Оценка" %}</th>
+              <th class="text-right">{% translate "Резерв" %}</th>
+              <th class="text-right">{% translate "План развития" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for employee in employees %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ employee.get_absolute_url }}">{{ employee.short_name }}</a>
+                  {% if employee.attrition_risk == "high" %}
+                    {% signal_dot "risk" _("Высокий риск ухода") %}
+                  {% endif %}
+                  {% if employee.is_key_talent %}
+                    <div class="table__secondary">{% translate "ключевой сотрудник" %}</div>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ employee.title }}</td>
+                <td class="text-right text-sm tabular">
+                  {{ employee.position_tenure_months|tenure }}
+                </td>
+                <td class="text-sm">
+                  {% if employee.pk in assessed_ids %}
+                    <span class="badge badge--ready badge--pill">{% translate "актуальна" %}</span>
+                  {% else %}
+                    <span class="badge badge--develop badge--pill"
+                          title="{% blocktranslate %}Нет утверждённой оценки за последние {{ stale_days }} дней{% endblocktranslate %}">
+                      {% translate "устарела" %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">
+                  {% if employee.reserve_count %}{{ employee.reserve_count }}{% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td class="text-right">
+                  {% if employee.plan_count %}
+                    <span class="badge badge--ready badge--pill">{% translate "есть" %}</span>
+                  {% else %}
+                    <span class="badge badge--neutral badge--pill">{% translate "нет" %}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="users" title=_("В подразделении нет сотрудников") text=_("Состав подразделения ведёт кадровая служба") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

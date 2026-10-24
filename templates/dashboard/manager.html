@@ -1,0 +1,229 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Рабочее место руководителя подразделения. #}
+
+{% block title %}{% translate "Дашборд подразделения" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {# --- Требует вашего решения ----------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Требует вашего решения" %}</h2>
+    </div>
+
+    <div class="grid grid--4">
+      {% for item in queue %}
+        <a class="card card--interactive" href="{{ item.url }}">
+          <div class="card__body">
+            <p class="metric__value {% if item.count %}text-accent{% else %}text-muted{% endif %}">
+              {{ item.count }}
+            </p>
+            <p class="text-sm text-semibold">{{ item.label }}</p>
+            <p class="text-xs text-muted">{{ item.hint }}</p>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Подразделение -------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Подразделение" %}</h2>
+      <a class="action-link" href="{% url 'people:team' %}">{% translate "мои сотрудники" %}</a>
+    </div>
+
+    <div class="grid grid--4">
+      <div class="metric">
+        <span class="metric__label">{% translate "Сотрудников" %}</span>
+        <span class="metric__value">{{ team_size }}</span>
+        <span class="metric__footer">{% translate "работающих в подразделении" %}</span>
+      </div>
+      <div class="metric {% if people.assessed_share < 50 %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Оценены за год" %}</span>
+        <span class="metric__value">{{ people.assessed }}</span>
+        <span class="metric__footer">{{ people.assessed_share|percent:1 }} {% translate "состава" %}</span>
+      </div>
+      <div class="metric {% if without_plan %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Без плана развития" %}</span>
+        <span class="metric__value">{{ without_plan }}</span>
+        <span class="metric__footer">{% translate "нет действующего плана" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "В кадровом резерве" %}</span>
+        <span class="metric__value">{{ reserve.active }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with count=reserve.ready_now %}готовы к назначению — {{ count }}{% endblocktranslate %}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  {# --- Заявки и анкеты ------------------------------------------------------ #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Заявки на согласование" %}</h2>
+        <a class="action-link" href="{% url 'reserve:approvals' %}">{% translate "все заявки" %}</a>
+      </div>
+      {% if nominations %}
+        <ul class="stack stack--sm">
+          {% for nomination in nominations %}
+            <li class="panel panel--outlined">
+              <a class="text-sm text-semibold" href="{{ nomination.get_absolute_url }}">
+                {{ nomination.employee.short_name }} → {{ nomination.target_position.name|shorten:40 }}
+              </a>
+              <p class="text-xs text-muted">
+                {{ nomination.get_kind_display }} · {{ nomination.submitted_at|date_ru }}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Заявок, ожидающих решения, нет" %}</p>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Анкеты оценки" %}</h2>
+        <a class="action-link" href="{% url 'assessment:inbox' %}">{% translate "мои задачи" %}</a>
+      </div>
+      {% if sessions %}
+        <ul class="stack stack--sm">
+          {% for session in sessions %}
+            <li class="panel panel--outlined">
+              <a class="text-sm text-semibold" href="{{ session.get_absolute_url }}">
+                {{ session.employee.short_name }}
+              </a>
+              <p class="text-xs text-muted">
+                {{ session.get_method_display }} ·
+                {{ session.campaign.name|default:_("внеплановая оценка")|shorten:40 }}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Анкет к заполнению нет" %}</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# --- Резервисты ----------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Резервисты подразделения" %}</h2>
+      <a class="action-link" href="{% url 'reserve:team' %}">{% translate "все записи" %}</a>
+    </div>
+
+    {% if entries %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Резервист" %}</th>
+              <th>{% translate "Целевая должность" %}</th>
+              <th>{% translate "Готовность" %}</th>
+              <th>{% translate "Пересмотр" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in entries %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ entry.get_absolute_url }}">{{ entry.employee.short_name }}</a>
+                </td>
+                <td class="text-sm">{{ entry.target_position.name|shorten:40 }}</td>
+                <td>{% readiness_badge entry.readiness_level %}</td>
+                <td class="text-sm">{{ entry.review_date|deadline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% url 'reserve:nomination_create' as nomination_url %}
+      {% include "components/empty_state.html" with icon="bookmark" title=_("Резервистов нет") text=_("Выдвиньте кандидата: подготовка преемника занимает не один квартал") action_url=nomination_url action_label=_("Выдвинуть кандидата") %}
+    {% endif %}
+  </section>
+
+  {# --- Риски и ближайшие сроки ---------------------------------------------- #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Риск ухода" %}</h2>
+      </div>
+      {% if at_risk %}
+        <ul class="stack stack--sm">
+          {% for person in at_risk %}
+            <li class="person">
+              <span class="avatar avatar--sm">{{ person.initials }}</span>
+              <span class="person__text">
+                <a class="person__name" href="{{ person.get_absolute_url }}">{{ person.short_name }}</a>
+                <span class="person__meta">
+                  {{ person.title }}
+                  {% if person.is_key_talent %} · {% translate "ключевой сотрудник" %}{% endif %}
+                </span>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">
+          {% translate "Сотрудников с высоким риском ухода нет" %}
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Ближайшие мероприятия" %}</h2>
+        <a class="action-link" href="{% url 'development:activities' %}">{% translate "все мероприятия" %}</a>
+      </div>
+      {% if upcoming %}
+        <ul class="stack stack--sm">
+          {% for activity in upcoming %}
+            <li class="panel panel--outlined">
+              <a class="text-sm text-semibold" href="{{ activity.get_absolute_url }}">
+                {{ activity.title|shorten:60 }}
+              </a>
+              <p class="text-xs text-muted">
+                {{ activity.plan.employee.short_name }} · {{ activity.due_date|deadline }}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Мероприятий с близким сроком нет" %}</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# --- Наставничество ------------------------------------------------------- #}
+  {% if mentorships %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Наставничество" %}</h2>
+        <a class="action-link" href="{% url 'development:mentorship' %}">{% translate "все пары" %}</a>
+      </div>
+      <ul class="stack stack--sm">
+        {% for pair in mentorships %}
+          <li class="panel panel--outlined">
+            <a class="text-sm text-semibold" href="{{ pair.get_absolute_url }}">
+              {{ pair.mentor.short_name }} → {{ pair.mentee.short_name }}
+            </a>
+            <p class="text-xs text-muted">
+              <span class="line-clamp-2" title="{{ pair.goal }}">{{ pair.goal }}</span>
+              {% if pair.last_meeting_at %}
+                · {% blocktranslate with date=pair.last_meeting_at|date_ru %}последняя встреча {{ date }}{% endblocktranslate %}
+              {% endif %}
+            </p>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Правка кадровой карточки. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Характеристики для расчёта готовности" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Мобильность участвует в оценке соответствия целевой должности: кандидат, закрывающий вакансию в другом городе, должен быть готов туда переехать. Риск ухода вместе с критичностью должности даёт приоритет планирования преемственности." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.mobility %}
+        {% include "components/field.html" with field=form.attrition_risk %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.is_key_talent inline=True %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Участие в кадровом резерве" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Исключение из резерва требует основания: через год никто не вспомнит, почему сотрудник не рассматривается, и запись либо висит бессрочно, либо снимается наугад." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.is_excluded_from_reserve inline=True %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.exclusion_note %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.notes %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{{ employee.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

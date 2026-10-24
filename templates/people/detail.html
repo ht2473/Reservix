@@ -1,0 +1,284 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Карточка сотрудника. #}
+
+{% block title %}{{ employee.short_name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="cluster cluster--between mb-4">
+    <div class="cluster cluster--sm">
+      <span class="avatar avatar--lg">{{ employee.initials }}</span>
+      <div>
+        <p class="text-lg text-semibold">{{ employee.full_name }}</p>
+        <p class="text-sm text-muted">
+          {{ employee.title }}
+          {% if employee.department %} · {{ employee.department.name }}{% endif %}
+        </p>
+      </div>
+    </div>
+    <div class="cluster cluster--sm">
+      <a class="btn btn--secondary btn--sm"
+         href="{% url 'competencies:employee_profile' employee.public_id %}">
+        {% translate "Профиль компетенций" %}
+      </a>
+      {% if can_edit %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'people:employee_edit' employee.public_id %}">
+          {% translate "Правка карточки" %}
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# --- Кадровые сведения --------------------------------------------------- #}
+  <section class="section">
+    <div class="grid grid--2">
+      <div class="panel">
+        <p class="panel__title">{% translate "Место в организации" %}</p>
+        <dl class="definition-list">
+          <dt>{% translate "Табельный номер" %}</dt>
+          <dd class="tabular">{{ employee.personnel_number }}</dd>
+
+          <dt>{% translate "Филиал" %}</dt>
+          <dd>{{ employee.branch.name|default:"—" }}</dd>
+
+          <dt>{% translate "Подразделение" %}</dt>
+          <dd>{{ employee.department.name|default:"—" }}</dd>
+
+          <dt>{% translate "Грейд" %}</dt>
+          <dd>{{ employee.position.grade.name|default:"—" }}</dd>
+
+          <dt>{% translate "Руководитель" %}</dt>
+          <dd>
+            {% if employee.manager %}
+              <a href="{{ employee.manager.get_absolute_url }}">{{ employee.manager.short_name }}</a>
+            {% else %}—{% endif %}
+          </dd>
+
+          <dt>{% translate "Статус" %}</dt>
+          <dd>{{ employee.get_status_display }}</dd>
+        </dl>
+      </div>
+
+      <div class="panel">
+        <p class="panel__title">{% translate "Характеристики для расчёта готовности" %}</p>
+        <dl class="definition-list">
+          <dt>{% translate "Стаж в организации" %}</dt>
+          <dd>{{ employee.tenure_display }}</dd>
+
+          <dt>{% translate "В текущей должности" %}</dt>
+          <dd>{{ employee.position_tenure_months|tenure }}</dd>
+
+          <dt>{% translate "Управленческий опыт" %}</dt>
+          <dd>{{ employee.management_experience_months|tenure }}</dd>
+
+          <dt>{% translate "Образование" %}</dt>
+          <dd>{{ employee.get_education_level_display }}</dd>
+
+          <dt>{% translate "Мобильность" %}</dt>
+          <dd>{{ employee.get_mobility_display }}</dd>
+
+          <dt>{% translate "Риск ухода" %}</dt>
+          <dd>
+            {{ employee.get_attrition_risk_display }}
+            {% if employee.attrition_risk == "high" %}{% signal_dot "risk" %}{% endif %}
+          </dd>
+        </dl>
+
+        {% if employee.is_excluded_from_reserve %}
+          <div class="alert alert--warning mt-4">
+            <p class="text-sm">
+              {% translate "Исключён из рассмотрения в резерв" %}
+              {% if employee.exclusion_note %} — {{ employee.exclusion_note }}{% endif %}
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  {# --- Резерв и матрица ----------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Кадровый резерв" %}</h2>
+    </div>
+
+    {% if entries %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Целевая должность" %}</th>
+              <th>{% translate "Программа" %}</th>
+              <th class="text-right">{% translate "Ранг" %}</th>
+              <th class="text-right">{% translate "Индекс" %}</th>
+              <th>{% translate "Готовность" %}</th>
+              <th>{% translate "Статус" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in entries %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ entry.get_absolute_url }}">{{ entry.target_position.name }}</a>
+                  <div class="table__secondary">{{ entry.target_position.grade.name }}</div>
+                </td>
+                <td class="text-sm">{{ entry.reserve_group.name|default:"—" }}</td>
+                <td class="text-right tabular">{{ entry.rank|default:"—" }}</td>
+                <td class="text-right tabular">
+                  {% if entry.readiness_index is not None %}{{ entry.readiness_index|score:1 }}{% else %}—{% endif %}
+                </td>
+                <td>{% readiness_badge entry.readiness_level %}</td>
+                <td class="text-sm">{{ entry.get_status_display }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="bookmark" title=_("Не состоит в резерве") text=_("Сотрудник не выдвинут ни на одну целевую должность") %}
+    {% endif %}
+
+    {% if placement %}
+      <div class="panel mt-4">
+        <p class="text-sm text-semibold">{% translate "Матрица «результативность — потенциал»" %}</p>
+        <p class="text-sm">
+          {{ placement.get_cell_display }} —
+          {% blocktranslate with performance=placement.performance potential=placement.potential %}
+            результативность {{ performance }}, потенциал {{ potential }}
+          {% endblocktranslate %}
+          {% if placement.session %}
+            <span class="text-muted">
+              · {% blocktranslate with held=placement.session.held_on|date_ru %}калибровка {{ held }}{% endblocktranslate %}
+            </span>
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </section>
+
+  {# --- Развитие ------------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Планы развития" %}</h2>
+    </div>
+
+    {% if plans %}
+      <ul class="stack stack--sm">
+        {% for plan in plans %}
+          <li class="panel panel--outlined">
+            <div class="cluster cluster--between">
+              <div>
+                <a class="text-semibold" href="{{ plan.get_absolute_url }}">{{ plan.title }}</a>
+                <p class="text-sm text-muted">
+                  {{ plan.start_date|date_ru }} — {{ plan.end_date|date_ru }} ·
+                  {{ plan.get_status_display }}
+                </p>
+              </div>
+              <div class="text-right">
+                {% progress_bar plan.completion_rate 100 %}
+                <span class="text-sm tabular">{{ plan.completion_rate|percent:0 }}</span>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      {% include "components/empty_state.html" with icon="target" title=_("Планов развития нет") text=_("План составляется от разрывов по целевой должности") %}
+    {% endif %}
+  </section>
+
+  {# --- Оценки и кадровая история -------------------------------------------- #}
+  <div class="grid grid--2">
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Оценки" %}</h2>
+      </div>
+      {% if sessions %}
+        <ul class="stack stack--sm">
+          {% for session in sessions %}
+            <li class="panel panel--outlined">
+              <p class="text-sm text-semibold">
+                {{ session.campaign.name|default:_("Внеплановая оценка") }}
+              </p>
+              <p class="text-sm text-muted">
+                {{ session.get_method_display }} ·
+                {{ session.get_status_display }} ·
+                {{ session.created_at|date_ru }}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Сессий оценки нет" %}</p>
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Кадровая история" %}</h2>
+      </div>
+      {% if history %}
+        <ol class="timeline">
+          {% for record in history %}
+            <li class="timeline__item">
+              <span class="timeline__dot"></span>
+              <p class="text-sm text-semibold">
+                {{ record.position.name|default:record.position_title }}
+              </p>
+              <p class="text-sm text-muted">
+                {{ record.get_change_type_display }} ·
+                {{ record.start_date|date_ru }}
+                {% if record.end_date %} — {{ record.end_date|date_ru }}{% endif %}
+              </p>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="text-sm text-muted">{% translate "Записей о переводах нет" %}</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# --- Подчинённые и документы ---------------------------------------------- #}
+  <div class="grid grid--2">
+    {% if subordinates %}
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Подчинённые" %}</h2>
+        </div>
+        <ul class="stack stack--sm">
+          {% for person in subordinates %}
+            <li class="person">
+              <span class="avatar avatar--sm">{{ person.initials }}</span>
+              <span class="person__text">
+                <a class="person__name" href="{{ person.get_absolute_url }}">{{ person.short_name }}</a>
+                <span class="person__meta">{{ person.title }}</span>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if documents %}
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Документы" %}</h2>
+        </div>
+        <ul class="stack stack--sm">
+          {% for document in documents %}
+            <li class="panel panel--outlined">
+              <a class="text-sm text-semibold" href="{{ document.get_absolute_url }}">{{ document.title }}</a>
+              <p class="text-xs text-muted">
+                {{ document.get_kind_display }} · {{ document.created_at|date_ru }}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+  </div>
+
+{% endblock %}
