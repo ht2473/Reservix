@@ -21,6 +21,9 @@ updates:
       # Проект остаётся на LTS-ветке Django 5.2.
       - dependency-name: "django"
         update-types: ["version-update:semver-major"]
+      # Клиент redis 8 требует kombu 5.7, у которой пока нет стабильного выпуска.
+      - dependency-name: "redis"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
