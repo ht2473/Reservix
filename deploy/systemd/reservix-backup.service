@@ -1,0 +1,28 @@
+# =============================================================================
+# Reservix — резервное копирование как служба systemd
+# Альтернатива записи в cron: таймер systemd переживает пропущенный запуск
+# (сервер был выключен в 03:30) и выполняет задание при следующей загрузке,
+# тогда как cron такой запуск просто теряет.
+# =============================================================================
+
+[Unit]
+Description=Резервное копирование Reservix
+Requires=docker.service
+After=docker.service reservix.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/reservix/deploy/backup.sh
+
+# Копирование не должно мешать работе системы: приоритет ввода-вывода снижен,
+# иначе ночной дамп базы на слабом диске делает страницы медленными.
+IOSchedulingClass=idle
+Nice=10
+
+# Отдельный журнал: `journalctl -u reservix-backup` отвечает на вопрос
+# «когда в последний раз проходило копирование» без обращения к файлам.
+StandardOutput=append:/var/log/reservix/backup.log
+StandardError=append:/var/log/reservix/backup.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,29 @@
+# =============================================================================
+# Reservix — управление составом контейнеров через systemd
+# Docker Compose поднимает контейнеры с `restart: unless-stopped`, и этого
+# достаточно для перезапуска упавшей службы.
+# =============================================================================
+
+[Unit]
+Description=Reservix — информационная система кадрового резерва
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/reservix/deploy
+
+# Запуск не пересобирает образ.
+ExecStart=/usr/bin/docker compose --env-file /opt/reservix/.env up -d --no-build
+ExecStop=/usr/bin/docker compose --env-file /opt/reservix/.env down
+ExecReload=/usr/bin/docker compose --env-file /opt/reservix/.env restart web worker beat
+
+# Запуск ждёт готовности контейнеров: база поднимается дольше приложения, и
+# без запаса systemd объявит службу запущенной раньше, чем она отвечает.
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
