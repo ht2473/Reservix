@@ -1,0 +1,113 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Модели компетенций — наборы требований к должностям. #}
+
+{% block title %}{% translate "Модели компетенций" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Всего моделей" %}</span>
+      <span class="metric__value">{{ models|length }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Опубликовано" %}</span>
+      <span class="metric__value">{{ published_count }}</span>
+      <span class="metric__footer">{% translate "доступны кампаниям оценки" %}</span>
+    </div>
+    <div class="metric {% if unbalanced %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Веса не сбалансированы" %}</span>
+      <span class="metric__value">{{ unbalanced|length }}</span>
+      <span class="metric__footer">{% translate "сумма весов не равна единице" %}</span>
+    </div>
+  </div>
+
+  {% if unbalanced %}
+    <div class="alert alert--warning mb-6">
+      <p class="alert__title">{% translate "Модели, требующие исправления" %}</p>
+      <p>
+        {% translate "Сумма весов требований должна быть равна 1,000. Иначе итоговое соответствие нельзя истолковать как долю: оно окажется больше ста процентов либо систематически заниженным." %}
+      </p>
+      <ul class="stack stack--sm mt-2">
+        {% for model in unbalanced %}
+          <li>
+            <a href="{{ model.get_absolute_url }}">{{ model.name }}</a> —
+            <span class="tabular">{{ model.weight_total|score:3 }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <section class="section">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Модель" %}</th>
+            <th>{% translate "Применение" %}</th>
+            <th class="text-right">{% translate "Требований" %}</th>
+            <th class="text-right">{% translate "Должностей" %}</th>
+            <th class="text-right">{% translate "Сумма весов" %}</th>
+            <th>{% translate "Состояние" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for model in models %}
+            <tr>
+              <td class="table__primary">
+                <a href="{{ model.get_absolute_url }}">{{ model.name }}</a>
+                <div class="table__secondary text-mono">
+                  {{ model.code }} · {% blocktranslate with version=model.version %}версия {{ version }}{% endblocktranslate %}
+                </div>
+              </td>
+              <td class="text-sm">
+                {% if model.grade %}
+                  {% blocktranslate with grade=model.grade.name %}грейд «{{ grade }}»{% endblocktranslate %}
+                {% else %}
+                  {% translate "по перечню должностей" %}
+                {% endif %}
+              </td>
+              <td class="text-right tabular">{{ model.requirement_count }}</td>
+              <td class="text-right tabular">{{ model.position_count }}</td>
+              <td class="text-right tabular">
+                {{ model.weight_total|score:3 }}
+                {% if model.is_active and not model.is_balanced %}
+                  <span class="badge badge--risk badge--pill">{% translate "не 1,000" %}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if not model.is_active %}
+                  <span class="badge badge--outline">{% translate "выведена" %}</span>
+                {% elif model.is_published %}
+                  <span class="badge badge--ready">{% translate "опубликована" %}</span>
+                {% else %}
+                  <span class="badge badge--neutral">{% translate "черновик" %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if without_positions %}
+    <section class="section section--sunken">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Модели без назначенных должностей" %}</h2>
+        <p class="section__lead">
+          {% translate "Такая модель применяется как запасная — по грейду должности, если для неё не задана функциональная модель. Пустой перечень должностей не ошибка, но и не норма: проверьте, что модель действительно нужна." %}
+        </p>
+      </div>
+      <ul class="stack stack--sm">
+        {% for model in without_positions %}
+          <li><a href="{{ model.get_absolute_url }}">{{ model.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

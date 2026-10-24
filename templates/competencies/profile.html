@@ -1,0 +1,252 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Профиль компетенций: соответствие требованиям должности. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if not employee %}
+    {% include "components/empty_state.html" with icon="user" title=_("Карточка сотрудника не связана с учётной записью") text=_("Профиль компетенций строится по карточке сотрудника. Обратитесь в кадровую службу.") %}
+
+  {% elif not competency_model %}
+    {% include "components/empty_state.html" with icon="layers" title=_("Для должности не задана модель компетенций") text=_("Без модели требований соответствие не рассчитывается: сравнивать оценки не с чем.") %}
+
+  {% else %}
+
+    {# --- Итоговые показатели ---------------------------------------------- #}
+    <div class="grid grid--4 mb-6">
+      <div class="metric metric--accent">
+        <span class="metric__label">{% translate "Соответствие должности" %}</span>
+        <span class="metric__value">{{ profile.match_score|score:1 }}<span class="metric__unit">%</span></span>
+        <span class="metric__footer">{{ competency_model.name }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Покрытие оценкой" %}</span>
+        <span class="metric__value">{{ profile.coverage|score:1 }}<span class="metric__unit">%</span></span>
+        <span class="metric__footer">
+          {% blocktranslate with total=profile.gaps|length assessed=profile.satisfied_gaps|length %}
+            требований в модели: {{ total }}
+          {% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Средний уровень" %}</span>
+        <span class="metric__value">{{ profile.average_level|score:2|default:"—" }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with target=profile.average_target|score:2 %}
+            планка должности: {{ target }}
+          {% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric {% if profile.is_blocked %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Критичные разрывы" %}</span>
+        <span class="metric__value">{{ blocking|length }}</span>
+        <span class="metric__footer">
+          {% if profile.is_blocked %}
+            {% translate "закрывают путь к назначению" %}
+          {% else %}
+            {% translate "препятствий к назначению нет" %}
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    {% if profile.coverage < 60 %}
+      <div class="alert alert--info mb-6">
+        <p class="alert__title">{% translate "Оценка не завершена" %}</p>
+        <p>
+          {% blocktranslate with coverage=profile.coverage|score:1 months=window_months %}
+            Подтверждено оценками {{ coverage }}% требований модели. Неоценённая
+            компетенция считается неподтверждённой и снижает итоговое
+            соответствие: отсутствие проверки не является доказательством
+            соответствия. В расчёт входят оценки за последние {{ months }} месяцев.
+          {% endblocktranslate %}
+        </p>
+      </div>
+    {% endif %}
+
+    <div class="grid grid--2 grid--gap-lg mb-6">
+
+      {# --- Диаграмма ------------------------------------------------------- #}
+      <section class="panel">
+        <h2 class="panel__title">{% translate "Профиль на фоне требований" %}</h2>
+        {% include "components/radar.html" %}
+      </section>
+
+      {# --- Свод по категориям ---------------------------------------------- #}
+      <section class="panel">
+        <h2 class="panel__title">{% translate "По категориям компетенций" %}</h2>
+        <p class="section__lead">
+          {% translate "Разрез, с которого начинается разговор по итогам оценки" %}
+        </p>
+
+        <div class="stack mt-4">
+          {% for item in categories %}
+            <div>
+              <div class="cluster cluster--between">
+                <span class="text-sm text-medium">{{ item.category.name }}</span>
+                <span class="text-sm tabular">
+                  {{ item.match|score:1 }}% ·
+                  {% blocktranslate with actual=item.average_level|default:"—" target=item.average_target %}
+                    {{ actual }} при {{ target }}
+                  {% endblocktranslate %}
+                </span>
+              </div>
+              {% progress_bar item.match 100 %}
+              <p class="text-xs text-muted">
+                {{ item.count }}&nbsp;{{ item.count|plural:_("компетенция,компетенции,компетенций") }},
+                {% blocktranslate with weight=item.weight|score:3 %}вес {{ weight }}{% endblocktranslate %}
+              </p>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    {# --- Блокирующие разрывы ---------------------------------------------- #}
+    {% if blocking %}
+      <section class="section section--tight">
+        <div class="alert alert--error">
+          <p class="alert__title">{% translate "Критичные требования не выполнены" %}</p>
+          <p>
+            {% translate "Недобор по критичному требованию не компенсируется превышением по другим компетенциям: они не взаимозаменяемы. До закрытия этих разрывов включение в резерв на должность не рассматривается." %}
+          </p>
+        </div>
+
+        <div class="mt-4">
+          {% for gap in blocking %}
+            {% include "components/gap_row.html" %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {# --- Приоритеты развития ----------------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Приоритеты развития" %}</h2>
+        <p class="section__lead">
+          {% translate "Порядок задан не величиной разрыва, а его ценой: разрыв в полтора уровня по компетенции с весом 0,02 обходится дешевле, чем разрыв в полбалла по компетенции с весом 0,20" %}
+        </p>
+      </div>
+
+      {% if priorities %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Компетенция" %}</th>
+                <th class="text-right">{% translate "Факт" %}</th>
+                <th class="text-right">{% translate "Требуется" %}</th>
+                <th class="text-right">{% translate "Цена разрыва" %}</th>
+                <th>{% translate "Рекомендация" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for gap in priorities %}
+                <tr>
+                  <td class="table__primary">
+                    <a href="{{ gap.competency.get_absolute_url }}">{{ gap.competency.name }}</a>
+                    {% if gap.is_critical %}
+                      <span class="badge badge--risk badge--pill">{% translate "критично" %}</span>
+                    {% endif %}
+                    <div class="table__secondary">{{ gap.status_label }}</div>
+                  </td>
+                  <td class="text-right tabular">{{ gap.actual|default_if_none:"—" }}</td>
+                  <td class="text-right tabular">{{ gap.target }}</td>
+                  <td class="text-right tabular">−{{ gap.loss|score:1 }}&nbsp;{% translate "п. п." %}</td>
+                  <td class="text-sm text-muted"><span class="line-clamp-2" title="{{ gap.competency.development_hint }}">{{ gap.competency.development_hint }}</span></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="check" title=_("Все требования выполнены") text=_("Разрывов относительно требований должности нет") %}
+      {% endif %}
+    </section>
+
+    {# --- Сильные стороны --------------------------------------------------- #}
+    {% if strengths %}
+      <section class="section section--sunken">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Освоено выше требуемого" %}</h2>
+          <p class="section__lead">
+            {% translate "Не для похвалы: сотрудник с превышением по управленческим компетенциям — кандидат в наставники и в кадровый резерв" %}
+          </p>
+        </div>
+        <div>
+          {% for gap in strengths %}
+            {% include "components/gap_row.html" %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {# --- Полный перечень требований ----------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Все требования модели" %}</h2>
+      </div>
+
+      <div>
+        {% for gap in profile.gaps %}
+          {% include "components/gap_row.html" %}
+        {% endfor %}
+      </div>
+
+      <p class="chart__caption mt-4">
+        {% blocktranslate with confidence=profile.confidence months=window_months %}
+          Достоверность профиля — {{ confidence }} (доля веса методов оценки,
+          фактически применённых). В расчёт входят оценки за последние
+          {{ months }} месяцев; внутри одного метода учитывается последнее
+          наблюдение.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {# --- Сравнение с другой должностью --------------------------------------- #}
+    {% if not is_own_profile %}
+      <section class="section section--sunken">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Соответствие другой должности" %}</h2>
+          <p class="section__lead">
+            {% translate "Именно так оценивается готовность к назначению: профиль сотрудника сопоставляется с требованиями целевой должности, а не собственной" %}
+          </p>
+        </div>
+
+        <form method="get" class="filter-panel">
+          <div class="filter-panel__row">
+            <div class="field">
+              <label class="field__label" for="model-select">{% translate "Модель требований" %}</label>
+              <select class="field-select" name="model" id="model-select">
+                <option value="">{% translate "— требования собственной должности —" %}</option>
+                {% for item in comparable_models %}
+                  <option value="{{ item.code }}" {% if target_model and target_model.pk == item.pk %}selected{% endif %}>
+                    {{ item.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="filter-panel__actions">
+            <button class="btn btn--primary btn--sm" type="submit">{% translate "Сравнить" %}</button>
+          </div>
+        </form>
+
+        {% if target_model %}
+          <p class="text-sm text-muted mt-3">
+            {% blocktranslate with own=own_model.name|default:"—" target=target_model.name %}
+              Показано соответствие требованиям «{{ target }}». Собственная модель
+              должности — «{{ own }}».
+            {% endblocktranslate %}
+          </p>
+        {% endif %}
+      </section>
+    {% endif %}
+
+  {% endif %}
+
+{% endblock %}

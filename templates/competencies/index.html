@@ -1,0 +1,134 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Справочник компетенций. #}
+
+{% block title %}{% translate "Справочник компетенций" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Компетенций" %}</span>
+      <span class="metric__value">{{ total_count }}</span>
+      <span class="metric__footer">{% translate "в корпоративной модели" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Сквозные" %}</span>
+      <span class="metric__value">{{ core_count }}</span>
+      <span class="metric__footer">{% translate "обязательны для всех должностей" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Проверяются тестом" %}</span>
+      <span class="metric__value">{{ testable_count }}</span>
+      <span class="metric__footer">{% translate "балл вычисляется, а не вводится" %}</span>
+    </div>
+    <div class="metric {% if incomplete_count %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Неполная шкала" %}</span>
+      <span class="metric__value">{{ incomplete_count }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with expected=expected_scale %}
+          требуется {{ expected }} уровня индикаторов
+        {% endblocktranslate %}
+      </span>
+    </div>
+  </div>
+
+  {# --- Категории ----------------------------------------------------------- #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Категории" %}</h2>
+      <p class="section__lead">
+        {% translate "Категория задаёт ось управленческого разговора: «управленческие подтянуты, профессиональные проседают» содержательнее перечня из сорока строк" %}
+      </p>
+    </div>
+
+    <div class="grid grid--4">
+      {% for category in categories %}
+        <a class="card card--interactive" href="{{ category.get_absolute_url }}">
+          <div class="card__body">
+            <p class="card__title">{{ category.name }}</p>
+            <p class="card__subtitle">{{ category.get_kind_display }}</p>
+            <p class="text-sm text-muted mt-2">
+              {{ category.competency_count }}&nbsp;{{ category.competency_count|plural:_("компетенция,компетенции,компетенций") }}
+            </p>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Отбор --------------------------------------------------------------- #}
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.category %}
+      {% include "components/field.html" with field=filter_form.kind %}
+      {% include "components/field.html" with field=filter_form.scope %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'competencies:index' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {# --- Перечень ------------------------------------------------------------ #}
+  <section class="section">
+    {% if competencies %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>
+                <a class="table__sort" href="?{% query_replace sort='name' %}">{% translate "Компетенция" %}</a>
+              </th>
+              <th>{% translate "Категория" %}</th>
+              <th>{% translate "Тип" %}</th>
+              <th>{% translate "Шкала" %}</th>
+              <th class="text-right">
+                <a class="table__sort" href="?{% query_replace sort='-usage' %}">{% translate "В моделях" %}</a>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for competency in competencies %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ competency.get_absolute_url }}">{{ competency.name }}</a>
+                  {% if competency.is_core %}
+                    <span class="badge badge--accent badge--pill">{% translate "сквозная" %}</span>
+                  {% endif %}
+                  {% if competency.is_testable %}
+                    <span class="badge badge--info badge--pill">{% translate "тест" %}</span>
+                  {% endif %}
+                  <div class="table__secondary"><span class="line-clamp-2" title="{{ competency.definition }}">{{ competency.definition }}</span></div>
+                </td>
+                <td class="text-sm">{{ competency.category.name }}</td>
+                <td class="text-sm">{{ competency.get_kind_display }}</td>
+                <td>
+                  {% if competency.scale_count == expected_scale %}
+                    <span class="badge badge--ready">{% translate "описана" %}</span>
+                  {% else %}
+                    <span class="badge badge--develop">
+                      {% blocktranslate with count=competency.scale_count total=expected_scale %}
+                        {{ count }} из {{ total }}
+                      {% endblocktranslate %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ competency.requirement_count }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="layers" title=_("Компетенции не найдены") text=_("Измените условия отбора или сбросьте фильтр") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

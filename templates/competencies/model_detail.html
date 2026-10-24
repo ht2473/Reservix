@@ -1,0 +1,174 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Модель компетенций: состав требований, распределение веса по категориям, охваченные должности. #}
+
+{% block title %}{{ competency_model.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if not competency_model.is_weight_balanced %}
+    <div class="alert alert--warning mb-6">
+      <p class="alert__title">{% translate "Веса не образуют распределение" %}</p>
+      <p>
+        {% blocktranslate with total=weight_sum|score:3 %}
+          Сумма весов требований равна {{ total }} вместо 1,000. Балл соответствия,
+          рассчитанный по такой модели, нельзя истолковать как долю.
+        {% endblocktranslate %}
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Требований" %}</span>
+      <span class="metric__value">{{ requirements|length }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Критичных" %}</span>
+      <span class="metric__value">{{ critical_count }}</span>
+      <span class="metric__footer">{% translate "недобор блокирует назначение" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Должностей" %}</span>
+      <span class="metric__value">{{ positions|length }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Сотрудников" %}</span>
+      <span class="metric__value">{{ assessed_employees }}</span>
+      <span class="metric__footer">{% translate "оцениваются по этой модели" %}</span>
+    </div>
+  </div>
+
+  <section class="panel mb-6">
+    <p class="prose">{{ competency_model.description|linebreaks }}</p>
+    <dl class="definition-list mt-4">
+      <dt>{% translate "Код" %}</dt>
+      <dd class="text-mono">{{ competency_model.code }}</dd>
+      <dt>{% translate "Типовой грейд" %}</dt>
+      <dd>{{ competency_model.grade.name|default:"—" }}</dd>
+      <dt>{% translate "Состояние" %}</dt>
+      <dd>
+        {% if competency_model.is_published %}
+          {% translate "опубликована — доступна кампаниям оценки" %}
+        {% else %}
+          {% translate "черновик — кампаниям недоступна" %}
+        {% endif %}
+      </dd>
+    </dl>
+  </section>
+
+  {# --- Распределение веса по категориям ---------------------------------- #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Распределение веса по категориям" %}</h2>
+      <p class="section__lead">
+        {% translate "Соотношение групп компетенций отражает содержание должности: у руководителя основной вес приходится на управленческие компетенции, у специалиста — на профессиональные" %}
+      </p>
+    </div>
+
+    <div class="stack stack--sm">
+      {% for item in category_shares %}
+        <div>
+          <div class="cluster cluster--between">
+            <span class="text-sm">{{ item.category.name }}</span>
+            <span class="text-sm tabular">
+              {{ item.share }}% · {{ item.count }}&nbsp;{{ item.count|plural:_("требование,требования,требований") }}
+            </span>
+          </div>
+          {% progress_bar item.share 100 "" "neutral" %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# --- Состав требований -------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Требования" %}</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Компетенция" %}</th>
+            <th>{% translate "Категория" %}</th>
+            <th class="text-right">{% translate "Целевой" %}</th>
+            <th class="text-right">{% translate "Минимум" %}</th>
+            <th class="text-right">{% translate "Вес" %}</th>
+            <th>{% translate "Признак" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for requirement in requirements %}
+            <tr>
+              <td class="table__primary">
+                <a href="{{ requirement.competency.get_absolute_url }}">{{ requirement.competency.name }}</a>
+                {% if requirement.comment %}
+                  <div class="table__secondary">{{ requirement.comment }}</div>
+                {% endif %}
+              </td>
+              <td class="text-sm">{{ requirement.competency.category.name }}</td>
+              <td class="text-right tabular">{{ requirement.target_level }}</td>
+              <td class="text-right tabular">{{ requirement.minimum_level|default:"—" }}</td>
+              <td class="text-right tabular">{{ requirement.weight|score:3 }}</td>
+              <td>
+                {% if requirement.is_critical %}
+                  <span class="badge badge--risk">{% translate "критичное" %}</span>
+                {% else %}
+                  <span class="badge badge--neutral">{% translate "обычное" %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="text-right text-sm text-muted">{% translate "Сумма весов" %}</td>
+            <td class="text-right tabular text-bold">{{ weight_sum|score:3 }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  {# --- Охваченные должности ----------------------------------------------- #}
+  <section class="section section--sunken">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Должности" %}</h2>
+      <p class="section__lead">
+        {% translate "Модель, назначенная должности напрямую, вытесняет модель грейда: точное правило побеждает общее" %}
+      </p>
+    </div>
+
+    {% if positions %}
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Грейд" %}</th>
+              <th>{% translate "Подразделение" %}</th>
+              <th class="text-right">{% translate "Штат" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for position in positions %}
+              <tr>
+                <td class="table__primary">{{ position.name }}</td>
+                <td class="text-sm">{{ position.grade.name }}</td>
+                <td class="text-sm">{{ position.department.name|default:"—" }}</td>
+                <td class="text-right tabular">{{ position.headcount_plan }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="sitemap" title=_("Должности не назначены") text=_("Модель применяется как запасная — по грейду должности") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

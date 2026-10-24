@@ -1,0 +1,67 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Категория справочника с входящими компетенциями. #}
+
+{% block title %}{{ category.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <section class="panel mb-6">
+    <p class="prose">{{ category.description }}</p>
+    <dl class="definition-list mt-4">
+      <dt>{% translate "Тип компетенций" %}</dt>
+      <dd>{{ category.get_kind_display }}</dd>
+      <dt>{% translate "Код" %}</dt>
+      <dd class="text-mono">{{ category.code }}</dd>
+    </dl>
+  </section>
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Компетенции категории" %}</h2>
+    </div>
+
+    {% if competencies %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Компетенция" %}</th>
+              <th>{% translate "Шкала" %}</th>
+              <th class="text-right">{% translate "В моделях" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for competency in competencies %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ competency.get_absolute_url }}">{{ competency.name }}</a>
+                  {% if competency.is_core %}
+                    <span class="badge badge--accent badge--pill">{% translate "сквозная" %}</span>
+                  {% endif %}
+                  <div class="table__secondary"><span class="line-clamp-2" title="{{ competency.definition }}">{{ competency.definition }}</span></div>
+                </td>
+                <td>
+                  {% if competency.scale_count == expected_scale %}
+                    <span class="badge badge--ready">{% translate "описана" %}</span>
+                  {% else %}
+                    <span class="badge badge--develop">
+                      {% blocktranslate with count=competency.scale_count total=expected_scale %}
+                        {{ count }} из {{ total }}
+                      {% endblocktranslate %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ competency.requirement_count }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="layers" title=_("В категории нет компетенций") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

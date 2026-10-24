@@ -1,0 +1,168 @@
+{% extends "layout/workspace.html" %}
+{% load i18n l10n reservix %}
+
+{# Карточка компетенции. #}
+
+{% block title %}{{ competency.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Оценок выставлено" %}</span>
+      <span class="metric__value">{{ score_count }}</span>
+      <span class="metric__footer">{% translate "в утверждённых и внесённых сессиях" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Средний уровень" %}</span>
+      <span class="metric__value">{{ average_level|score:2|default:"—" }}</span>
+      <span class="metric__footer">{% translate "по всем оценённым сотрудникам" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Входит в модели" %}</span>
+      <span class="metric__value">{{ requirements|length }}</span>
+      <span class="metric__footer">{% translate "требований к должностям" %}</span>
+    </div>
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    {# --- Определение и шкала ---------------------------------------------- #}
+    <div class="stack stack--lg">
+      <section class="panel">
+        <h2 class="panel__title">{% translate "Определение" %}</h2>
+        <p class="prose">{{ competency.definition }}</p>
+
+        <dl class="definition-list mt-4">
+          <dt>{% translate "Категория" %}</dt>
+          <dd><a href="{{ competency.category.get_absolute_url }}">{{ competency.category.name }}</a></dd>
+          <dt>{% translate "Тип" %}</dt>
+          <dd>{{ competency.get_kind_display }}</dd>
+          <dt>{% translate "Код" %}</dt>
+          <dd class="text-mono">{{ competency.code }}</dd>
+          <dt>{% translate "Применение" %}</dt>
+          <dd>
+            {% if competency.is_core %}
+              {% translate "обязательна для всех должностей организации" %}
+            {% else %}
+              {% translate "требуется отдельными моделями компетенций" %}
+            {% endif %}
+          </dd>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title">{% translate "Шкала владения" %}</h2>
+        <p class="section__lead">
+          {% translate "Поведенческие индикаторы превращают оценку из вкусовой в воспроизводимую: два эксперта, читающие одно описание уровня, ставят близкие баллы" %}
+        </p>
+
+        {% if scale %}
+          <dl class="definition-list mt-4">
+            {% for level in scale %}
+              <dt>{{ level.level }} — {{ level.name }}</dt>
+              <dd>{{ level.indicators }}</dd>
+            {% endfor %}
+          </dl>
+        {% else %}
+          <div class="alert alert--warning mt-4">
+            <p class="alert__title">{% translate "Шкала не описана" %}</p>
+            <p>{% translate "Оценка по компетенции без поведенческих индикаторов невоспроизводима: эксперт не различает соседние уровни и ставит балл наугад." %}</p>
+          </div>
+        {% endif %}
+      </section>
+
+      {% if competency.development_hint %}
+        <section class="panel panel--outlined">
+          <h2 class="panel__title">{% translate "Рекомендации по развитию" %}</h2>
+          <p class="prose">{{ competency.development_hint }}</p>
+          <p class="text-xs text-muted mt-2">
+            {% translate "Подставляется в индивидуальный план развития при выявлении разрыва" %}
+          </p>
+        </section>
+      {% endif %}
+    </div>
+
+    {# --- Распределение и применение ---------------------------------------- #}
+    <div class="stack stack--lg">
+      <section class="panel">
+        <h2 class="panel__title">{% translate "Распределение оценок" %}</h2>
+
+        {% if distribution %}
+          <div class="histogram">
+            {% for row in distribution %}
+              <div class="histogram__bar"
+                   title="{% blocktranslate with level=row.level count=row.count share=row.share %}уровень {{ level }}: {{ count }} оценок, {{ share }}%{% endblocktranslate %}">
+                <span class="histogram__label tabular">{{ row.count }}</span>
+                <span class="histogram__fill"
+                      style="height: {% localize off %}{{ row.height }}{% endlocalize %}%"></span>
+                <span class="histogram__label tabular">{{ row.level|score:1 }}</span>
+              </div>
+            {% endfor %}
+          </div>
+          <p class="chart__caption">
+            {% translate "Распределение, смещённое к верхним уровням, означает не сильный коллектив, а нетребовательную оценку: такая компетенция не различает сотрудников и не годится для отбора в резерв." %}
+          </p>
+        {% else %}
+          {% include "components/empty_state.html" with icon="chart" title=_("Оценок пока нет") text=_("Распределение появится после первой завершённой кампании") %}
+        {% endif %}
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title">{% translate "Где требуется" %}</h2>
+
+        {% if requirements %}
+          <div class="table-wrap">
+            <table class="table table--compact">
+              <thead>
+                <tr>
+                  <th>{% translate "Модель" %}</th>
+                  <th class="text-right">{% translate "Уровень" %}</th>
+                  <th class="text-right">{% translate "Вес" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for requirement in requirements %}
+                  <tr>
+                    <td>
+                      <a href="{{ requirement.competency_model.get_absolute_url }}">
+                        {{ requirement.competency_model.name }}
+                      </a>
+                      {% if requirement.is_critical %}
+                        <span class="badge badge--risk badge--pill">{% translate "критично" %}</span>
+                      {% endif %}
+                    </td>
+                    <td class="text-right tabular">{{ requirement.target_level }}</td>
+                    <td class="text-right tabular">{{ requirement.weight|score:3 }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "components/empty_state.html" with icon="layers" title=_("Не входит ни в одну модель") text=_("Компетенция описана, но ни одна должность её не требует — оценивать её не будут") %}
+        {% endif %}
+      </section>
+
+      {% if tests %}
+        <section class="panel panel--outlined">
+          <h2 class="panel__title">{% translate "Проверяется тестами" %}</h2>
+          <ul class="stack stack--sm mt-3">
+            {% for test in tests %}
+              <li>
+                <a href="{% url 'assessment:test_detail' test.pk %}">{{ test.name }}</a>
+                <span class="text-xs text-muted">
+                  {% blocktranslate with limit=test.time_limit_minutes passing=test.passing_score %}
+                    {{ limit }} мин., порог {{ passing }} баллов
+                  {% endblocktranslate %}
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </div>
+
+  </div>
+
+{% endblock %}

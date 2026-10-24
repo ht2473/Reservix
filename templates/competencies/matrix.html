@@ -1,0 +1,136 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Матрица разрывов подразделения. #}
+
+{% block title %}{% translate "Матрица разрывов" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.competency_model %}
+      {% include "components/field.html" with field=filter_form.department %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Построить" %}</button>
+      <a class="btn btn--ghost btn--sm" href="{% url 'competencies:matrix' %}">{% translate "Сбросить" %}</a>
+    </div>
+  </form>
+
+  {% if hint %}
+    {% include "components/empty_state.html" with icon="grid" title=hint text=_("Матрица строится по единой модели требований: сравнение по разным моделям дало бы таблицу, столбцы которой означают разное для разных строк") %}
+
+  {% elif matrix %}
+
+    {% if truncated %}
+      <div class="alert alert--info mb-4">
+        <p>
+          {% translate "Показаны первые 60 сотрудников. Таблица на две сотни строк не читается — уточните подразделение." %}
+        </p>
+      </div>
+    {% endif %}
+
+    {# --- Свод по компетенциям --------------------------------------------- #}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Где проседает команда" %}</h2>
+        <p class="section__lead">
+          {% blocktranslate with model=competency_model.name count=rows|length %}
+            Модель «{{ model }}», сотрудников в выборке: {{ count }}. Доля
+            несоответствующих считается от всех сотрудников, а не от оценённых:
+            неоценённый — тоже неподтверждённое соответствие.
+          {% endblocktranslate %}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Компетенция" %}</th>
+              <th class="text-right">{% translate "Требуется" %}</th>
+              <th class="text-right">{% translate "Средний уровень" %}</th>
+              <th class="text-right">{% translate "Не соответствуют" %}</th>
+              <th>{% translate "Доля" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for column in columns %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ column.competency.get_absolute_url }}">{{ column.competency.name }}</a>
+                  {% if column.requirement.is_critical %}
+                    <span class="badge badge--risk badge--pill">{% translate "критично" %}</span>
+                  {% endif %}
+                  <div class="table__secondary">
+                    {% blocktranslate with share=column.assessed_share %}оценено {{ share }}% сотрудников{% endblocktranslate %}
+                  </div>
+                </td>
+                <td class="text-right tabular">{{ column.target }}</td>
+                <td class="text-right tabular">{{ column.average_level|default:"—" }}</td>
+                <td class="text-right tabular">{{ column.failing }}</td>
+                <td>{% progress_bar column.failing_share 100 "" "neutral" %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {# --- Матрица ----------------------------------------------------------- #}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Сотрудники и требования" %}</h2>
+        <p class="section__lead">
+          {% translate "В ячейке — отклонение от требуемого уровня. Зелёная ячейка означает соответствие, оранжевая — недобор до полутора уровней, красная — существенный разрыв, серая — компетенция не оценивалась." %}
+        </p>
+      </div>
+
+      <div class="scroll-x">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th class="matrix__person">{% translate "Сотрудник" %}</th>
+              <th class="text-right">{% translate "%" %}</th>
+              {% for column in matrix.requirements %}
+                <th class="matrix__head">
+                  <span class="matrix__head-label" title="{{ column.competency.name }}">
+                    {{ column.competency.name }}
+                  </span>
+                </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td class="matrix__person">
+                  <a href="{% url 'competencies:employee_profile' row.employee.public_id %}">
+                    {{ row.employee.short_name }}
+                  </a>
+                  <div class="table__secondary">{{ row.employee.position_title|shorten:32 }}</div>
+                </td>
+                <td class="text-right tabular text-sm">{{ row.profile.match_score|score:0 }}</td>
+                {% for cell in row.cells %}
+                  {% if cell %}
+                    <td class="matrix__cell matrix__cell--{{ cell.signal }}"
+                        title="{{ cell.competency.name }}: {{ cell.status_label }}">
+                      {{ cell.delta_label }}
+                    </td>
+                  {% else %}
+                    <td class="matrix__cell">—</td>
+                  {% endif %}
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  {% else %}
+    {% include "components/empty_state.html" with icon="grid" title=_("Выберите модель требований") text=_("Матрица сравнивает сотрудников по единому эталону, поэтому модель требований задаётся явно") %}
+  {% endif %}
+
+{% endblock %}
