@@ -1,0 +1,120 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Форма выставления баллов. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Оцениваемый" %}</span>
+      <span class="metric__value text-lg">{{ session.employee.short_name }}</span>
+      <span class="metric__footer">{{ session.employee.title }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Метод оценки" %}</span>
+      <span class="metric__value text-lg">{{ session.get_method_display }}</span>
+      <span class="metric__footer">{{ session.campaign.name|default:_("вне кампании") }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Срок" %}</span>
+      <span class="metric__value text-lg">
+        {% if session.campaign %}{{ session.campaign.deadline|date_ru }}{% else %}—{% endif %}
+      </span>
+      <span class="metric__footer">{% translate "до окончания приёма оценок" %}</span>
+    </div>
+  </div>
+
+  {% if session.campaign.instructions %}
+    <div class="alert alert--info mb-6">
+      <p class="alert__title">{% translate "Инструкция" %}</p>
+      <p>{{ session.campaign.instructions }}</p>
+    </div>
+  {% endif %}
+
+  {% if session.rejection_reason %}
+    <div class="alert alert--warning mb-6">
+      <p class="alert__title">{% translate "Сессия возвращена на доработку" %}</p>
+      <p>{{ session.rejection_reason }}</p>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <p class="section__lead mb-4">{{ scale_hint }}</p>
+
+    <section class="section section--tight">
+      {% for row in rows %}
+        <div class="score-row">
+          <div class="score-row__head">
+            <div>
+              <span class="score-row__name">{{ row.competency.name }}</span>
+              {% if row.requirement.is_critical %}
+                <span class="badge badge--risk badge--pill">{% translate "критичное требование" %}</span>
+              {% endif %}
+              <p class="score-row__definition">{{ row.competency.definition }}</p>
+            </div>
+            <span class="score-row__target">
+              {% blocktranslate with target=row.requirement.target_level weight=row.requirement.weight|score:3 %}
+                требуется {{ target }} · вес {{ weight }}
+              {% endblocktranslate %}
+            </span>
+          </div>
+
+          <div class="score-row__body">
+            <div>
+              {% include "components/field.html" with field=row.level_field %}
+            </div>
+
+            <div>
+              <dl class="score-row__scale">
+                {% for level in row.scale %}
+                  <dt data-target="{% if level.level == row.requirement.target_level %}true{% else %}false{% endif %}">
+                    {{ level.level }} — {{ level.name }}
+                  </dt>
+                  <dd>{{ level.indicators }}</dd>
+                {% endfor %}
+              </dl>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            {% include "components/field.html" with field=row.comment_field %}
+          </div>
+        </div>
+      {% endfor %}
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Заключение по результатам" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Сильные стороны, зоны развития и договорённости с сотрудником. Заключение видно кадровой службе и попадает в карточку сотрудника." %}
+      </p>
+      {% include "components/field.html" with field=summary_form.summary %}
+    </section>
+
+    <div class="form-actions form-actions--sticky">
+      <button class="btn btn--primary" type="submit" name="submit" value="1">
+        {% translate "Внести оценку" %}
+      </button>
+      <button class="btn btn--secondary" type="submit" name="save" value="1">
+        {% translate "Сохранить черновик" %}
+      </button>
+      <a class="btn btn--ghost" href="{% url 'assessment:inbox' %}">{% translate "К списку задач" %}</a>
+      <p class="text-xs text-muted">
+        {% translate "Внести можно только полностью заполненную оценку: средний уровень по трети компетенций искажает соответствие тем сильнее, чем меньше заполнено." %}
+      </p>
+    </div>
+  </form>
+
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Результаты оценки сотрудника. #}
+
+{% block title %}{% translate "Мои результаты оценки" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if not employee %}
+    {% include "components/empty_state.html" with icon="user" title=_("Карточка сотрудника не связана с учётной записью") text=_("Результаты оценки хранятся в карточке сотрудника. Обратитесь в кадровую службу.") %}
+  {% else %}
+
+    {# --- Сведённые уровни -------------------------------------------------- #}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Уровни владения компетенциями" %}</h2>
+        <p class="section__lead">
+          {% translate "Сведение выполняется по методам: внутри одного метода учитывается последнее наблюдение, между методами — взвешенное среднее по степени доверия к способу оценки" %}
+        </p>
+      </div>
+
+      {% if rows %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Компетенция" %}</th>
+                <th>{% translate "Категория" %}</th>
+                <th class="text-right">{% translate "Уровень" %}</th>
+                <th class="text-right">{% translate "Методов" %}</th>
+                <th class="text-right">{% translate "Самооценка" %}</th>
+                <th>{% translate "Достоверность" %}</th>
+                <th>{% translate "Обновлено" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  <td class="table__primary">
+                    <a href="{{ row.competency.get_absolute_url }}">{{ row.competency.name }}</a>
+                  </td>
+                  <td class="text-sm">{{ row.competency.category.name }}</td>
+                  <td class="text-right tabular">{{ row.level|score:2 }}</td>
+                  <td class="text-right tabular">{{ row.methods }}</td>
+                  <td class="text-right tabular">
+                    {% if row.self_bias is not None %}
+                      <span title="{% translate 'расхождение самооценки с внешней оценкой' %}"
+                            class="{% if row.self_bias > 0.5 %}text-develop{% elif row.self_bias < -0.5 %}text-ready{% endif %}">
+                        {{ row.self_bias|delta:1 }}
+                      </span>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>{% progress_bar row.confidence 1 %}</td>
+                  <td class="text-sm">{{ row.latest|date_ru }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="chart__caption mt-3">
+          {% translate "Положительное значение в столбце самооценки означает, что вы оцениваете себя выше, чем вас оценивают. Это не нарушение — это предмет разговора с руководителем." %}
+        </p>
+      {% else %}
+        {% include "components/empty_state.html" with icon="clipboard" title=_("Оценок пока нет") text=_("Результаты появятся после первой завершённой кампании оценки") %}
+      {% endif %}
+    </section>
+
+    {# --- Обратная связь 360° ------------------------------------------------ #}
+    {% for survey in surveys %}
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">
+            {% blocktranslate with name=survey.campaign.name %}Обратная связь 360°: {{ name }}{% endblocktranslate %}
+          </h2>
+          <p class="section__lead">
+            {% translate "Оценки разных категорий респондентов не смешиваются в одно число: руководитель, коллеги и подчинённые видят разные стороны работы, и различие их оценок — главный результат процедуры" %}
+          </p>
+        </div>
+
+        <div class="grid grid--auto mb-4">
+          {% for item in survey.aggregates %}
+            <div class="metric">
+              <span class="metric__label">{{ item.label }}</span>
+              {% if item.is_disclosed %}
+                <span class="metric__value">{{ item.average_level|score:2|default:"—" }}</span>
+                <span class="metric__footer">
+                  {% blocktranslate with responses=item.responses invited=item.invited %}
+                    ответили {{ responses }} из {{ invited }}
+                  {% endblocktranslate %}
+                </span>
+              {% else %}
+                <span class="metric__value">—</span>
+                <span class="metric__footer">
+                  {% blocktranslate with responses=item.responses %}
+                    ответили {{ responses }} — результат скрыт ради анонимности
+                  {% endblocktranslate %}
+                </span>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if survey.blind_spots %}
+          <div class="panel">
+            <h3 class="panel__title">{% translate "Наибольшие расхождения" %}</h3>
+            <p class="section__lead">
+              {% translate "«Слепые зоны» — то, что вы считаете своей сильной стороной, а окружение так не считает. Разговор по итогам оценки строится вокруг них, а не вокруг средних баллов." %}
+            </p>
+
+            <div class="table-wrap mt-3">
+              <table class="table table--compact">
+                <thead>
+                  <tr>
+                    <th>{% translate "Компетенция" %}</th>
+                    <th class="text-right">{% translate "Ваша оценка" %}</th>
+                    <th class="text-right">{% translate "Оценка окружения" %}</th>
+                    <th class="text-right">{% translate "Расхождение" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in survey.blind_spots %}
+                    <tr>
+                      <td>{{ item.competency.name|default:"—" }}</td>
+                      <td class="text-right tabular">{{ item.self_level|score:2 }}</td>
+                      <td class="text-right tabular">{{ item.external_level|score:2 }}</td>
+                      <td class="text-right tabular">{{ item.delta|delta:2 }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endif %}
+      </section>
+    {% endfor %}
+
+    <div class="grid grid--2 grid--gap-lg">
+
+      {# --- История сессий -------------------------------------------------- #}
+      <section class="panel">
+        <h2 class="panel__title">{% translate "История оценок" %}</h2>
+
+        {% if sessions %}
+          <div class="table-wrap mt-3">
+            <table class="table table--compact">
+              <thead>
+                <tr>
+                  <th>{% translate "Дата" %}</th>
+                  <th>{% translate "Метод" %}</th>
+                  <th>{% translate "Кампания" %}</th>
+                  <th class="text-right">{% translate "Средний" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for session in sessions %}
+                  <tr>
+                    <td class="text-sm">{{ session.assessment_date|date_ru }}</td>
+                    <td class="text-sm">{{ session.get_method_display }}</td>
+                    <td class="text-sm">{{ session.campaign.name|default:"—" }}</td>
+                    <td class="text-right tabular">{{ session.average_level|score:2|default:"—" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "components/empty_state.html" with icon="clipboard" title=_("Сессий оценки не было") %}
+        {% endif %}
+      </section>
+
+      {# --- Тестирование ----------------------------------------------------- #}
+      <section class="panel">
+        <h2 class="panel__title">{% translate "Результаты тестирования" %}</h2>
+
+        {% if attempts %}
+          <div class="table-wrap mt-3">
+            <table class="table table--compact">
+              <thead>
+                <tr>
+                  <th>{% translate "Тест" %}</th>
+                  <th>{% translate "Дата" %}</th>
+                  <th class="text-right">{% translate "Балл" %}</th>
+                  <th>{% translate "Итог" %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for attempt in attempts %}
+                  <tr>
+                    <td>
+                      <a href="{% url 'assessment:attempt_result' attempt.public_id %}">
+                        {{ attempt.test.name|shorten:36 }}
+                      </a>
+                    </td>
+                    <td class="text-sm">{{ attempt.started_at|date_ru }}</td>
+                    <td class="text-right tabular">{{ attempt.score|score:1|default:"—" }}</td>
+                    <td>
+                      {% if attempt.is_passed %}
+                        <span class="badge badge--ready">{% translate "пройден" %}</span>
+                      {% elif attempt.status == "in_progress" %}
+                        <span class="badge badge--develop">{% translate "выполняется" %}</span>
+                      {% else %}
+                        <span class="badge badge--risk">{% translate "не пройден" %}</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          {% include "components/empty_state.html" with icon="check" title=_("Тесты не проходились") action_url="/workspace/assessment/tests/" action_label=_("Открыть тесты") %}
+        {% endif %}
+      </section>
+    </div>
+
+  {% endif %}
+
+{% endblock %}

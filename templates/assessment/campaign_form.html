@@ -1,0 +1,89 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Создание и изменение кампании оценки. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Назначение кампании" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Модель компетенций задаёт набор требований по умолчанию. Для должностей с собственной моделью применяется она: общекорпоративная кампания охватывает и кладовщиков, и руководителей департаментов, и требовать от них одного набора компетенций бессмысленно." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.name %}
+        {% include "components/field.html" with field=form.code %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.description %}
+        </div>
+        {% include "components/field.html" with field=form.competency_model %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Период и срок" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Период — интервал, за который оценивается работа. Срок — дата, до которой оценивающие обязаны заполнить формы." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.period_start %}
+        {% include "components/field.html" with field=form.period_end %}
+        {% include "components/field.html" with field=form.deadline %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Охват" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Ограничение подразделением распространяется на вложенные. Без ограничений кампания охватывает всю организацию." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.branch %}
+        {% include "components/field.html" with field=form.department %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Состав процедур" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Расхождение самооценки с оценкой руководителя — предмет обсуждения, поэтому самооценка включена по умолчанию. Опрос 360° трудоёмок: его проводят для руководителей и резервистов, а не для всех." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.is_self_assessment_required inline=True %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.is_360_enabled inline=True %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.is_anonymous_360 inline=True %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.instructions %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{% url 'assessment:list' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

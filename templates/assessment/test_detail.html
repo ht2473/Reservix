@@ -1,0 +1,151 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка теста: условия прохождения и история попыток. #}
+
+{% block title %}{{ test.name }}{% endblock %}
+
+{% block page_actions %}
+  {% if can_start %}
+    <div class="page-header__actions">
+      <form method="post" action="{% url 'assessment:test_start' test.pk %}">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">{% translate "Начать попытку" %}</button>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Заданий в попытке" %}</span>
+      <span class="metric__value">{{ test.questions_per_attempt }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=test.question_total %}из {{ total }} в банке{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Ограничение времени" %}</span>
+      <span class="metric__value">{{ test.time_limit_minutes }}</span>
+      <span class="metric__footer">{% translate "минут" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Порог прохождения" %}</span>
+      <span class="metric__value">{{ test.passing_score }}</span>
+      <span class="metric__footer">{% translate "баллов из 100" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Осталось попыток" %}</span>
+      <span class="metric__value">{{ attempts_left|default:"—" }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=test.max_attempts %}всего допускается {{ total }}{% endblocktranslate %}
+      </span>
+    </div>
+  </div>
+
+  {% if not test.is_ready %}
+    <div class="alert alert--warning mb-6">
+      <p class="alert__title">{% translate "Тест не готов к прохождению" %}</p>
+      <p>
+        {% translate "В банке меньше заданий, чем требует настройка попытки. Обратитесь в кадровую службу." %}
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    <section class="panel">
+      <h2 class="panel__title">{% translate "О тесте" %}</h2>
+      <p class="prose">{{ test.description }}</p>
+
+      {% if test.instructions %}
+        <div class="mt-4">
+          <p class="text-sm text-medium">{% translate "Инструкция" %}</p>
+          <p class="text-sm text-muted">{{ test.instructions }}</p>
+        </div>
+      {% endif %}
+
+      <dl class="definition-list mt-4">
+        <dt>{% translate "Проверяемая компетенция" %}</dt>
+        <dd><a href="{{ test.competency.get_absolute_url }}">{{ test.competency.name }}</a></dd>
+        <dt>{% translate "Порядок заданий" %}</dt>
+        <dd>
+          {% if test.shuffle_questions %}
+            {% translate "случайный, устойчивый внутри попытки" %}
+          {% else %}
+            {% translate "фиксированный" %}
+          {% endif %}
+        </dd>
+        <dt>{% translate "Результат" %}</dt>
+        <dd>
+          {% if test.show_result_immediately %}
+            {% translate "показывается сразу после завершения" %}
+          {% else %}
+            {% translate "показывается после проверки экспертом" %}
+          {% endif %}
+        </dd>
+      </dl>
+
+      <p class="chart__caption mt-4">
+        {% translate "Состав заданий определяется идентификатором попытки: перезагрузка страницы не подменяет вопросы и не расходует попытку." %}
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel__title">{% translate "История попыток" %}</h2>
+
+      {% if attempts %}
+        <div class="table-wrap mt-3">
+          <table class="table table--compact">
+            <thead>
+              <tr>
+                <th>{% translate "№" %}</th>
+                <th>{% translate "Начата" %}</th>
+                <th class="text-right">{% translate "Балл" %}</th>
+                <th>{% translate "Итог" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for attempt in attempts %}
+                <tr>
+                  <td class="tabular">{{ attempt.attempt_number }}</td>
+                  <td class="text-sm">{{ attempt.started_at|date_ru }}</td>
+                  <td class="text-right tabular">{{ attempt.score|score:1|default:"—" }}</td>
+                  <td>
+                    {% if attempt.status == "in_progress" %}
+                      <a class="btn btn--primary btn--sm"
+                         href="{% url 'assessment:attempt' attempt.public_id %}">
+                        {% translate "Продолжить" %}
+                      </a>
+                    {% elif attempt.is_passed %}
+                      <a href="{% url 'assessment:attempt_result' attempt.public_id %}">
+                        <span class="badge badge--ready">{% translate "пройден" %}</span>
+                      </a>
+                    {% else %}
+                      <a href="{% url 'assessment:attempt_result' attempt.public_id %}">
+                        <span class="badge badge--risk">{% translate "не пройден" %}</span>
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if best %}
+          <p class="text-sm text-muted mt-3">
+            {% blocktranslate with score=best.score|score:1 %}
+              Лучший результат: {{ score }} баллов.
+            {% endblocktranslate %}
+          </p>
+        {% endif %}
+      {% else %}
+        {% include "components/empty_state.html" with icon="check" title=_("Попыток ещё не было") %}
+      {% endif %}
+    </section>
+  </div>
+
+{% endblock %}

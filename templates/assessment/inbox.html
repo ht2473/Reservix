@@ -1,0 +1,175 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Задачи оценивающего. #}
+
+{% block title %}{% translate "Мои задачи по оценке" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if rejected %}
+    <section class="section section--tight">
+      <div class="alert alert--warning">
+        <p class="alert__title">{% translate "Сессии возвращены на доработку" %}</p>
+        <p>{% translate "Кадровая служба вернула оценку с замечанием. Исправьте и внесите повторно." %}</p>
+      </div>
+
+      <div class="table-wrap mt-4">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Кампания" %}</th>
+              <th>{% translate "Причина возврата" %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for session in rejected %}
+              <tr>
+                <td class="table__primary">{{ session.employee.short_name }}</td>
+                <td class="text-sm">{{ session.campaign.name|default:"—" }}</td>
+                <td class="text-sm">{{ session.rejection_reason }}</td>
+                <td class="text-right">
+                  <a class="btn btn--secondary btn--sm"
+                     href="{% url 'assessment:session_fill' session.public_id %}">
+                    {% translate "Исправить" %}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {# --- Приглашения 360° --------------------------------------------------- #}
+  {% if invitations %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Приглашения к оценке 360°" %}</h2>
+        <p class="section__lead">
+          {% translate "Ваши ответы не показываются оцениваемому персонально: он видит только средние значения по категории респондентов, и то при достаточном числе ответивших" %}
+        </p>
+      </div>
+
+      <div class="grid grid--2">
+        {% for invitation in invitations %}
+          <div class="card">
+            <div class="card__body">
+              <p class="card__title">{{ invitation.employee.short_name }}</p>
+              <p class="card__subtitle">
+                {{ invitation.get_relation_display }} · {{ invitation.campaign.name }}
+              </p>
+              <p class="text-sm text-muted mt-2">
+                {% translate "Срок:" %} {{ invitation.campaign.deadline|deadline }}
+              </p>
+            </div>
+            <div class="card__footer">
+              <a class="btn btn--primary btn--sm"
+                 href="{% url 'assessment:respond_360' invitation.access_token %}">
+                {% translate "Заполнить анкету" %}
+              </a>
+              <form method="post"
+                    action="{% url 'assessment:decline_360' invitation.access_token %}"
+                    class="inline-flex">
+                {% csrf_token %}
+                <button class="btn btn--ghost btn--sm" type="submit">
+                  {% translate "Отказаться" %}
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# --- Ожидают заполнения -------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Ожидают заполнения" %}</h2>
+    </div>
+
+    {% if sessions %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Метод" %}</th>
+              <th>{% translate "Модель требований" %}</th>
+              <th>{% translate "Срок" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for session in sessions %}
+              <tr>
+                <td class="table__primary">
+                  {{ session.employee.short_name }}
+                  <div class="table__secondary">{{ session.employee.title }}</div>
+                </td>
+                <td class="text-sm">{{ session.get_method_display }}</td>
+                <td class="text-sm">{{ session.competency_model.name }}</td>
+                <td>{{ session.campaign.deadline|deadline }}</td>
+                <td>
+                  {% if session.status == "in_progress" %}
+                    <span class="badge badge--develop">{% translate "заполняется" %}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{% translate "не начата" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right">
+                  <a class="btn btn--primary btn--sm"
+                     href="{% url 'assessment:session_fill' session.public_id %}">
+                    {% translate "Заполнить" %}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="check" title=_("Задач по оценке нет") text=_("Сессии появятся здесь после запуска кампании оценки") %}
+    {% endif %}
+  </section>
+
+  {# --- Внесённые ----------------------------------------------------------- #}
+  {% if submitted %}
+    <section class="section section--sunken">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Внесены и ожидают утверждения" %}</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Кампания" %}</th>
+              <th>{% translate "Внесена" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for session in submitted %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ session.get_absolute_url }}">{{ session.employee.short_name }}</a>
+                </td>
+                <td class="text-sm">{{ session.campaign.name|default:"—" }}</td>
+                <td class="text-sm">{{ session.submitted_at|date_ru }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}

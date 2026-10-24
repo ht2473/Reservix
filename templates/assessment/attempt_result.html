@@ -1,0 +1,154 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Результат попытки с разбором ответов. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+  {% if can_publish %}
+    <div class="page-header__actions">
+      <form method="post" action="{% url 'assessment:attempt_publish' attempt.public_id %}">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">
+          {% translate "Учесть как оценку компетенции" %}
+        </button>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric {% if attempt.is_passed %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Результат" %}</span>
+      <span class="metric__value">{{ attempt.score|score:1|default:"—" }}<span class="metric__unit">/100</span></span>
+      <span class="metric__footer">
+        {% if attempt.is_passed %}
+          {% translate "порог пройден" %}
+        {% else %}
+          {% blocktranslate with passing=attempt.test.passing_score %}порог {{ passing }} не достигнут{% endblocktranslate %}
+        {% endif %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Верных ответов" %}</span>
+      <span class="metric__value">{{ correct_count }}<span class="metric__unit">/{{ total }}</span></span>
+      <span class="metric__footer">{% translate "без учёта развёрнутых" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Затрачено" %}</span>
+      <span class="metric__value">
+        {% if attempt.duration_seconds %}{% widthratio attempt.duration_seconds 60 1 %}{% else %}—{% endif %}
+      </span>
+      <span class="metric__footer">{% translate "минут" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Состояние" %}</span>
+      <span class="metric__value text-lg">{{ attempt.get_status_display }}</span>
+      <span class="metric__footer">
+        {% if published %}
+          {% translate "учтён как оценка компетенции" %}
+        {% else %}
+          {% translate "в расчёты не перенесён" %}
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  {% if attempt.status == "expired" %}
+    <div class="alert alert--warning mb-6">
+      <p class="alert__title">{% translate "Время истекло" %}</p>
+      <p>
+        {% translate "Попытка завершена по времени. Засчитаны все ответы, сохранённые до истечения срока." %}
+      </p>
+    </div>
+  {% endif %}
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Разбор ответов" %}</h2>
+      <p class="section__lead">
+        {% translate "Вопрос с несколькими правильными ответами засчитывается только при точном совпадении: частичный зачёт означал бы балл за отсутствие знания" %}
+      </p>
+    </div>
+
+    {% for item in answers %}
+      <div class="question" id="answer-{{ item.answer.pk }}">
+        <p class="text-medium">{{ item.question.text }}</p>
+
+        <div class="mt-3">
+          {% for option in item.question.options.all %}
+            {% if option in item.selected and option.is_correct %}
+              <div class="option-review option-review--correct">
+                <span aria-hidden="true">✓</span>
+                <span>{{ option.text }} — {% translate "ваш ответ, верно" %}</span>
+              </div>
+            {% elif option in item.selected %}
+              <div class="option-review option-review--wrong">
+                <span aria-hidden="true">✗</span>
+                <span>{{ option.text }} — {% translate "ваш ответ, неверно" %}</span>
+              </div>
+            {% elif option.is_correct %}
+              <div class="option-review option-review--correct">
+                <span aria-hidden="true">·</span>
+                <span>{{ option.text }} — {% translate "правильный ответ" %}</span>
+              </div>
+            {% else %}
+              <div class="option-review">
+                <span aria-hidden="true">·</span>
+                <span class="text-muted">{{ option.text }}</span>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {% if item.answer.text_answer %}
+          <div class="mt-3">
+            <p class="text-sm text-medium">
+              {% if own %}{% translate "Ваш ответ" %}{% else %}{% translate "Ответ сотрудника" %}{% endif %}
+            </p>
+            <p class="text-sm text-muted">{{ item.answer.text_answer|linebreaks }}</p>
+            {% if item.answer.checked_by %}
+              <p class="text-xs text-muted">
+                {% blocktranslate with expert=item.answer.checked_by.short_name %}Проверил эксперт: {{ expert }}{% endblocktranslate %}
+              </p>
+            {% elif can_check %}
+              <form class="answer-check" method="post" action="{% url 'assessment:answer_check' item.answer.pk %}">
+                {% csrf_token %}
+                <label class="answer-check__label" for="score-{{ item.answer.pk }}">
+                  {% blocktranslate with weight=item.question.weight %}Балл эксперта, от 0 до {{ weight }}{% endblocktranslate %}
+                </label>
+                <input class="field-input answer-check__input" id="score-{{ item.answer.pk }}" name="score"
+                       type="number" min="0" max="{{ item.question.weight }}" step="0.5" required>
+                <button class="btn btn--primary btn--sm" type="submit">{% translate "Засчитать" %}</button>
+              </form>
+            {% else %}
+              <p class="text-xs text-muted">
+                {% translate "Развёрнутый ответ ожидает проверки экспертом и в автоматический подсчёт не входит." %}
+              </p>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if item.question.explanation %}
+          <div class="question__explanation">{{ item.question.explanation }}</div>
+        {% endif %}
+
+        <div class="question__meta">
+          <span>{% blocktranslate with score=item.answer.awarded_score|score:1 weight=item.question.weight %}начислено {{ score }} из {{ weight }}{% endblocktranslate %}</span>
+          <span>{% blocktranslate with difficulty=item.question.difficulty %}сложность {{ difficulty }} из 5{% endblocktranslate %}</span>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+
+  <div class="form-actions">
+    <a class="btn btn--secondary" href="{% url 'assessment:test_detail' attempt.test.pk %}">
+      {% translate "К тесту" %}
+    </a>
+    <a class="btn btn--ghost" href="{% url 'assessment:tests' %}">{% translate "Ко всем тестам" %}</a>
+  </div>
+
+{% endblock %}

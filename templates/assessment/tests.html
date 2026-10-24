@@ -1,0 +1,113 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Перечень тестов. #}
+
+{% block title %}{% translate "Тестирование" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="alert alert--info mb-6">
+    <p>
+      {% translate "Результат теста подсчитывается системой по ответам и переносится в оценку компетенции решением кадровой службы. Это единственный метод оценки, на который оценивающий не влияет." %}
+    </p>
+  </div>
+
+  {% if pending_checks %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Развёрнутые ответы на проверке" %}</h2>
+        <p class="section__lead">
+          {% translate "Балл эксперта входит в результат попытки сразу после проверки" %}
+        </p>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">{% translate "Сотрудник" %}</th>
+              <th scope="col">{% translate "Тест" %}</th>
+              <th scope="col">{% translate "Вопрос" %}</th>
+              <th scope="col">{% translate "Завершена" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for answer in pending_checks %}
+              <tr>
+                <td>
+                  <a class="table__primary" href="{% url 'assessment:attempt_result' answer.attempt.public_id %}#answer-{{ answer.pk }}">
+                    {{ answer.attempt.employee.short_name }}
+                  </a>
+                </td>
+                <td>{{ answer.attempt.test.name }}</td>
+                <td class="text-sm">{{ answer.question.text|truncatewords:12 }}</td>
+                <td>{{ answer.attempt.finished_at|date:"d.m.Y" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.competency %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+    </div>
+  </form>
+
+  <section class="section">
+    {% if tests %}
+      <div class="grid grid--2">
+        {% for test in tests %}
+          <div class="card">
+            <div class="card__body">
+              <p class="card__title">
+                <a href="{% url 'assessment:test_detail' test.pk %}">{{ test.name }}</a>
+              </p>
+              <p class="card__subtitle">{{ test.competency.name }}</p>
+              <p class="text-sm text-muted mt-2">{{ test.description }}</p>
+
+              <dl class="definition-list mt-3">
+                <dt>{% translate "Заданий" %}</dt>
+                <dd>
+                  {% blocktranslate with per_attempt=test.questions_per_attempt total=test.question_total %}
+                    {{ per_attempt }} из {{ total }} в банке
+                  {% endblocktranslate %}
+                </dd>
+                <dt>{% translate "Время" %}</dt>
+                <dd>{{ test.time_limit_minutes }}&nbsp;{% translate "мин." %}</dd>
+                <dt>{% translate "Порог" %}</dt>
+                <dd>{{ test.passing_score }}&nbsp;{% translate "баллов из 100" %}</dd>
+                <dt>{% translate "Попыток" %}</dt>
+                <dd>
+                  {% with used=attempts|get_item:test.pk %}
+                    {% blocktranslate with done=used|length total=test.max_attempts %}
+                      использовано {{ done }} из {{ total }}
+                    {% endblocktranslate %}
+                  {% endwith %}
+                </dd>
+              </dl>
+            </div>
+
+            <div class="card__footer">
+              <a class="btn btn--secondary btn--sm" href="{% url 'assessment:test_detail' test.pk %}">
+                {% translate "Подробнее" %}
+              </a>
+              {% if test.question_total < test.questions_per_attempt %}
+                <span class="badge badge--develop">{% translate "не готов к прохождению" %}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="check" title=_("Тесты не найдены") text=_("Тесты создаются кадровой службой для компетенций, помеченных как проверяемые") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

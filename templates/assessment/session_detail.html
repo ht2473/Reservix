@@ -1,0 +1,162 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Просмотр внесённой сессии оценки. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block page_actions %}
+  <div class="page-header__actions">
+    {% if can_edit %}
+      <a class="btn btn--secondary" href="{% url 'assessment:session_fill' session.public_id %}">
+        {% translate "Продолжить заполнение" %}
+      </a>
+    {% endif %}
+    {% if can_approve %}
+      <form method="post" action="{% url 'assessment:session_approve' session.public_id %}" class="inline-flex">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">{% translate "Утвердить" %}</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Оцениваемый" %}</span>
+      <span class="metric__value text-lg">{{ session.employee.short_name }}</span>
+      <span class="metric__footer">{{ session.employee.title }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Метод" %}</span>
+      <span class="metric__value text-lg">{{ session.get_method_display }}</span>
+      <span class="metric__footer">{{ session.assessment_date|date_ru }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Средний уровень" %}</span>
+      <span class="metric__value">{{ session.average_level|score:2|default:"—" }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=session.scored_count %}оценено компетенций: {{ count }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Состояние" %}</span>
+      <span class="metric__value text-lg">{{ session.get_status_display }}</span>
+      <span class="metric__footer">
+        {% if session.is_counted %}
+          {% translate "учитывается в расчётах" %}
+        {% else %}
+          {% translate "в расчёты не входит" %}
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  {% if session.rejection_reason %}
+    <div class="alert alert--warning mb-6">
+      <p class="alert__title">{% translate "Возвращена на доработку" %}</p>
+      <p>{{ session.rejection_reason }}</p>
+    </div>
+  {% endif %}
+
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Оценки по компетенциям" %}</h2>
+      <p class="section__lead">{{ session.competency_model.name }}</p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Компетенция" %}</th>
+            <th class="text-right">{% translate "Оценка" %}</th>
+            <th class="text-right">{% translate "Требуется" %}</th>
+            <th class="text-right">{% translate "Отклонение" %}</th>
+            <th>{% translate "Обоснование" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="table__primary">
+                <a href="{{ row.competency.get_absolute_url }}">{{ row.competency.name }}</a>
+              </td>
+              <td class="text-right tabular">{{ row.score.level|score:1 }}</td>
+              <td class="text-right tabular">{{ row.target|default:"—" }}</td>
+              <td class="text-right tabular">
+                {% if row.delta is not None %}
+                  <span class="{% if row.delta < 0 %}text-risk{% elif row.delta > 0 %}text-ready{% endif %}">
+                    {{ row.delta|delta:1 }}
+                  </span>
+                {% else %}—{% endif %}
+              </td>
+              <td class="text-sm text-muted">{{ row.score.comment|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if session.summary %}
+    <section class="panel mt-6">
+      <h2 class="panel__title">{% translate "Заключение оценивающего" %}</h2>
+      <p class="prose">{{ session.summary|linebreaks }}</p>
+    </section>
+  {% endif %}
+
+  <section class="panel mt-6">
+    <h2 class="panel__title">{% translate "Сведения о сессии" %}</h2>
+    <dl class="definition-list mt-3">
+      <dt>{% translate "Кампания" %}</dt>
+      <dd>
+        {% comment %}
+          Карточка кампании доступна организаторам оценки. Остальным название выводится текстом:
+          ссылка вела на отказ в доступе.
+        {% endcomment %}
+        {% if session.campaign %}
+          {% if is_organizer %}
+            <a href="{{ session.campaign.get_absolute_url }}">{{ session.campaign.name }}</a>
+          {% else %}{{ session.campaign.name }}{% endif %}
+        {% else %}{% translate "вне кампании — перенесена из исходной базы" %}{% endif %}
+      </dd>
+      <dt>{% translate "Оценивающий" %}</dt>
+      <dd>
+        {% if session.assessor %}{{ session.assessor.get_full_name }}
+        {% else %}{% translate "система — результат вычислен, а не введён" %}{% endif %}
+      </dd>
+      <dt>{% translate "Внесена" %}</dt>
+      <dd>{{ session.submitted_at|date_ru|default:"—" }}</dd>
+      <dt>{% translate "Утверждена" %}</dt>
+      <dd>
+        {% if session.approved_at %}
+          {{ session.approved_at|date_ru }}{% if session.approved_by %}, {{ session.approved_by.get_short_name }}{% endif %}
+        {% else %}—{% endif %}
+      </dd>
+    </dl>
+  </section>
+
+  {# --- Возврат на доработку ------------------------------------------------ #}
+  {% if can_approve %}
+    <section class="section section--sunken">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Вернуть на доработку" %}</h2>
+        <p class="section__lead">
+          {% translate "Возврат уместен, когда оценка не подтверждена обоснованиями либо расходится с наблюдаемыми результатами работы" %}
+        </p>
+      </div>
+
+      <form method="post" action="{% url 'assessment:session_reject' session.public_id %}" novalidate>
+        {% csrf_token %}
+        {% include "components/field.html" with field=reject_form.reason %}
+        <div class="form-actions">
+          <button class="btn btn--danger-soft" type="submit">{% translate "Вернуть оценивающему" %}</button>
+        </div>
+      </form>
+    </section>
+  {% endif %}
+
+{% endblock %}

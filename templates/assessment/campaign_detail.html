@@ -1,0 +1,262 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка кампании оценки. #}
+
+{% block title %}{{ campaign.name }}{% endblock %}
+
+{% block page_actions %}
+  <div class="page-header__actions">
+    <a class="btn btn--ghost" href="{% url 'assessment:campaign_sessions' campaign.public_id %}">
+      {% translate "Все сессии" %}
+    </a>
+    <a class="btn btn--secondary" href="{% url 'assessment:campaign_edit' campaign.public_id %}">
+      {% translate "Изменить" %}
+    </a>
+    {% if can_launch %}
+      <form method="post" action="{% url 'assessment:campaign_launch' campaign.public_id %}" class="inline-flex">
+        {% csrf_token %}
+        <button class="btn btn--primary" type="submit">
+          {% if campaign.status == "draft" %}
+            {% translate "Запустить кампанию" %}
+          {% else %}
+            {% translate "Досоздать сессии" %}
+          {% endif %}
+        </button>
+      </form>
+    {% endif %}
+    {% if can_close %}
+      <form method="post" action="{% url 'assessment:campaign_close' campaign.public_id %}" class="inline-flex">
+        {% csrf_token %}
+        <button class="btn btn--danger-soft" type="submit">{% translate "Завершить" %}</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric metric--accent">
+      <span class="metric__label">{% translate "Завершено сессий" %}</span>
+      <span class="metric__value">{{ progress.completion_rate|score:1 }}<span class="metric__unit">%</span></span>
+      <span class="metric__footer">
+        {% blocktranslate with done=progress.done total=progress.total %}
+          {{ done }} из {{ total }}
+        {% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Ждут утверждения" %}</span>
+      <span class="metric__value">{{ progress.submitted }}</span>
+      <span class="metric__footer">{% translate "внесены оценивающими" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Не начаты" %}</span>
+      <span class="metric__value">{{ progress.planned }}</span>
+      <span class="metric__footer">{% translate "оценивающий не открывал форму" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "До срока" %}</span>
+      <span class="metric__value">{{ campaign.days_left }}</span>
+      <span class="metric__footer">{% translate "дней" %}</span>
+    </div>
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+
+    <section class="panel">
+      <h2 class="panel__title">{% translate "Состояние сессий" %}</h2>
+      <div class="stack stack--sm mt-4">
+        <div class="cluster cluster--between">
+          <span class="text-sm">{% translate "Запланированы" %}</span>
+          <span class="text-sm tabular">{{ progress.planned }}</span>
+        </div>
+        <div class="cluster cluster--between">
+          <span class="text-sm">{% translate "Заполняются" %}</span>
+          <span class="text-sm tabular">{{ progress.in_progress }}</span>
+        </div>
+        <div class="cluster cluster--between">
+          <span class="text-sm">{% translate "Внесены" %}</span>
+          <span class="text-sm tabular">{{ progress.submitted }}</span>
+        </div>
+        <div class="cluster cluster--between">
+          <span class="text-sm">{% translate "Утверждены" %}</span>
+          <span class="text-sm tabular">{{ progress.approved }}</span>
+        </div>
+        <div class="cluster cluster--between">
+          <span class="text-sm">{% translate "Возвращены" %}</span>
+          <span class="text-sm tabular">{{ progress.rejected }}</span>
+        </div>
+        <div class="cluster cluster--between">
+          <span class="text-sm text-muted">{% translate "Отменены" %}</span>
+          <span class="text-sm tabular text-muted">{{ progress.cancelled }}</span>
+        </div>
+      </div>
+
+      <p class="chart__caption mt-4">
+        {% blocktranslate with rate=progress.approval_rate|score:1 %}
+          Утверждено {{ rate }}% внесённых оценок. В расчёт индекса готовности
+          попадают только внесённые и утверждённые сессии.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel__title">{% translate "Параметры кампании" %}</h2>
+      <dl class="definition-list mt-4">
+        <dt>{% translate "Код" %}</dt>
+        <dd class="text-mono">{{ campaign.code }}</dd>
+        <dt>{% translate "Модель компетенций" %}</dt>
+        <dd>
+          {% if campaign.competency_model %}
+            <a href="{{ campaign.competency_model.get_absolute_url }}">{{ campaign.competency_model.name }}</a>
+          {% else %}—{% endif %}
+        </dd>
+        <dt>{% translate "Охват" %}</dt>
+        <dd>
+          {% if campaign.department %}{{ campaign.department.name }}
+          {% elif campaign.branch %}{{ campaign.branch.name }}
+          {% else %}{% translate "вся организация" %}{% endif %}
+        </dd>
+        <dt>{% translate "Самооценка" %}</dt>
+        <dd>{% if campaign.is_self_assessment_required %}{% translate "требуется" %}{% else %}{% translate "не требуется" %}{% endif %}</dd>
+        <dt>{% translate "Оценка 360°" %}</dt>
+        <dd>
+          {% if campaign.is_360_enabled %}
+            {% translate "включена" %}{% if campaign.is_anonymous_360 %}, {% translate "анонимная" %}{% endif %}
+          {% else %}{% translate "не проводится" %}{% endif %}
+        </dd>
+        <dt>{% translate "Создана" %}</dt>
+        <dd>{{ campaign.created_at|date_ru }}{% if campaign.created_by %}, {{ campaign.created_by.get_short_name }}{% endif %}</dd>
+      </dl>
+
+      {% if campaign.instructions %}
+        <div class="mt-4">
+          <p class="text-sm text-medium">{% translate "Инструкция участникам" %}</p>
+          <p class="text-sm text-muted">{{ campaign.instructions }}</p>
+        </div>
+      {% endif %}
+    </section>
+  </div>
+
+  {# --- Средний уровень по методам ----------------------------------------- #}
+  <section class="section section--tight">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Средний уровень по методам" %}</h2>
+      <p class="section__lead">
+        {% translate "Расхождение самооценки и оценки руководителя — не ошибка процедуры, а её результат: величина расхождения обсуждается с сотрудником" %}
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table table--compact">
+        <thead>
+          <tr>
+            <th>{% translate "Метод" %}</th>
+            <th class="text-right">{% translate "Сессий" %}</th>
+            <th class="text-right">{% translate "Средний уровень" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in by_method %}
+            <tr>
+              <td>{{ method_labels|get_item:row.method }}</td>
+              <td class="text-right tabular">{{ row.total }}</td>
+              <td class="text-right tabular">{{ row.mean|score:2|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    {# --- Ждут утверждения --------------------------------------------------- #}
+    <section class="panel">
+      <h2 class="panel__title">{% translate "Ждут утверждения" %}</h2>
+
+      {% if pending %}
+        <div class="table-wrap mt-3">
+          <table class="table table--compact">
+            <thead>
+              <tr>
+                <th>{% translate "Сотрудник" %}</th>
+                <th>{% translate "Оценивал" %}</th>
+                <th>{% translate "Внесена" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for session in pending %}
+                <tr>
+                  <td class="table__primary">
+                    <a href="{{ session.get_absolute_url }}">{{ session.employee.short_name }}</a>
+                    <div class="table__secondary">{{ session.get_method_display }}</div>
+                  </td>
+                  <td class="text-sm">{{ session.assessor.get_short_name|default:"—" }}</td>
+                  <td class="text-sm">{{ session.submitted_at|date_ru }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="check" title=_("Нет сессий на утверждении") %}
+      {% endif %}
+    </section>
+
+    {# --- Отстающие ---------------------------------------------------------- #}
+    <section class="panel">
+      <h2 class="panel__title">{% translate "Не заполнили" %}</h2>
+      <p class="section__lead">
+        {% translate "Кампания буксует не «в целом», а у конкретных руководителей" %}
+      </p>
+
+      {% if laggards %}
+        <div class="table-wrap mt-3">
+          <table class="table table--compact">
+            <thead>
+              <tr>
+                <th>{% translate "Оценивающий" %}</th>
+                <th class="text-right">{% translate "Не заполнено" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in laggards %}
+                <tr>
+                  <td>{{ row.assessor__last_name|localized_name }} {{ row.assessor__first_name|localized_name|slice:":1" }}.</td>
+                  <td class="text-right tabular">{{ row.total }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        {% include "components/empty_state.html" with icon="check" title=_("Все сессии заполнены") %}
+      {% endif %}
+    </section>
+  </div>
+
+  {# --- Опрос 360° ---------------------------------------------------------- #}
+  {% if campaign.is_360_enabled %}
+    <section class="section section--sunken">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Опрос 360°" %}</h2>
+        <p class="section__lead">
+          {% translate "Агрегат по категории респондентов раскрывается только при достаточном числе ответивших: иначе анонимность становится формальной" %}
+        </p>
+      </div>
+
+      <div class="grid grid--auto">
+        {% for row in respondent_stats %}
+          <div class="metric">
+            <span class="metric__label">{{ respondent_labels|get_item:row.status }}</span>
+            <span class="metric__value">{{ row.total }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}

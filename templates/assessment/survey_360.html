@@ -1,0 +1,139 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Результаты опроса 360° по сотруднику для кадровой службы и руководителя. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="alert alert--info mb-6">
+    <p class="alert__title">{% translate "Об анонимности" %}</p>
+    <p>
+      {% blocktranslate with threshold=disclosure_threshold %}
+        Показаны средние значения по категориям респондентов. Категория, в
+        которой ответили менее {{ threshold }} человек, не раскрывается: при
+        меньшем числе оценку конкретного респондента можно восстановить
+        вычитанием, и обещанная анонимность становится формальной.
+      {% endblocktranslate %}
+    </p>
+  </div>
+
+  <div class="grid grid--auto mb-6">
+    {% for item in aggregates %}
+      <div class="metric">
+        <span class="metric__label">{{ item.label }}</span>
+        {% if item.is_disclosed %}
+          <span class="metric__value">{{ item.average_level|score:2|default:"—" }}</span>
+          <span class="metric__footer">
+            {% blocktranslate with responses=item.responses invited=item.invited weight=item.weight|score:2 %}
+              ответили {{ responses }} из {{ invited }} · вес {{ weight }}
+            {% endblocktranslate %}
+          </span>
+        {% else %}
+          <span class="metric__value">—</span>
+          <span class="metric__footer">
+            {% blocktranslate with responses=item.responses invited=item.invited %}
+              ответили {{ responses }} из {{ invited }} — не раскрывается
+            {% endblocktranslate %}
+          </span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if blind_spots %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Слепые зоны" %}</h2>
+        <p class="section__lead">
+          {% translate "Компетенции с наибольшим расхождением самооценки и мнения окружения. Классический результат процедуры: разговор по итогам строится вокруг них, а не вокруг средних баллов." %}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Компетенция" %}</th>
+              <th class="text-right">{% translate "Самооценка" %}</th>
+              <th class="text-right">{% translate "Окружение" %}</th>
+              <th class="text-right">{% translate "Расхождение" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in blind_spots %}
+              <tr>
+                <td class="table__primary">
+                  {% if item.competency %}
+                    <a href="{{ item.competency.get_absolute_url }}">{{ item.competency.name }}</a>
+                  {% else %}—{% endif %}
+                </td>
+                <td class="text-right tabular">{{ item.self_level|score:2 }}</td>
+                <td class="text-right tabular">{{ item.external_level|score:2 }}</td>
+                <td class="text-right tabular">
+                  <span class="{% if item.delta > 0.5 %}text-develop{% elif item.delta < -0.5 %}text-ready{% endif %}">
+                    {{ item.delta|delta:2 }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="chart__caption mt-3">
+        {% translate "Положительное расхождение означает завышенную самооценку, отрицательное — заниженную. Заниженная самооценка встречается реже, но требует внимания не меньше: такой сотрудник не выдвигает свою кандидатуру сам." %}
+      </p>
+    </section>
+  {% endif %}
+
+  {# --- Оценки по компетенциям в разрезе категорий -------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Оценки по компетенциям" %}</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Компетенция" %}</th>
+            {% for item in aggregates %}
+              <th class="text-right">{{ item.label }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for competency_id, competency in competencies.items %}
+            <tr>
+              <td class="table__primary">
+                <a href="{{ competency.get_absolute_url }}">{{ competency.name }}</a>
+              </td>
+              {% for item in aggregates %}
+                <td class="text-right tabular">
+                  {% if item.is_disclosed %}
+                    {{ item.by_competency|get_item:competency_id|default:"—" }}
+                  {% else %}
+                    <span class="text-muted" title="{% translate 'не раскрывается: мало ответов' %}">·</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <a class="btn btn--secondary"
+       href="{% url 'competencies:employee_profile' employee.public_id %}">
+      {% translate "Профиль компетенций сотрудника" %}
+    </a>
+    <a class="btn btn--ghost" href="{{ campaign.get_absolute_url }}">
+      {% translate "К кампании" %}
+    </a>
+  </div>
+
+{% endblock %}

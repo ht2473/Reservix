@@ -1,0 +1,81 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Прохождение теста. #}
+
+{% block title %}{{ attempt.test.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Заданий" %}</span>
+      <span class="metric__value">{{ total }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with answered=answered %}сохранено ответов: {{ answered }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Осталось времени" %}</span>
+      <span class="metric__value" data-countdown="{{ attempt.seconds_left }}">
+        {{ attempt.seconds_left }}
+      </span>
+      <span class="metric__footer">{% translate "секунд" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Порог" %}</span>
+      <span class="metric__value">{{ attempt.test.passing_score }}</span>
+      <span class="metric__footer">{% translate "баллов из 100" %}</span>
+    </div>
+  </div>
+
+  {% if attempt.test.instructions %}
+    <div class="alert alert--info mb-6">
+      <p class="alert__title">{% translate "Инструкция" %}</p>
+      <p>{{ attempt.test.instructions }}</p>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <section class="section section--tight">
+      {% for item in forms %}
+        <div class="question">
+          <span class="question__number">
+            {% blocktranslate with number=item.number total=total %}Задание {{ number }} из {{ total }}{% endblocktranslate %}
+          </span>
+
+          {% include "components/field.html" with field=item.form.answer %}
+
+          <div class="question__meta">
+            <span>
+              {% blocktranslate with difficulty=item.question.difficulty %}сложность {{ difficulty }} из 5{% endblocktranslate %}
+            </span>
+            <span>
+              {% blocktranslate with weight=item.question.weight %}вес {{ weight }}{% endblocktranslate %}
+            </span>
+            {% if item.question.kind == "multiple" %}
+              <span>{% translate "правильных ответов несколько" %}</span>
+            {% elif item.question.kind == "open" %}
+              <span>{% translate "развёрнутый ответ, проверяется экспертом" %}</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </section>
+
+    <div class="form-actions form-actions--sticky">
+      <button class="btn btn--secondary" type="submit" name="save" value="1">
+        {% translate "Сохранить ответы" %}
+      </button>
+      <button class="btn btn--primary" type="submit" name="finish" value="1">
+        {% translate "Завершить попытку" %}
+      </button>
+      <p class="text-xs text-muted">
+        {% translate "После завершения ответы изменить нельзя. Разбор с пояснениями станет доступен сразу." %}
+      </p>
+    </div>
+  </form>
+
+{% endblock %}

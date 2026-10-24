@@ -1,0 +1,124 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Кампании оценки. #}
+
+{% block title %}{% translate "Кампании оценки" %}{% endblock %}
+
+{% block page_actions %}
+  <div class="page-header__actions">
+    <a class="btn btn--primary" href="{% url 'assessment:campaign_create' %}">
+      {% translate "Новая кампания" %}
+    </a>
+  </div>
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Идут сейчас" %}</span>
+      <span class="metric__value">{{ active_count }}</span>
+    </div>
+    <div class="metric {% if overdue %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Просрочены" %}</span>
+      <span class="metric__value">{{ overdue }}</span>
+      <span class="metric__footer">{% translate "срок истёк, кампания не завершена" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Ждут утверждения" %}</span>
+      <span class="metric__value">{{ pending_approval }}</span>
+      <span class="metric__footer">{% translate "внесённых сессий оценки" %}</span>
+    </div>
+  </div>
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.year %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'assessment:list' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if campaigns %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Кампания" %}</th>
+              <th>{% translate "Период" %}</th>
+              <th>{% translate "Срок" %}</th>
+              <th>{% translate "Охват" %}</th>
+              <th class="text-right">{% translate "Сессий" %}</th>
+              <th>{% translate "Заполнено" %}</th>
+              <th>{% translate "Состояние" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for campaign in campaigns %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ campaign.get_absolute_url }}">{{ campaign.name }}</a>
+                  <div class="table__secondary">
+                    {{ campaign.competency_model.name|default:"—" }}
+                    {% if campaign.is_360_enabled %}
+                      · <span class="badge badge--info badge--pill">360°</span>
+                    {% endif %}
+                  </div>
+                </td>
+                <td class="text-sm">
+                  {{ campaign.period_start|date_ru }} — {{ campaign.period_end|date_ru }}
+                </td>
+                <td>{{ campaign.deadline|deadline }}</td>
+                <td class="text-sm">
+                  {% if campaign.department %}
+                    {{ campaign.department.name }}
+                  {% elif campaign.branch %}
+                    {{ campaign.branch.name }}
+                  {% else %}
+                    {% translate "вся организация" %}
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ campaign.session_count }}</td>
+                <td>
+                  {% if campaign.session_count %}
+                    {% widthratio campaign.done_count campaign.session_count 100 as done_share %}
+                    {% progress_bar done_share 100 %}
+                    <span class="text-xs text-muted tabular">
+                      {{ campaign.done_count }} / {{ campaign.session_count }}
+                    </span>
+                  {% else %}
+                    <span class="text-xs text-muted">{% translate "не запущена" %}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if campaign.status == "active" %}
+                    <span class="badge badge--ready">{{ campaign.get_status_display }}</span>
+                  {% elif campaign.status == "closed" %}
+                    <span class="badge badge--neutral">{{ campaign.get_status_display }}</span>
+                  {% elif campaign.status == "cancelled" %}
+                    <span class="badge badge--outline">{{ campaign.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--develop">{{ campaign.get_status_display }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="clipboard" title=_("Кампаний оценки нет") text=_("Кампания задаёт период, охват и модель компетенций, по которой оцениваются сотрудники") action_url="/workspace/assessment/campaigns/new/" action_label=_("Создать кампанию") %}
+    {% endif %}
+  </section>
+
+{% endblock %}
