@@ -5,7 +5,7 @@
 # =============================================================================
 
 # --- Этап сборки -------------------------------------------------------------
-FROM python:3.12.13-slim-bookworm AS builder
+FROM python:3.12.14-slim-bookworm AS builder
 
 # uv копируется из официального образа: версия закреплена тегом, а установка
 # через pip добавила бы лишний слой и замедлила сборку.
@@ -35,7 +35,7 @@ RUN /app/.venv/bin/python scripts/i18n.py compile
 
 
 # --- Финальный образ ---------------------------------------------------------
-FROM python:3.12.13-slim-bookworm AS runtime
+FROM python:3.12.14-slim-bookworm AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
