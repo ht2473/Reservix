@@ -58,7 +58,7 @@
                 <td>{% readiness_badge entry.readiness_level %}</td>
                 <td class="text-right text-sm">{{ entry.months_in_reserve|tenure }}</td>
                 <td class="text-sm">{{ entry.expected_ready_date|date_ru|default:"—" }}</td>
-                <td class="text-sm">{{ entry.review_date|deadline }}</td>
+                <td class="text-sm">{% if entry.is_active %}{{ entry.review_date|deadline }}{% else %}—{% endif %}</td>
               </tr>
             {% endfor %}
           </tbody>
