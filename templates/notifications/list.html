@@ -1,0 +1,105 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Лента уведомлений. #}
+
+{% block title %}{% translate "Уведомления" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric {% if summary.unread %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Непрочитанных" %}</span>
+      <span class="metric__value">{{ summary.unread }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=summary.total %}всего сообщений — {{ total }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Резерв и назначения" %}</span>
+      <span class="metric__value">{{ summary.reserve_unread }}</span>
+      <span class="metric__footer">{% translate "статусы, заявки, назначения" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Развитие" %}</span>
+      <span class="metric__value">{{ summary.development_unread }}</span>
+      <span class="metric__footer">{% translate "планы, сроки, наставничество" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Оценка" %}</span>
+      <span class="metric__value">{{ summary.assessment_unread }}</span>
+      <span class="metric__footer">{% translate "кампании и запросы оценки" %}</span>
+    </div>
+  </div>
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.state %}
+      {% include "components/field.html" with field=filter_form.kind %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'notifications:list' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if summary.unread %}
+    <form class="cluster cluster--sm mb-4" method="post" action="{% url 'notifications:mark_all_read' %}">
+      {% csrf_token %}
+      <button class="btn btn--secondary btn--sm" type="submit">
+        {% icon "check" 16 %}{% translate "Отметить все прочитанными" %}
+      </button>
+      <a class="btn btn--ghost btn--sm" href="{% url 'accounts:preferences' %}">
+        {% translate "Настройки уведомлений" %}
+      </a>
+    </form>
+  {% endif %}
+
+  <section class="section">
+    {% if notifications %}
+      <div class="panel panel--outlined">
+        {% for item in notifications %}
+          <div class="notification {% if not item.is_read %}notification--unread{% endif %}">
+            {% signal_dot item.signal item.get_kind_display %}
+
+            <div class="flex-1">
+              <form method="post" action="{% url 'notifications:open' item.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="action-link notification__title">
+                  {{ item.title }}
+                </button>
+              </form>
+
+              {% if item.body %}
+                <p class="notification__body">{{ item.body }}</p>
+              {% endif %}
+
+              <p class="notification__body text-muted">
+                {{ item.get_kind_display }}
+                {% if item.actor %} · {{ item.actor|person }}{% endif %}
+              </p>
+            </div>
+
+            <div class="notification__time">
+              <div>{{ item.created_at|date_ru:"d.m.Y H:i" }}</div>
+              {% if not item.is_read %}
+                <form method="post" action="{% url 'notifications:mark_read' item.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="action-link">{% translate "Прочитано" %}</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="bell" title=_("Уведомлений нет") text=_("Сообщения появятся при изменении статуса в резерве, назначении плана развития и приближении сроков мероприятий") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

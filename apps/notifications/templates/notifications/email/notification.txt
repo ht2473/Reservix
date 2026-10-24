@@ -1,0 +1,17 @@
+{% load i18n %}{% autoescape off %}{% translate "Здравствуйте" %}, {{ recipient.first_name }}!
+
+{{ notification.title }}
+{% if notification.body %}
+{{ notification.body }}
+{% endif %}
+{% if action_url %}
+{% translate "Открыть в системе:" %}
+{{ action_url }}
+{% endif %}
+
+--
+{% translate "Письмо отправлено системой автоматически, отвечать на него не нужно." %}
+{% translate "Настроить получение уведомлений можно в личном кабинете, в разделе «Настройки»." %}
+
+{{ site_name }} · {{ site_domain }}
+{% endautoescape %}
