@@ -1,0 +1,16 @@
+{% extends "errors/base_error.html" %}
+{% load i18n %}
+
+{# Отказ проверки CSRF. #}
+
+{% block error_details %}
+  <div class="alert alert--info mb-6" style="text-align:left">
+    {% icon "info" 18 "alert__icon" %}
+    <div>
+      <p class="alert__title">{% translate "Что произошло" %}</p>
+      <p class="text-sm">
+        {% translate "Форма была открыта слишком долго, и защитный токен перестал действовать. Данные не отправлены. Вернитесь назад, обновите страницу и заполните форму заново." %}
+      </p>
+    </div>
+  </div>
+{% endblock %}

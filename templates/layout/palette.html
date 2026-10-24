@@ -1,0 +1,30 @@
+{% load i18n %}
+{# Окно поиска по системе. #}
+
+<dialog class="palette" id="command-palette" aria-label="{% translate 'Поиск по системе' %}">
+  <div class="palette__search">
+    {% icon "search" 18 "palette__search-icon" %}
+    <input type="text" class="palette__input" placeholder="{% translate 'Раздел или действие…' %}"
+           aria-label="{% translate 'Поиск по разделам' %}" autocomplete="off" spellcheck="false"
+           role="combobox" aria-expanded="true" aria-controls="palette-results"
+           aria-autocomplete="list">
+    <button type="button" class="btn btn--ghost btn--icon btn--sm" data-modal-close
+            aria-label="{% translate 'Закрыть' %}">{% icon "close" 16 %}</button>
+  </div>
+
+  <div class="palette__results" id="palette-results" role="listbox"
+       aria-label="{% translate 'Результаты' %}"></div>
+
+  <div class="palette__footer">
+    <span class="palette__shortcut">
+      <span class="kbd">↑</span><span class="kbd">↓</span> {% translate "выбор" %}
+    </span>
+    <span class="palette__shortcut"><span class="kbd">Enter</span> {% translate "перейти" %}</span>
+    <span class="palette__shortcut"><span class="kbd">Esc</span> {% translate "закрыть" %}</span>
+    <span class="palette__shortcut palette__shortcut--end">
+      <span class="kbd">Ctrl</span><span class="kbd">K</span> {% translate "открыть поиск" %}
+    </span>
+  </div>
+</dialog>
+
+{{ palette_entries|json_script:"palette-entries" }}

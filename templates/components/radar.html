@@ -1,0 +1,92 @@
+{% load i18n l10n %}
+{# Лепестковая диаграмма профиля компетенций. #}
+
+{% if radar %}
+  <figure class="radar">
+    {% localize off %}
+    <svg viewBox="0 0 {{ radar.size }} {{ radar.size }}"
+         class="radar__svg"
+         role="img"
+         aria-labelledby="radar-title radar-desc">
+      <title id="radar-title">{% translate "Профиль компетенций" %}</title>
+      <desc id="radar-desc">
+        {% blocktranslate with count=radar.axes|length %}
+          Лепестковая диаграмма: {{ count }} компетенций, фактический уровень на фоне требуемого
+        {% endblocktranslate %}
+      </desc>
+
+      {# Концентрические окружности — уровни шкалы #}
+      {% for ring in radar.rings %}
+        <circle cx="{{ radar.center }}" cy="{{ radar.center }}" r="{{ ring }}"
+                class="radar__ring" fill="none" />
+      {% endfor %}
+
+      {# Лучи осей #}
+      {% for axis in radar.axes %}
+        <line x1="{{ radar.center }}" y1="{{ radar.center }}"
+              x2="{{ axis.label_x }}" y2="{{ axis.label_y }}"
+              class="radar__spoke" />
+      {% endfor %}
+
+      {# Требуемый профиль — контур без заливки #}
+      <polygon points="{{ radar.target_points }}" class="radar__target" />
+
+      {# Фактический профиль — заливка #}
+      {% if radar.has_actual %}
+        <polygon points="{{ radar.actual_points }}" class="radar__actual" />
+      {% endif %}
+
+      {# Подписи осей #}
+      {% for axis in radar.axes %}
+        <text x="{{ axis.label_x }}" y="{{ axis.label_y }}"
+              text-anchor="{{ axis.anchor }}"
+              class="radar__label">{{ axis.short_label }}</text>
+      {% endfor %}
+    </svg>
+    {% endlocalize %}
+
+    <figcaption class="radar__legend">
+      <span class="radar__legend-item radar__legend-item--actual">{% translate "фактический уровень" %}</span>
+      <span class="radar__legend-item radar__legend-item--target">{% translate "требуемый уровень" %}</span>
+      {% if not radar.has_actual %}
+        <span class="text-muted text-xs">
+          {% translate "контур факта не построен: оценены не все компетенции модели" %}
+        </span>
+      {% endif %}
+    </figcaption>
+  </figure>
+
+  {% comment %}
+    Числовое дублирование диаграммы: она недоступна программам чтения с экрана как таблица, и
+    печать в оттенках серого её обесцвечивает.
+  {% endcomment %}
+  <details class="disclosure radar__data">
+    <summary class="disclosure__summary">
+      <span class="disclosure__title">{% translate "Значения диаграммы" %}</span>
+      <span class="disclosure__action">{% translate "таблица" %}</span>
+    </summary>
+    <div class="disclosure__body">
+    {# Обёртка с прокруткой: на телефоне три столбца в строку не помещаются. #}
+    <div class="table-wrap">
+    <table class="table table--compact">
+      <thead>
+        <tr>
+          <th>{% translate "Компетенция" %}</th>
+          <th class="text-right">{% translate "Факт" %}</th>
+          <th class="text-right">{% translate "Требуется" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for axis in radar.axes %}
+          <tr>
+            <td>{{ axis.label }}</td>
+            <td class="text-right tabular">{{ axis.actual|default_if_none:"—" }}</td>
+            <td class="text-right tabular">{{ axis.target }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    </div>
+  </details>
+{% endif %}

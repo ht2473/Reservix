@@ -1,0 +1,54 @@
+{% load i18n %}
+{# Меню для узких экранов. #}
+
+<div class="mobile-nav" id="mobile-nav" data-mobile-nav hidden>
+
+  {% if workspace_menu %}
+    <div class="mobile-nav__group">
+      <p class="mobile-nav__title">{% translate "Рабочее место" %} · {{ current_role_label }}</p>
+      {% for item in workspace_menu %}
+        <a class="mobile-nav__link" href="{{ item.url }}"
+           {% if item.is_active %}aria-current="page"{% endif %}>
+          {% icon item.icon 18 %}
+          <span class="flex-1">{{ item.label }}</span>
+          {% if item.badge %}<span class="workspace-nav__badge">{{ item.badge }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="mobile-nav__group">
+    <p class="mobile-nav__title">{% translate "Разделы системы" %}</p>
+    {% for item in public_menu %}
+      {% comment %}
+        Модификатор --stacked означает пункт с пояснением под названием: в нём значок выравнивается
+        по первой строке, а не по середине всего блока.
+      {% endcomment %}
+      <a class="mobile-nav__link{% if item.description %} mobile-nav__link--stacked{% endif %}"
+         href="{{ item.url }}"
+         {% if item.is_active %}aria-current="page"{% endif %}>
+        {% icon item.icon 18 %}
+        <span class="flex-1">
+          {{ item.label }}
+          {% if item.description %}
+            <span class="mobile-nav__hint block">{{ item.description }}</span>
+          {% endif %}
+        </span>
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="mobile-nav__group">
+    <p class="mobile-nav__title">{% translate "Язык интерфейса" %}</p>
+    <form action="{% url 'set_language' %}" method="post" class="cluster">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      {% for code, name in LANGUAGES %}
+        <button type="submit" name="language" value="{{ code }}"
+                class="btn {% if code == LANGUAGE_CODE %}btn--soft{% else %}btn--secondary{% endif %} btn--sm">
+          {{ name }}
+        </button>
+      {% endfor %}
+    </form>
+  </div>
+</div>

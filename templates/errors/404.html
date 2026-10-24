@@ -1,0 +1,15 @@
+{% extends "errors/base_error.html" %}
+{% load i18n %}
+
+{# Ошибка 404: страница не найдена. #}
+
+{% block error_details %}
+  <div class="panel mb-6" style="text-align:left">
+    <p class="panel__title">{% translate "Возможно, вы искали" %}</p>
+    <ul class="stack stack--sm">
+      {% for item in public_menu|slice:":6" %}
+        <li><a href="{{ item.url }}">{{ item.label }}</a> <span class="text-xs text-subtle">— {{ item.description }}</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}

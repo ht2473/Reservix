@@ -1,0 +1,11 @@
+{# Текстовая часть заголовка страницы: раздел, название, пояснение. #}
+
+<div class="page-header__text">
+  {% if page_section_label and page_section_label != page_title %}
+    <span class="page-header__eyebrow">{{ page_section_label }}</span>
+  {% endif %}
+  <h1 class="page-header__title">{{ page_title }}</h1>
+  {% if page_subtitle %}
+    <p class="page-header__subtitle">{{ page_subtitle }}</p>
+  {% endif %}
+</div>

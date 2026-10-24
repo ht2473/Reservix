@@ -1,0 +1,53 @@
+{% load i18n %}
+{# Постраничная навигация. #}
+
+{% if is_paginated %}
+  <nav class="pagination" aria-label="{% translate 'Постраничная навигация' %}">
+    <p class="pagination__summary">
+      {% blocktranslate with start=page_obj.start_index end=page_obj.end_index total=total_count|default:paginator.count %}
+        Показаны {{ start }}–{{ end }} из {{ total }}
+      {% endblocktranslate %}
+    </p>
+
+    <ul class="pagination__list">
+      {% if page_obj.has_previous %}
+        <li>
+          <a class="pagination__link"
+             href="?page={{ page_obj.previous_page_number }}{% if pagination_query %}&amp;{{ pagination_query }}{% endif %}"
+             rel="prev">
+            <span aria-hidden="true">←</span>
+            <span class="visually-hidden">{% translate "Предыдущая страница" %}</span>
+          </a>
+        </li>
+      {% endif %}
+
+      {% for number in visible_pages|default:paginator.page_range %}
+        {% if number == "…" %}
+          <li class="pagination__ellipsis" aria-hidden="true">…</li>
+        {% elif number == page_obj.number %}
+          <li>
+            <span class="pagination__link" aria-current="page">{{ number }}</span>
+          </li>
+        {% else %}
+          <li>
+            <a class="pagination__link"
+               href="?page={{ number }}{% if pagination_query %}&amp;{{ pagination_query }}{% endif %}">
+              {{ number }}
+            </a>
+          </li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li>
+          <a class="pagination__link"
+             href="?page={{ page_obj.next_page_number }}{% if pagination_query %}&amp;{{ pagination_query }}{% endif %}"
+             rel="next">
+            <span aria-hidden="true">→</span>
+            <span class="visually-hidden">{% translate "Следующая страница" %}</span>
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endif %}

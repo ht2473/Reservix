@@ -1,0 +1,36 @@
+{% load i18n l10n reservix %}
+{# Индекс готовности на шкале с порогами уровней. #}
+
+<div class="readiness"
+     style="--t-medium: {% localize off %}{{ threshold_medium|default:55 }}{% endlocalize %}%; --t-high: {% localize off %}{{ threshold_high|default:75 }}{% endlocalize %}%">
+  <div class="readiness__head">
+    <span class="readiness__value readiness__value--{{ level_signal|default:'neutral' }}">
+      {% if value is None %}—{% else %}{{ value|score:1 }}{% endif %}
+    </span>
+    {% readiness_badge level %}
+  </div>
+
+  {% comment %}
+    Локализация отключена намеренно: доля в CSS записывается точкой, русская локаль поставила бы
+    запятую, и браузер отбросил бы правило целиком — засечки и метка уехали бы в начало полосы.
+  {% endcomment %}
+  <div class="readiness__scale">
+    <span class="readiness__threshold"
+          style="left: {% localize off %}{{ threshold_medium|default:55 }}{% endlocalize %}%"></span>
+    <span class="readiness__threshold"
+          style="left: {% localize off %}{{ threshold_high|default:75 }}{% endlocalize %}%"></span>
+    {% if value is not None %}
+      <span class="readiness__marker"
+            style="left: {% localize off %}{{ value }}{% endlocalize %}%"></span>
+    {% endif %}
+  </div>
+
+  <div class="readiness__ticks">
+    <span>0</span>
+    <span>{{ threshold_medium|default:55 }}</span>
+    <span>{{ threshold_high|default:75 }}</span>
+    <span>100</span>
+  </div>
+
+  {% if label %}<p class="text-xs text-muted">{{ label }}</p>{% endif %}
+</div>

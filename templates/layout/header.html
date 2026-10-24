@@ -1,0 +1,220 @@
+{% load static i18n %}
+{# Шапка сайта. #}
+
+<header class="site-header">
+  <div class="container site-header__inner">
+
+    <a class="site-header__brand" href="{% url 'portal:home' %}"
+       aria-label="{{ SITE_NAME }} — {% translate 'на главную' %}">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#0b6b74"/>
+        <g fill="#ffffff">
+          <rect x="6.5" y="18.5" width="6" height="6" rx="1.5" opacity=".3"/>
+          <rect x="13.5" y="18.5" width="6" height="6" rx="1.5" opacity=".3"/>
+          <rect x="6.5" y="11.5" width="6" height="6" rx="1.5" opacity=".45"/>
+          <rect x="13.5" y="11.5" width="6" height="6" rx="1.5" opacity=".6"/>
+          <rect x="20.5" y="11.5" width="6" height="6" rx="1.5" opacity=".78"/>
+        </g>
+        <rect x="20.5" y="4.5" width="6" height="6" rx="1.5" fill="#f08a6c"/>
+        <path d="M9.5 21.5 16 15l7.5-7.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" fill="none" opacity=".5"/>
+      </svg>
+      <span class="brand__text">
+        <span class="brand__name">{{ SITE_NAME }}</span>
+        <span class="brand__tagline">{% translate "Кадровый резерв" %}</span>
+      </span>
+    </a>
+
+    {# Главное меню публичной части. #}
+    <nav class="main-nav" aria-label="{% translate 'Основная навигация' %}" data-main-nav>
+      <ul class="main-nav__list">
+        {% for item in public_menu %}
+          <li class="main-nav__item">
+            <a class="main-nav__link" href="{{ item.url }}"
+               {% if item.is_active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+
+      <div class="dropdown main-nav__more" data-nav-more hidden>
+        <button type="button" class="main-nav__link main-nav__more-btn"
+                data-dropdown-trigger="nav-more"
+                aria-expanded="false" aria-haspopup="true">
+          <span>{% translate "Ещё" %}</span>{% icon "chevron-down" 14 %}
+        </button>
+        <div class="dropdown__menu" data-dropdown-menu="nav-more" hidden></div>
+      </div>
+    </nav>
+
+    {% if user.is_authenticated %}
+      {# Поиск по системе — основной способ навигации для того, кто работает с сотнями карточек. #}
+      <button type="button" class="site-search" data-palette-open
+              aria-haspopup="dialog" aria-label="{% translate 'Поиск по системе' %}">
+        {% icon "search" 16 "site-search__icon" %}
+        <span class="site-search__placeholder">{% translate "Поиск по системе" %}</span>
+      </button>
+    {% endif %}
+
+    <div class="site-header__actions">
+
+      {% if user.is_authenticated %}
+        {# На ширинах, где поле не помещается, остаётся значок. #}
+        <button type="button" class="btn btn--ghost btn--icon site-search-compact" data-palette-open
+                aria-haspopup="dialog" aria-label="{% translate 'Поиск по системе' %}">
+          {% icon "search" 18 %}
+        </button>
+      {% endif %}
+
+      {% comment %}
+        Переключатель языка. Форма отправляется методом POST: смена языка изменяет состояние сессии
+        и не должна выполняться по ссылке.
+      {% endcomment %}
+      <form action="{% url 'set_language' %}" method="post" class="lang-switch hide-sm"
+            aria-label="{% translate 'Язык интерфейса' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% for code, name in LANGUAGES %}
+          <button type="submit" name="language" value="{{ code }}"
+                  class="lang-switch__option"
+                  aria-current="{% if code == LANGUAGE_CODE %}true{% else %}false{% endif %}"
+                  {% if code == LANGUAGE_CODE %}aria-disabled="true"{% endif %}
+                  title="{{ name }}"><span aria-hidden="true">{{ code }}</span>
+            <span class="visually-hidden">{{ name }}</span></button>
+        {% endfor %}
+      </form>
+
+      {# Переключатель темы оформления #}
+      <div class="dropdown">
+        <button type="button" class="btn btn--ghost btn--icon" data-dropdown-trigger="theme"
+                aria-expanded="false" aria-haspopup="true"
+                aria-label="{% translate 'Оформление' %}">
+          {% icon "sun" 18 %}
+        </button>
+        <div class="dropdown__menu" data-dropdown-menu="theme" hidden>
+          <p class="dropdown__header">{% translate "Оформление" %}</p>
+          <button type="button" class="dropdown__item" data-theme-option="light" aria-pressed="false">
+            {% icon "sun" 16 %}{% translate "Светлое" %}
+          </button>
+          <button type="button" class="dropdown__item" data-theme-option="dark" aria-pressed="false">
+            {% icon "moon" 16 %}{% translate "Тёмное" %}
+          </button>
+          <button type="button" class="dropdown__item" data-theme-option="system" aria-pressed="false">
+            {% icon "monitor" 16 %}{% translate "Как в системе" %}
+          </button>
+        </div>
+      </div>
+
+      {% if user.is_authenticated %}
+
+        {# Уведомления: последние сообщения во всплывающем списке #}
+        <div class="dropdown">
+          <button type="button" class="btn btn--ghost btn--icon notify-trigger"
+                  data-dropdown-trigger="notifications"
+                  aria-expanded="false" aria-haspopup="true"
+                  aria-label="{% translate 'Уведомления' %}">
+            {% icon "bell" 18 %}
+            {% if nav_counters.unread_notifications %}
+              <span class="notify-trigger__count" aria-hidden="true">{{ nav_counters.unread_notifications }}</span>
+              <span class="visually-hidden">
+                {{ nav_counters.unread_notifications }}
+                {{ nav_counters.unread_notifications|plural:_("новое уведомление,новых уведомления,новых уведомлений") }}
+              </span>
+            {% endif %}
+          </button>
+          <div class="dropdown__menu notify-menu" data-dropdown-menu="notifications" hidden>
+            <div class="notify-menu__head">
+              <span class="notify-menu__title">{% translate "Уведомления" %}</span>
+              {% if nav_counters.unread_notifications %}
+                <form method="post" action="{% url 'notifications:mark_all_read' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn--ghost btn--sm">{% translate "Прочитать все" %}</button>
+                </form>
+              {% endif %}
+            </div>
+            {% if nav_notifications %}
+              <ul class="notify-menu__list">
+                {% for note in nav_notifications %}
+                  <li>
+                    <form method="post" action="{% url 'notifications:open' note.pk %}">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="notify-menu__item{% if not note.is_read %} notify-menu__item--unread{% endif %}">
+                        <span class="notify-menu__item-title">{{ note.title }}</span>
+                        <span class="notify-menu__item-time">{{ note.created_at|date:"d.m.Y H:i" }}</span>
+                      </button>
+                    </form>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="notify-menu__empty">{% translate "Уведомлений пока нет" %}</p>
+            {% endif %}
+            <div class="notify-menu__foot">
+              <a href="{% url 'notifications:list' %}">{% translate "Все уведомления" %}</a>
+              <a href="{% url 'accounts:preferences' %}">{% translate "Настройки" %}</a>
+            </div>
+          </div>
+        </div>
+
+        {# Меню пользователя #}
+        <div class="dropdown">
+          <button type="button" class="btn btn--ghost" data-dropdown-trigger="user"
+                  aria-expanded="false" aria-haspopup="true">
+            <span class="avatar avatar--sm">{{ user.initials }}</span>
+            <span class="hide-sm">{{ user.last_name }}</span>
+            {% icon "chevron-down" 14 %}
+          </button>
+
+          <div class="dropdown__menu" data-dropdown-menu="user" hidden>
+            <div class="dropdown__profile">
+              <span class="avatar">{{ user.initials }}</span>
+              <span>
+                <span class="dropdown__profile-name">{{ user.short_name }}</span>
+                <span class="dropdown__profile-role">{{ current_role_label }}</span>
+              </span>
+            </div>
+
+            <a class="dropdown__item" href="{{ role_home_url }}">
+              {% icon "dashboard" 16 %}{% translate "Рабочее место" %}
+            </a>
+            <a class="dropdown__item" href="{% url 'accounts:profile' %}">
+              {% icon "user" 16 %}{% translate "Мой профиль" %}
+            </a>
+            <a class="dropdown__item" href="{% url 'accounts:preferences' %}">
+              {% icon "settings" 16 %}{% translate "Настройки" %}
+            </a>
+            <a class="dropdown__item" href="{% url 'accounts:security' %}">
+              {% icon "shield" 16 %}{% translate "Безопасность" %}
+            </a>
+
+            <div class="dropdown__divider"></div>
+
+            {% comment %}
+              Выход выполняется методом POST: ссылка по GET позволяет завершить чужую сессию
+              запросом со стороннего сайта.
+            {% endcomment %}
+            <form action="{% url 'accounts:logout' %}" method="post">
+              {% csrf_token %}
+              <button type="submit" class="dropdown__item dropdown__item--danger">
+                {% icon "logout" 16 %}{% translate "Выйти" %}
+              </button>
+            </form>
+          </div>
+        </div>
+
+      {% else %}
+        <a class="btn btn--primary btn--sm" href="{% url 'accounts:login' %}">
+          {% icon "lock" 16 %}
+          <span class="hide-sm">{% translate "Войти" %}</span>
+        </a>
+      {% endif %}
+
+      <button type="button" class="btn btn--ghost btn--icon nav-toggle" data-nav-toggle
+              aria-expanded="false" aria-controls="mobile-nav"
+              aria-label="{% translate 'Меню' %}">
+        {% icon "menu" 20 %}
+      </button>
+    </div>
+  </div>
+</header>
+
+{% include "layout/mobile_nav.html" %}

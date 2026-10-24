@@ -1,0 +1,34 @@
+{% load i18n reservix %}
+{# Вложения объекта. #}
+
+<section class="section section--tight">
+  <div class="section__header">
+    <h2 class="section__title">{{ title|default:_("Документы") }}</h2>
+    {% if upload_url %}
+      <a class="btn btn--ghost btn--sm" href="{{ upload_url }}">
+        {% icon "plus" 14 %}{% translate "Прикрепить" %}
+      </a>
+    {% endif %}
+  </div>
+
+  {% if attachments %}
+    <ul class="stack stack--sm">
+      {% for document in attachments %}
+        <li class="cluster cluster--between">
+          <span class="person__text">
+            <a class="person__name" href="{{ document.get_absolute_url }}">{{ document.title }}</a>
+            <span class="person__meta">
+              {{ document.get_kind_display }} · {{ document.extension|upper }} ·
+              {{ document.size_display }} · {{ document.created_at|date_ru }}
+            </span>
+          </span>
+          <a class="btn btn--ghost btn--sm" href="{{ document.download_url }}">
+            {% icon "download" 14 %}{% translate "Выгрузить" %}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted text-sm">{% translate "Вложений нет" %}</p>
+  {% endif %}
+</section>

@@ -1,0 +1,33 @@
+{% load i18n l10n reservix %}
+{# Строка разрыва по компетенции. #}
+
+<div class="gap-row gap-row--{{ gap.delta_class|cut:"gap-row__delta--" }}" {% if not gap.is_assessed %}data-unassessed="true"{% endif %}>
+  <div class="gap-row__name">
+    <a href="{{ gap.competency.get_absolute_url }}">{{ gap.competency.name }}</a>
+    {% if gap.is_blocking %}
+      <span class="badge badge--risk badge--pill">{% translate "критично" %}</span>
+    {% endif %}
+    <span class="gap-row__weight">
+      {% blocktranslate with weight=gap.weight|score:3 category=gap.competency.category.name %}
+        {{ category }} · вес {{ weight }}
+      {% endblocktranslate %}
+    </span>
+  </div>
+
+  <div class="gap-row__scale"
+       role="img"
+       aria-label="{% blocktranslate with actual=gap.actual|default_if_none:'—' target=gap.target %}уровень {{ actual }} при требуемом {{ target }}{% endblocktranslate %}">
+    {% for step in gap.steps %}
+      <span class="gap-row__step{% if step.state == 'filled' %} gap-row__step--filled{% elif step.state == 'partial' %} gap-row__step--filled-partial{% endif %}"></span>
+    {% endfor %}
+    {% comment %}
+      Локализация отключена: доля в CSS записывается точкой, а русская локаль поставила бы запятую,
+      и правило left: 80,0% браузер отбросил бы целиком, оставив метку требуемого уровня в начале
+      полосы.
+    {% endcomment %}
+    <span class="gap-row__target" style="left: {% localize off %}{{ gap.target_offset }}{% endlocalize %}%"></span>
+  </div>
+
+  <span class="gap-row__delta {{ gap.delta_class }}"
+        title="{{ gap.status_label }}">{{ gap.delta_label }}</span>
+</div>

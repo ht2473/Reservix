@@ -1,0 +1,78 @@
+{% load static i18n %}<!doctype html>
+{# Базовый шаблон Reservix. #}
+{% comment %}
+  Тема и плотность подставляются сервером, а не сценарием: значение известно из cookie ещё до
+  формирования ответа, поэтому тёмный фон приходит вместе с разметкой.
+{% endcomment %}
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}" class="no-js"
+      {% if ui_theme %}data-theme="{{ ui_theme }}"{% endif %}
+      {% if ui_density %}data-density="{{ ui_density }}"{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+
+  <title>{% block title %}{{ page_title }}{% endblock %} · {{ SITE_NAME }}</title>
+
+  <meta name="description" content="{% block description %}{{ page_description|default:SITE_TAGLINE }}{% endblock %}">
+  <meta name="generator" content="{{ SITE_NAME }} {{ APP_VERSION }}">
+  {% block meta %}{% endblock %}
+
+  {% comment %}
+    Предзагрузка основного начертания: текст интерфейса не должен дважды перерисовываться при
+    появлении шрифта.
+  {% endcomment %}
+  <link rel="preload" href="{% static 'fonts/IBMPlexSans-400-cyrillic.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{% static 'fonts/IBMPlexSans-600-cyrillic.woff2' %}" as="font" type="font/woff2" crossorigin>
+
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="mask-icon" href="{% static 'img/favicon.svg' %}" color="#0b6b74">
+
+  {# Начальный сценарий подключается без defer и выполняется до отрисовки страницы. #}
+  <script src="{% static 'js/boot.js' %}"></script>
+
+  {# Основной слой подключается с defer: он не влияет на первый кадр. #}
+  <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+  {% block head_scripts %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}" data-role="{{ current_role|default:'guest' }}"
+      {% if user.is_authenticated %}data-appearance-url="{% url 'accounts:appearance' %}"{% endif %}>
+
+  <a class="skip-link" href="#main-content">{% translate "Перейти к содержимому" %}</a>
+
+  <div class="load-bar" aria-hidden="true"></div>
+
+  <div class="page">
+    {% include "layout/header.html" %}
+
+    {% block breadcrumbs %}
+      {% include "layout/breadcrumbs.html" %}
+    {% endblock %}
+
+    <main class="page__main {% block main_class %}{% endblock %}" id="main-content" tabindex="-1">
+      {% include "layout/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+
+    {% include "layout/footer.html" %}
+  </div>
+
+  {% comment %}
+    Область всплывающих уведомлений. Объявлена как aria-live: сообщение зачитывается программой
+    чтения, не прерывая работу пользователя.
+  {% endcomment %}
+  <div class="toast-stack" role="region" aria-live="polite" aria-label="{% translate 'Уведомления' %}"></div>
+
+  {% if user.is_authenticated %}
+    {% include "layout/palette.html" %}
+  {% endif %}
+
+  {# Подписи, которые сценарии выводят пользователю. #}
+  {{ ui_strings|json_script:"ui-strings" }}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

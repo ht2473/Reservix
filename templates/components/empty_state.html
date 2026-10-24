@@ -1,0 +1,11 @@
+{% load i18n %}
+{# Пустое состояние списка. #}
+
+<div class="empty-state">
+  {% icon icon|default:"search" 40 "empty-state__icon" %}
+  <p class="empty-state__title">{{ title|default:_("Данных пока нет") }}</p>
+  {% if text %}<p class="empty-state__text">{{ text }}</p>{% endif %}
+  {% if action_url %}
+    <a class="btn btn--primary btn--sm mt-2" href="{{ action_url }}">{{ action_label }}</a>
+  {% endif %}
+</div>

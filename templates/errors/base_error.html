@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Общий макет страниц ошибок. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+  <div class="container container--narrow">
+    <div class="card mt-8">
+      <div class="card__body text-center">
+
+        <p class="text-mono text-subtle" style="font-size: var(--text-4xl); line-height: 1">
+          {{ error_code }}
+        </p>
+
+        <h1 class="page-header__title mt-3 mb-3">{{ page_title }}</h1>
+
+        <p class="text-muted mb-6">{{ error_message }}</p>
+
+        {% block error_details %}{% endblock %}
+
+        <div class="cluster" style="justify-content:center">
+          {% block error_actions %}
+            <a class="btn btn--primary" href="{% url 'portal:home' %}">
+              {% icon "home" 18 %}
+              {% translate "На главную" %}
+            </a>
+            {% if user.is_authenticated %}
+              <a class="btn btn--secondary" href="{{ role_home_url }}">
+                {% icon "dashboard" 18 %}
+                {% translate "В рабочее место" %}
+              </a>
+            {% endif %}
+          {% endblock %}
+        </div>
+      </div>
+
+      {% if request_path %}
+        <div class="card__footer text-center">
+          <span class="text-mono text-xs">{{ request_path }}</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "errors/base_error.html" %}
+{% load i18n %}
+
+{# Ошибка 400: сервер не смог разобрать запрос. #}
+
+{% block error_details %}
+  <p class="text-sm text-subtle mb-6">
+    {% translate "Проверьте адрес страницы. Если вы перешли по ссылке из письма, она могла быть перенесена при копировании." %}
+  </p>
+{% endblock %}

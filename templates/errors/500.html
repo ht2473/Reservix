@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Ошибка 500: внутренний сбой. #}
+
+{% block title %}{% translate "Внутренняя ошибка" %}{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+  <div class="container container--narrow">
+    <div class="card mt-8">
+      <div class="card__body text-center">
+        <p class="text-mono text-subtle" style="font-size: var(--text-4xl); line-height: 1">500</p>
+
+        <h1 class="page-header__title mt-3 mb-3">{% translate "Внутренняя ошибка" %}</h1>
+
+        <p class="text-muted mb-6">
+          {% translate "Произошла непредвиденная ошибка. Событие зафиксировано, администратор системы уведомлён." %}
+        </p>
+
+        <p class="text-sm text-subtle mb-6">
+          {% translate "Если ошибка повторяется, сообщите администратору идентификатор запроса из заголовка ответа X-Request-ID." %}
+        </p>
+
+        <a class="btn btn--primary" href="/">{% translate "На главную" %}</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

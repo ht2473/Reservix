@@ -1,0 +1,41 @@
+{% extends "errors/base_error.html" %}
+{% load i18n %}
+
+{# Ошибка 403: доступ запрещён. #}
+
+{% block error_details %}
+  <div class="alert alert--warning mb-6" style="text-align:left">
+    {% icon "shield" 18 "alert__icon" %}
+    <div>
+      <p class="alert__title">{% translate "Раздел ограничен по роли" %}</p>
+      <p class="text-sm">
+        {% if user.is_authenticated %}
+          {% translate "Ваша текущая роль:" %} <strong>{{ current_role_label }}</strong>.
+          {% translate "Если доступ необходим для работы, обратитесь к администратору системы." %}
+        {% else %}
+          {% translate "Раздел доступен только авторизованным пользователям." %}
+        {% endif %}
+      </p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block error_actions %}
+  {% if user.is_authenticated %}
+    <a class="btn btn--primary" href="{{ role_home_url }}">
+      {% icon "dashboard" 18 %}
+      {% translate "В рабочее место" %}
+    </a>
+    <a class="btn btn--secondary" href="{% url 'portal:feedback' %}">
+      {% translate "Запросить доступ" %}
+    </a>
+  {% else %}
+    <a class="btn btn--primary" href="{% url 'accounts:login' %}">
+      {% icon "lock" 18 %}
+      {% translate "Войти в систему" %}
+    </a>
+    <a class="btn btn--secondary" href="{% url 'portal:home' %}">
+      {% translate "На главную" %}
+    </a>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,56 @@
+{% load i18n %}
+{# Подвал сайта. #}
+
+<footer class="site-footer">
+  <div class="container">
+
+    <div class="site-footer__grid">
+
+      <div>
+        <p class="brand__name mb-2">{{ SITE_NAME }}</p>
+        <p class="text-sm">{{ SITE_TAGLINE }}</p>
+        <p class="text-xs text-subtle mt-3">
+          {% blocktranslate with org=ORGANIZATION_NAME %}Демонстрационная организация: {{ org }}{% endblocktranslate %}
+        </p>
+      </div>
+
+      <div>
+        <p class="site-footer__title">{% translate "Методика" %}</p>
+        <ul class="site-footer__list">
+          <li><a href="{% url 'portal:about' %}">{% translate "О системе" %}</a></li>
+          <li><a href="{% url 'portal:home' %}#stages">{% translate "Этапы работы с резервом" %}</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <p class="site-footer__title">{% translate "Поддержка" %}</p>
+        <ul class="site-footer__list">
+          <li><a href="{% url 'portal:contacts' %}">{% translate "Контакты" %}</a></li>
+          <li><a href="{% url 'portal:feedback' %}">{% translate "Обратная связь" %}</a></li>
+          {% if not user.is_authenticated %}
+            <li><a href="{% url 'accounts:login' %}">{% translate "Вход в систему" %}</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      {% comment %}
+        Правовой раздел собирается из страниц портала с отметкой «ссылка в подвале»: перечень ведёт
+        администратор, а не разметка.
+      {% endcomment %}
+      {% if footer_pages %}
+        <div>
+          <p class="site-footer__title">{% translate "Правовая информация" %}</p>
+          <ul class="site-footer__list">
+            {% for page in footer_pages %}
+              <li><a href="{{ page.get_absolute_url }}">{{ page.title }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="site-footer__bottom">
+      <p>{{ SITE_NAME }} {{ APP_VERSION }}</p>
+    </div>
+  </div>
+</footer>

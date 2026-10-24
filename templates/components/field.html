@@ -1,0 +1,32 @@
+{% load i18n %}
+{# Поле формы. #}
+
+<div class="field {% if inline %}field--inline{% endif %} {{ wrapper_class }}">
+
+  {% if inline %}
+    {{ field }}
+    <div>
+      <label class="field__label" for="{{ field.id_for_label }}">
+        {{ field.label }}
+        {% if field.field.required %}<span class="field__required" aria-hidden="true">*</span>{% endif %}
+      </label>
+      {% if field.help_text %}<p class="field__help">{{ field.help_text }}</p>{% endif %}
+      {% field_errors field %}
+    </div>
+  {% else %}
+    <label class="field__label" for="{{ field.id_for_label }}">
+      {{ field.label }}
+      {% if field.field.required %}
+        <span class="field__required" aria-hidden="true">*</span>
+        <span class="visually-hidden">{% translate "обязательное поле" %}</span>
+      {% else %}
+        <span class="field__optional">{% translate "необязательно" %}</span>
+      {% endif %}
+    </label>
+
+    {{ field }}
+
+    {% if field.help_text %}<p class="field__help">{{ field.help_text }}</p>{% endif %}
+    {% field_errors field %}
+  {% endif %}
+</div>

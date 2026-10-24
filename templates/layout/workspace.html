@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Каркас рабочего места. #}
+
+{% block body_class %}workspace-page{% endblock %}
+
+{% block main_class %}page__main--flush{% endblock %}
+
+{% block content %}
+  <div class="container container--full">
+    <div class="workspace">
+
+      <aside class="workspace-sidebar">
+        <nav class="workspace-nav" aria-label="{% translate 'Разделы рабочего места' %}">
+          <div class="workspace-nav__role">
+            <span class="workspace-nav__role-label">{% translate "Рабочее место" %}</span>
+            <span class="workspace-nav__role-value">{{ current_role_label }}</span>
+          </div>
+
+          {% for item in workspace_menu %}
+            {% if item.group %}<span class="workspace-nav__group">{{ item.group }}</span>{% endif %}
+            <a class="workspace-nav__link"
+               href="{{ item.url }}"
+               {% if item.is_active %}aria-current="page"{% endif %}>
+              {% icon item.icon 18 "workspace-nav__icon" %}
+              <span class="workspace-nav__label">{{ item.label }}</span>
+              {% if item.badge %}
+                <span class="workspace-nav__badge">{{ item.badge }}</span>
+              {% endif %}
+            </a>
+          {% endfor %}
+        </nav>
+      </aside>
+
+      <div class="workspace-content">
+        {# Блок действий объявлен в каркасе: блоки включаемого шаблона не переопределяются. #}
+        <div class="page-header {{ header_class }}">
+          {% include "components/page_header_text.html" %}
+          {% block page_actions %}{% endblock %}
+        </div>
+        {% block workspace_content %}{% endblock %}
+      </div>
+
+    </div>
+  </div>
+{% endblock %}
