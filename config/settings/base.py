@@ -419,7 +419,7 @@ NINJA_DEFAULT_THROTTLE_RATES = {
 }
 
 API_TITLE = "Reservix API"
-API_VERSION = "1.0.0"
+API_VERSION = "1.0.1"
 
 # ---------------------------------------------------------------------------
 # Логирование

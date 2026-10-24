@@ -1,6 +1,6 @@
 [project]
 name = "reservix"
-version = "1.0.0"
+version = "1.0.1"
 description = "Reservix — информационная система формирования и развития кадрового резерва организации"
 readme = "README.md"
 requires-python = "==3.12.*"
