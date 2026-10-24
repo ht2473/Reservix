@@ -1,0 +1,255 @@
+# =============================================================================
+# Reservix — непрерывная интеграция
+# Конвейер выстроен по возрастанию стоимости проверок: быстрые линтеры отсекают
+# очевидные ошибки за секунды, тесты с базой данных запускаются только после их
+# прохождения.
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Новый коммит в ту же ветку отменяет предыдущий незавершённый запуск:
+# проверять устаревшее состояние бессмысленно.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12.13"
+  UV_VERSION: "0.9.7"
+
+jobs:
+
+  # --- Статический анализ ----------------------------------------------------
+  lint:
+    name: Линтер и типы
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Установка Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Установка зависимостей
+        run: uv sync --locked --all-groups
+
+      - name: Проверка стиля
+        run: uv run ruff check --output-format=github .
+
+      - name: Проверка форматирования
+        run: uv run ruff format --check .
+
+      - name: Проверка типов
+        run: uv run mypy apps core config
+
+      - name: Актуальность собранных ресурсов
+        # Бандлы стилей и сценариев коммитятся в репозиторий. Проверка
+        # гарантирует, что они пересобраны после правки исходных файлов.
+        run: uv run python scripts/build_assets.py --check
+
+      - name: Полнота каталогов перевода
+        # Непереведённая строка в каталоге означает русский текст в
+        # английском интерфейсе — такое расхождение видно пользователю.
+        run: uv run python scripts/i18n.py check
+
+  # --- Безопасность ----------------------------------------------------------
+  security:
+    name: Анализ безопасности
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Установка зависимостей
+        run: uv sync --locked --all-groups
+
+      - name: Поиск уязвимостей в коде
+        run: uv run bandit -c pyproject.toml -r apps core config
+
+      - name: Аудит зависимостей
+        # Отчёт формируется, но не блокирует сборку: уязвимость в
+        # транзитивной зависимости не всегда устранима немедленно.
+        run: uv run pip-audit --desc
+        continue-on-error: true
+
+      - name: Проверка настроек развёртывания
+        run: uv run python manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.prod
+          DJANGO_SECRET_KEY: ci-only-secret-key-not-used-in-production-environment
+          DJANGO_ALLOWED_HOSTS: reservix.ru
+          DATABASE_URL: postgres://reservix:reservix@localhost:5432/reservix
+
+  # --- Тесты -----------------------------------------------------------------
+  test:
+    name: Тесты
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint]
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: reservix_test
+          POSTGRES_USER: reservix
+          POSTGRES_PASSWORD: reservix
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U reservix"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7.4-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_SECRET_KEY: ci-only-secret-key-not-used-in-production-environment
+      DATABASE_URL: postgres://reservix:reservix@localhost:5432/reservix_test
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Установка зависимостей
+        run: uv sync --locked --all-groups
+
+      - name: Согласованность моделей и миграций
+        # Модель, изменённая без создания миграции, ломает развёртывание.
+        # Проверка обходится дешевле разбора инцидента на сервере.
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Модульные, интеграционные проверки и проверки безопасности
+        # Сквозные сценарии исключены из этого задания: браузеры здесь не
+        # установлены, и сценарии всё равно пропустились бы — но каждый рабочий
+        # процесс всё-таки запускал бы драйвер Playwright, чтобы это выяснить.
+        run: >-
+          uv run pytest tests/unit tests/integration tests/security
+          --cov --cov-report=xml --cov-report=term -n auto
+
+      - name: Публикация отчёта о покрытии
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage.xml
+          retention-days: 14
+
+  # --- Сквозные сценарии -----------------------------------------------------
+  e2e:
+    name: Сквозные сценарии
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [test]
+    # Сценарии в браузере выполняются долго: на ветках разработки они
+    # избыточны, достаточно прогона перед слиянием в основную ветку.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: reservix_e2e
+          POSTGRES_USER: reservix
+          POSTGRES_PASSWORD: reservix
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U reservix"
+          --health-interval 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7.4-alpine
+        ports: ["6379:6379"]
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DJANGO_SECRET_KEY: ci-only-secret-key-not-used-in-production-environment
+      DATABASE_URL: postgres://reservix:reservix@localhost:5432/reservix_e2e
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Установка зависимостей
+        run: uv sync --locked --all-groups
+
+      - name: Установка браузеров
+        run: uv run playwright install --with-deps chromium firefox
+
+      - name: Прогон сценариев
+        run: uv run pytest tests/e2e --browser chromium --browser firefox
+
+      - name: Сохранение снимков экрана
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-screenshots
+          path: test-results/
+          retention-days: 7
+
+  # --- Сборка образа ---------------------------------------------------------
+  build:
+    name: Сборка образа
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, security, test]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Настройка Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Сборка образа
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: false
+          tags: reservix:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

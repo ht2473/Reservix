@@ -1,0 +1,73 @@
+# =============================================================================
+# Reservix — проверки перед фиксацией изменений
+# Установка: uv run pre-commit install Разовый прогон по всем файлам: uv run
+# pre-commit run --all-files Набор намеренно ограничен быстрыми проверками.
+# =============================================================================
+
+default_language_version:
+  python: python3.12
+
+repos:
+
+  # --- Базовая гигиена файлов ------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.(md|po)$
+      - id: end-of-file-fixer
+        exclude: \.(svg|woff2)$
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      # Крупные файлы в репозитории обычно означают случайно добавленный
+      # дамп базы или архив. Шрифты исключены явно.
+      - id: check-added-large-files
+        args: [--maxkb=600]
+        exclude: ^static/(fonts|vendor)/
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # --- Python ----------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.5
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # --- Зависимости -----------------------------------------------------------
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.7
+    hooks:
+      # Файл блокировки должен соответствовать pyproject.toml: расхождение
+      # означает, что сборка на сервере получит не те версии пакетов.
+      - id: uv-lock
+
+  # --- Собственные проверки --------------------------------------------------
+  - repo: local
+    hooks:
+      - id: build-assets
+        name: Сборка стилей и сценариев
+        entry: uv run python scripts/build_assets.py
+        language: system
+        files: ^static/src/.*\.(css|js)$
+        pass_filenames: false
+
+      - id: django-check
+        name: Системные проверки Django
+        entry: uv run python manage.py check
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: missing-migrations
+        name: Модели без миграций
+        entry: uv run python manage.py makemigrations --check --dry-run
+        language: system
+        files: models\.py$
+        pass_filenames: false
