@@ -249,7 +249,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [lint, security, test]
-    if: github.ref == 'refs/heads/main'
+    # Образ собирается и для запросов на слияние: ошибка сборки видна до слияния.
 
     steps:
       - uses: actions/checkout@v7
