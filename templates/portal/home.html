@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Главная страница публичной части. #}
+
+{% block title %}{% translate "Формирование кадрового резерва" %}{% endblock %}
+
+{% block breadcrumbs %}
+  {% comment %}
+    Главная страница является корнем навигации: цепочка из одного звена не несёт информации и
+    только занимает место.
+  {% endcomment %}
+{% endblock %}
+
+{% block main_class %}page__main--flush{% endblock %}
+
+{% block content %}
+
+  {# ==== Геройский блок ==================================================== #}
+  <section class="hero grid-surface">
+    <div class="container">
+      <div class="hero__inner">
+
+        <div>
+          <h1 class="hero__title">
+            {% translate "Кадровый резерв, построенный на измеримых данных" %}
+          </h1>
+
+          <p class="hero__lead">
+            {% blocktranslate %}
+              Система связывает профиль должности, оценку компетенций и план
+              развития в один процесс. Готовность резервиста к назначению
+              вычисляется по прозрачной методике: видно, из каких критериев
+              сложилась оценка и что именно нужно закрыть до назначения.
+            {% endblocktranslate %}
+          </p>
+
+          <div class="hero__actions">
+            <a class="btn btn--primary btn--lg" href="{% url 'portal:about' %}">
+              {% translate "Как это работает" %}
+              {% icon "arrow-right" 18 %}
+            </a>
+            {% if not user.is_authenticated %}
+              <a class="btn btn--secondary btn--lg" href="{% url 'accounts:login' %}">
+                {% icon "lock" 18 %}
+                {% translate "Войти в систему" %}
+              </a>
+            {% else %}
+              <a class="btn btn--secondary btn--lg" href="{{ role_home_url }}">
+                {% icon "dashboard" 18 %}
+                {% translate "Моё рабочее место" %}
+              </a>
+            {% endif %}
+          </div>
+
+          <dl class="hero__stats">
+            <div>
+              <dd class="hero__stat-value">{{ summary.branches|spaced }}</dd>
+              <dt class="hero__stat-label">
+                {{ summary.branches|plural:_("филиал,филиала,филиалов") }}
+                {% translate "организации" %}
+              </dt>
+            </div>
+            <div>
+              <dd class="hero__stat-value">{{ summary.departments|spaced }}</dd>
+              <dt class="hero__stat-label">
+                {{ summary.departments|plural:_("подразделение,подразделения,подразделений") }}
+              </dt>
+            </div>
+            <div>
+              <dd class="hero__stat-value">{{ summary.positions|spaced }}</dd>
+              <dt class="hero__stat-label">
+                {{ summary.positions|plural:_("должность,должности,должностей") }}
+                {% translate "в справочнике" %}
+              </dt>
+            </div>
+            <div>
+              <dd class="hero__stat-value">{{ summary.key_positions|spaced }}</dd>
+              <dt class="hero__stat-label">
+                {% translate "из них критичных" %}
+              </dt>
+            </div>
+          </dl>
+        </div>
+
+        {% comment %}
+          Обезличенное распределение сотрудников по матрице 9-box: главный визуальный объект
+          системы показан сразу, а не спрятан за авторизацией.
+        {% endcomment %}
+        <div>
+          <div class="card card--raised">
+            <div class="card__header">
+              <div>
+                <p class="card__title">{% translate "Матрица оценки 9-box" %}</p>
+                <p class="card__subtitle">{% translate "Результативность и потенциал сотрудников" %}</p>
+              </div>
+            </div>
+
+            {% comment %}
+              Ячейки объявлены кнопками, а не текстом: название зоны без управленческого решения
+              ничего не сообщает, а девять решений подряд не помещаются на экран.
+            {% endcomment %}
+            <div class="card__body card__body--flush">
+              <div class="ninebox ninebox--compact" data-ninebox>
+                <span class="ninebox__axis-y">{% translate "Результативность" %}</span>
+
+                {% for cell in ninebox_cells %}
+                  <button type="button"
+                          class="ninebox__cell ninebox__cell--zone-{{ cell.zone }}{% if cell.pool %} ninebox__cell--pool{% endif %}{% if forloop.counter == 3 %} is-selected{% endif %}"
+                          data-ninebox-cell
+                          data-decision="{{ cell.decision }}"
+                          data-name="{{ cell.name }}"
+                          aria-pressed="{% if forloop.counter == 3 %}true{% else %}false{% endif %}">
+                    <span class="ninebox__cell-name">{{ cell.name }}</span>
+                    <span>
+                      <span class="ninebox__cell-count">{{ cell.count }}</span>
+                      <span class="ninebox__cell-share">{{ cell.share|percent:0 }}</span>
+                    </span>
+                  </button>
+                {% endfor %}
+
+                <span class="ninebox__axis-x">{% translate "Потенциал" %}</span>
+              </div>
+            </div>
+
+            <div class="card__footer ninebox-decision" aria-live="polite">
+              <p class="ninebox-decision__zone" data-ninebox-name>
+                {% for cell in ninebox_cells %}{% if forloop.counter == 3 %}{{ cell.name }}{% endif %}{% endfor %}
+              </p>
+              <p class="ninebox-decision__text" data-ninebox-decision>
+                {% for cell in ninebox_cells %}{% if forloop.counter == 3 %}{{ cell.decision }}{% endif %}{% endfor %}
+              </p>
+              <p class="ninebox-decision__hint">
+                {% translate "Полоса над ячейкой отмечает зоны, из которых формируется кадровый резерв" %}
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  {# ==== Возможности ======================================================= #}
+  <section class="section section--sunken">
+    <div class="container">
+      <header class="section__header">
+        <h2 class="section__title">{% translate "Что делает система" %}</h2>
+        <p class="section__lead">
+          {% blocktranslate %}
+            Шесть связанных модулей закрывают полный цикл: от описания
+            требований к должности до оценки результата состоявшегося
+            назначения.
+          {% endblocktranslate %}
+        </p>
+      </header>
+
+      <div class="grid grid--3 grid--gap-lg">
+        {% for item in sections %}
+          <a class="card card--interactive" href="{{ item.url }}">
+            <div class="card__body">
+              <span class="badge badge--accent badge--pill mb-3">{% icon item.icon 14 %}</span>
+              <h3 class="card__title mb-2">{{ item.label }}</h3>
+              <p class="text-sm text-muted">{{ item.description }}</p>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# ==== Этапы процесса ==================================================== #}
+  <section class="section" id="stages">
+    <div class="container">
+      <div class="split">
+        <div>
+          <header class="section__header">
+            <h2 class="section__title">{% translate "Семь этапов работы с резервом" %}</h2>
+            <p class="section__lead">
+              {% blocktranslate %}
+                Последовательность отражает практику управления преемственностью
+                и реализована в системе как связанный процесс, а не набор
+                независимых справочников.
+              {% endblocktranslate %}
+            </p>
+          </header>
+
+          <ol class="stage-list">
+            {% for stage in stages %}
+              <li class="stage">
+                <span class="stage__number">{{ stage.number }}</span>
+                <div>
+                  <h3 class="stage__title">{{ stage.title }}</h3>
+                  <p class="stage__text">{{ stage.text }}</p>
+                </div>
+              </li>
+            {% endfor %}
+          </ol>
+        </div>
+
+        <aside class="stack">
+          <div class="card">
+            <div class="card__header card__header--plain">
+              <p class="card__title">{% translate "Индекс готовности" %}</p>
+            </div>
+            <div class="card__body">
+              <p class="text-sm text-muted mb-4">
+                {% blocktranslate %}
+                  Композитный показатель по шести критериям, приведённым к
+                  шкале от 0 до 100.
+                {% endblocktranslate %}
+              </p>
+
+              <div class="readiness">
+                <div class="readiness__head">
+                  <span class="readiness__value readiness__value--ready">78,4</span>
+                  {% readiness_badge "high" %}
+                </div>
+                <div class="readiness__scale">
+                  <span class="readiness__threshold" style="left:55%"></span>
+                  <span class="readiness__threshold" style="left:75%"></span>
+                  <span class="readiness__marker" style="left:78.4%"></span>
+                </div>
+                <div class="readiness__ticks">
+                  <span>0</span><span>55</span><span>75</span><span>100</span>
+                </div>
+              </div>
+
+              <a class="action-link mt-4" href="{% url 'portal:readiness' %}">
+                {% translate "Методика расчёта" %}
+                {% icon "arrow-right" 14 "action-link__arrow" %}
+              </a>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__header card__header--plain">
+              <p class="card__title">{% translate "Границы решения" %}</p>
+            </div>
+            <div class="card__body">
+              <ul class="stack stack--sm text-sm text-muted">
+                <li>{% translate "Не заменяет учётную систему по труду" %}</li>
+                <li>{% translate "Не подбирает внешних кандидатов" %}</li>
+                <li>{% translate "Решение о назначении принимает человек" %}</li>
+              </ul>
+              <a class="action-link mt-4" href="{% url 'portal:about' %}#boundaries">
+                {% translate "Подробнее" %}
+                {% icon "arrow-right" 14 "action-link__arrow" %}
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  {# ==== Обратная связь ==================================================== #}
+  <section class="section section--tight section--sunken">
+    <div class="container">
+      <div class="card">
+        <div class="card__body">
+          <div class="cluster cluster--between">
+            <div>
+              <h2 class="card__title">{% translate "Остались вопросы?" %}</h2>
+              <p class="text-sm text-muted mt-2">
+                {% translate "Задайте вопрос службе сопровождения или предложите доработку системы." %}
+              </p>
+            </div>
+            <a class="btn btn--primary" href="{% url 'portal:feedback' %}">
+              {% icon "mail" 18 %}
+              {% translate "Написать" %}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+{% endblock %}

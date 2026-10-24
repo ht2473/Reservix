@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Страница «О системе». #}
+
+{% block title %}{% translate "О системе" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("О системе") %}
+
+    <section class="prose mb-8">
+      <p>
+        {% blocktranslate with org=ORGANIZATION_NAME %}
+          Reservix — информационная система формирования и развития кадрового
+          резерва, разработанная для {{ org }}. Система решает задачу, с
+          которой сталкивается любая распределённая организация: заранее
+          подготовить внутренних кандидатов на ключевые должности, чтобы
+          освобождение позиции не приводило к длительному простою.
+        {% endblocktranslate %}
+      </p>
+      <p>
+        {% blocktranslate %}
+          Отличие от ведения резерва в таблицах состоит в связности данных.
+          Требования к должности, результаты оценки, разрывы компетенций и
+          мероприятия развития хранятся не по отдельности, а как единая
+          цепочка. Благодаря этому готовность кандидата вычисляется, а не
+          назначается экспертным решением, и любое значение можно разложить
+          на составляющие.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {# ==== Возможности ==================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-6">{% translate "Функциональные модули" %}</h2>
+
+      <div class="grid grid--2 grid--gap-lg">
+        {% for item in capabilities %}
+          <article class="card">
+            <div class="card__body">
+              <span class="badge badge--accent badge--pill mb-3">{% icon item.icon 14 %}</span>
+              <h3 class="card__title mb-2">{{ item.title }}</h3>
+              <p class="text-sm text-muted">{{ item.text }}</p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# ==== Роли =========================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-2">{% translate "Роли пользователей" %}</h2>
+      <p class="text-muted mb-6">
+        {% blocktranslate %}
+          Права разделены на два независимых измерения: роль определяет
+          доступные операции, область видимости — круг сотрудников, чьи данные
+          доступны. Руководитель подразделения и руководитель филиала имеют
+          одинаковую роль, но разный охват данных.
+        {% endblocktranslate %}
+      </p>
+
+      <div class="card">
+        <div class="card__body card__body--flush">
+          <dl class="definition-list" style="padding: var(--space-5)">
+            {% for item in roles %}
+              <dt>{{ item.role }}</dt>
+              <dd>{{ item.text }}</dd>
+            {% endfor %}
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    {# ==== Границы ======================================================== #}
+    <section class="section section--tight" id="boundaries">
+      <h2 class="section__title mb-2">{% translate "Границы решения" %}</h2>
+      <p class="text-muted mb-6">
+        {% blocktranslate %}
+          Перечень того, чего система намеренно не делает. Каждое ограничение
+          — осознанное проектное решение, а не незавершённая функция.
+        {% endblocktranslate %}
+      </p>
+
+      <ul class="stack">
+        {% for boundary in boundaries %}
+          <li class="alert">
+            {% icon "info" 18 "alert__icon" %}
+            <span>{{ boundary }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    {# ==== Технологическая основа ======================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-6">{% translate "Технологическая основа" %}</h2>
+
+      <div class="card">
+        <div class="card__body">
+          <dl class="definition-list">
+            <dt>{% translate "Приложение" %}</dt>
+            <dd>Python 3.12, Django 5.2 LTS</dd>
+
+            <dt>{% translate "Хранение данных" %}</dt>
+            <dd>PostgreSQL 18 &middot; {% translate "полнотекстовый поиск, нечёткое сопоставление имён" %}</dd>
+
+            <dt>{% translate "Фоновая обработка" %}</dt>
+            <dd>Celery, Redis &middot; {% translate "пересчёт показателей, рассылки, формирование отчётов" %}</dd>
+
+            <dt>{% translate "Интерфейс" %}</dt>
+            <dd>{% translate "Серверный рендеринг, HTMX, собственная дизайн-система" %}</dd>
+
+            <dt>{% translate "Аналитика" %}</dt>
+            <dd>NumPy, SciPy &middot; {% translate "метод анализа иерархий, TOPSIS, энтропийные веса" %}</dd>
+
+            <dt>{% translate "Выгрузка документов" %}</dt>
+            <dd>{% translate "Форматы .docx, .xlsx и .pdf" %}</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}

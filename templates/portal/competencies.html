@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Публичный справочник компетенций. #}
+
+{% block title %}{% translate "Модель компетенций" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Справочник") %}
+
+    <section class="prose mb-8">
+      <p>
+        {% blocktranslate %}
+          Компетенция — это наблюдаемая характеристика поведения, а не знание
+          и не черта характера. Определение здесь принципиально: «Лидерство»
+          само по себе неизмеримо, измеримым его делает описание того, какое
+          поведение считается проявлением и на каком уровне.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {# ==== Шкала ========================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-2">{% translate "Корпоративная шкала владения" %}</h2>
+      <p class="text-muted mb-6">
+        {% blocktranslate %}
+          Уровни описаны через наблюдаемое поведение, а не через степень
+          «удовлетворительно — отлично». Два эксперта, читающие описание
+          уровня, ставят близкие баллы; шкала без описаний остаётся шкалой
+          симпатии к работнику.
+        {% endblocktranslate %}
+      </p>
+
+      <div class="card">
+        <div class="card__body">
+          <dl class="definition-list">
+            {% for item in scale %}
+              <dt>{{ item.level }} — {{ item.name }}</dt>
+              <dd>{{ item.text }}</dd>
+            {% endfor %}
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    {# ==== Справочник ===================================================== #}
+    <section class="section">
+      <h2 class="section__title mb-6">{% translate "Компетенции по категориям" %}</h2>
+
+      {% for category in categories %}
+        <article class="card mb-6">
+          <div class="card__header">
+            <h3 class="card__title">{{ category.name }}</h3>
+            {% if category.description %}
+              <p class="card__subtitle">{{ category.description }}</p>
+            {% endif %}
+          </div>
+          <div class="card__body">
+            {# Компетенция раскрывается по нажатию. #}
+            {% for competency in category.competencies.all %}
+              <details class="disclosure">
+                <summary class="disclosure__summary">
+                  <span class="disclosure__title">{{ competency.name }}</span>
+                  <span class="disclosure__action">{% translate "описание" %}</span>
+                </summary>
+                <div class="disclosure__body">
+                  <p class="text-sm text-muted">
+                    {{ competency.definition|default:competency.description }}
+                  </p>
+
+                  {% if competency.scale_levels.all %}
+                    <dl class="definition-list mt-3">
+                      {% for level in competency.scale_levels.all %}
+                        <dt>{% translate "Уровень" %} {{ level.level }} — {{ level.name }}</dt>
+                        <dd>{{ level.indicators }}</dd>
+                      {% endfor %}
+                    </dl>
+                  {% endif %}
+                </div>
+              </details>
+            {% empty %}
+              <p class="text-muted text-sm">{% translate "В категории нет опубликованных компетенций" %}</p>
+            {% endfor %}
+          </div>
+        </article>
+      {% empty %}
+        {% include "components/empty_state.html" with icon="layers" title=_("Справочник не заполнен") text=_("Модель компетенций ведёт кадровая служба организации") %}
+      {% endfor %}
+    </section>
+
+  </div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load i18n reservix %}
+
+{# Матрица «результативность — потенциал» на обезличенной выборке. #}
+
+{% block title %}{% translate "Матрица 9-box" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Методика") %}
+
+    <section class="prose mb-8">
+      <p>
+        {% blocktranslate %}
+          Матрица «результативность — потенциал» отвечает на вопрос, который
+          не решается одной оценкой: высокий результат на нынешней должности
+          не предсказывает результата на следующей. Поэтому осей две.
+          Результативность — то, что человек уже сделал; потенциал — то, чем
+          он способен стать при подходящих условиях.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {# ==== Показатели ===================================================== #}
+    <div class="grid grid--3 mb-8">
+      <div class="metric">
+        <span class="metric__label">{% translate "Размещено сотрудников" %}</span>
+        <span class="metric__value">{{ matrix.total }}</span>
+        <span class="metric__footer">{% translate "обезличенная выборка организации" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Талант-пул" %}</span>
+        <span class="metric__value">{{ matrix.talent_share|percent:1 }}</span>
+        <span class="metric__footer">{% translate "три ячейки, из которых формируется резерв" %}</span>
+      </div>
+      <div class="metric {% if not matrix.is_discriminating %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Концентрация" %}</span>
+        <span class="metric__value">{{ matrix.concentration|percent:1 }}</span>
+        <span class="metric__footer">{% translate "доля наиболее заполненной ячейки" %}</span>
+      </div>
+    </div>
+
+    {% if not matrix.is_discriminating %}
+      <div class="alert alert--warning mb-8" role="status">
+        <p class="alert__title">{% translate "Оценка слабо различает сотрудников" %}</p>
+        <p>
+          {% blocktranslate %}
+            Более сорока процентов сотрудников попали в одну ячейку. Такое
+            распределение говорит не о персонале, а о качестве оценочной
+            процедуры: матрица делит организацию на «всех» и «единицы» и
+            перестаёт быть инструментом отбора.
+          {% endblocktranslate %}
+        </p>
+      </div>
+    {% endif %}
+
+    {# ==== Матрица ======================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-4">{% translate "Девять зон" %}</h2>
+
+      {% comment %}
+        Порядок ячеек задан сервером: обход слева направо и сверху вниз, где верхний ряд — высокая
+        результативность.
+      {% endcomment %}
+      <div class="ninebox">
+        <div class="ninebox__axis-y">{% translate "Результативность" %}</div>
+        {% for cell in matrix.cells %}
+          <div class="ninebox__cell ninebox__cell--zone-{{ cell.zone }}{% if cell.pool %} ninebox__cell--pool{% endif %}">
+            <span class="ninebox__cell-name">{{ cell.name }}</span>
+            <span class="ninebox__cell-count">{{ cell.count }}</span>
+            <span class="ninebox__cell-share">{{ cell.share|percent:1 }}</span>
+          </div>
+        {% endfor %}
+        <div class="ninebox__axis-x">{% translate "Потенциал" %}</div>
+      </div>
+
+      <p class="chart__caption mt-3">
+        {% translate "По горизонтали — потенциал, слева направо от низкого к высокому. По вертикали — результативность, снизу вверх." %}
+      </p>
+
+      <div class="ninebox-legend mt-3">
+        <span class="ninebox-legend__item">
+          <span class="ninebox-legend__swatch ninebox__cell--pool"></span>
+          {% translate "зоны, из которых формируется кадровый резерв" %}
+        </span>
+      </div>
+    </section>
+
+    {# ==== Решения по зонам =============================================== #}
+    <section class="section">
+      <h2 class="section__title mb-2">{% translate "Управленческое решение по зонам" %}</h2>
+      <p class="text-muted mb-6">
+        {% blocktranslate %}
+          Ценность матрицы не в раскраске, а в том, что каждой зоне отвечает
+          своё решение. Одинаковая работа со «звездой» и с «нераскрытым
+          потенциалом» обесценивает саму процедуру размещения.
+        {% endblocktranslate %}
+      </p>
+
+      <div class="card">
+        <div class="card__body">
+          <dl class="definition-list">
+            {% for cell in matrix.cells %}
+              <dt>
+                {{ cell.name }}
+                <span class="text-muted text-sm">
+                  — {{ cell.count }} {{ cell.count|plural:_("сотрудник,сотрудника,сотрудников") }}
+                </span>
+              </dt>
+              <dd>{{ cell.decision }}</dd>
+            {% endfor %}
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    {# ==== О калибровке =================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-4">{% translate "Почему размещение калибруется" %}</h2>
+      <div class="card card--accent">
+        <div class="card__body">
+          <p class="text-sm">
+            {% blocktranslate %}
+              Первичные координаты вычисляются системой по данным оценки и
+              результативности. Затем они выносятся на сессию калибровки, где
+              руководители защищают свои оценки перед коллегами. Смысл
+              процедуры — не в исправлении расчёта, а в сопоставлении планок:
+              «высокий потенциал» в одном подразделении и в другом обязаны
+              означать одно и то же. Каждое перемещение сохраняется вместе с
+              обоснованием и автором.
+            {% endblocktranslate %}
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}

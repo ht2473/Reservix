@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load i18n reservix %}
+
+{# База знаний. #}
+
+{% block title %}{% translate "База знаний" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Материалы") %}
+
+    <form class="filter-panel mb-6" method="get" role="search">
+      <div class="filter-panel__row">
+        <div class="field flex-1">
+          <label class="field__label" for="article-search">{% translate "Поиск по материалам" %}</label>
+          <input class="field-input" type="search" id="article-search" name="q"
+                 value="{{ query }}" placeholder="{% translate 'Заголовок, текст или метка' %}">
+        </div>
+        <div class="field">
+          <label class="field__label" for="article-category">{% translate "Раздел" %}</label>
+          <select class="field-select" id="article-category" name="category">
+            <option value="">{% translate "— все разделы —" %}</option>
+            {% for category in categories %}
+              <option value="{{ category.slug }}"
+                      {% if category.slug == active_category %}selected{% endif %}>
+                {{ category.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="filter-panel__actions">
+        <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+        {% if query or active_category or active_tag %}
+          <a class="btn btn--ghost btn--sm" href="{% url 'portal:articles' %}">{% translate "Сбросить" %}</a>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if tags %}
+      <div class="filter-chips mb-6">
+        {% for tag, count in tags %}
+          <a class="filter-chip" href="?tag={{ tag|urlencode }}"
+             {% if tag == active_tag %}aria-current="true"{% endif %}>
+            {{ tag }} <span class="text-muted">{{ count }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="section">
+      {% if articles %}
+        <div class="grid grid--3">
+          {% for article in articles %}
+            <article class="card card--interactive">
+              <div class="card__header">
+                <p class="card__subtitle">
+                  <span class="badge badge--outline">{{ article.category.name }}</span>
+                </p>
+                <h2 class="card__title">
+                  <a href="{{ article.get_absolute_url }}">{{ article.title }}</a>
+                </h2>
+              </div>
+              <div class="card__body">
+                <p class="text-sm text-muted line-clamp-3">{{ article.summary }}</p>
+              </div>
+              <div class="card__footer">
+                <span class="text-xs text-muted">
+                  {{ article.published_at|date_ru }}
+                  {% if article.reading_minutes %}
+                    · {{ article.reading_minutes }} {% translate "мин чтения" %}
+                  {% endif %}
+                </span>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        {% include "components/pagination.html" %}
+      {% else %}
+        {% include "components/empty_state.html" with icon="book" title=_("Материалы не найдены") text=_("Измените условия поиска или сбросьте отбор") %}
+      {% endif %}
+    </section>
+
+  </div>
+{% endblock %}

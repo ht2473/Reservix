@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load i18n reservix %}
+
+{# Глоссарий терминов. #}
+
+{% block title %}{% translate "Глоссарий" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Справочник") %}
+
+    <form class="filter-panel mb-6" method="get" role="search">
+      <div class="filter-panel__row">
+        <div class="field flex-1">
+          <label class="field__label" for="glossary-search">{% translate "Поиск по глоссарию" %}</label>
+          <input class="field-input" type="search" id="glossary-search" name="q"
+                 value="{{ query }}" placeholder="{% translate 'Термин, определение или английское соответствие' %}">
+        </div>
+      </div>
+      <div class="filter-panel__actions">
+        <button class="btn btn--primary btn--sm" type="submit">{% translate "Найти" %}</button>
+        {% if query %}
+          <a class="btn btn--ghost btn--sm" href="{% url 'portal:glossary' %}">{% translate "Сбросить" %}</a>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if groups %}
+      <p class="text-sm text-muted mb-4">
+        {% blocktranslate count counter=total %}
+          Найден {{ counter }} термин
+        {% plural %}
+          Найдено терминов: {{ counter }}
+        {% endblocktranslate %}
+      </p>
+
+      <nav class="filter-chips mb-8" aria-label="{% translate 'Алфавитный указатель' %}"
+           data-glossary-index>
+        {% for letter in letters %}
+          <a class="filter-chip" href="#letter-{{ forloop.counter }}" data-letter="{{ letter }}">
+            {{ letter }}
+          </a>
+        {% endfor %}
+      </nav>
+
+      {% for letter, terms in groups %}
+        <section class="section section--tight" id="letter-{{ forloop.counter }}"
+                 data-glossary-letter="{{ letter }}">
+          <h2 class="section__title mb-4">{{ letter }}</h2>
+
+          <div class="card">
+            <div class="card__body">
+              <dl class="definition-list">
+                {% for term in terms %}
+                  <dt id="term-{{ term.slug }}">
+                    {{ term.term }}
+                    {% if term.english %}
+                      <span class="text-muted text-sm">— {{ term.english }}</span>
+                    {% endif %}
+                  </dt>
+                  <dd>
+                    {{ term.definition }}
+                    {% if term.example %}
+                      <p class="text-sm text-muted mt-2">
+                        {% translate "Пример" %}: {{ term.example }}
+                      </p>
+                    {% endif %}
+                  </dd>
+                {% endfor %}
+              </dl>
+            </div>
+          </div>
+        </section>
+      {% endfor %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="dictionary" title=_("Термины не найдены") text=_("Измените условие поиска или откройте глоссарий целиком") %}
+    {% endif %}
+
+  </div>
+{% endblock %}

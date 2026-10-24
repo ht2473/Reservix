@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load i18n reservix %}
+
+{# Методика расчёта индекса готовности с калькулятором. #}
+
+{% block title %}{% translate "Индекс готовности" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Методика") %}
+
+    <section class="prose mb-8">
+      <p>
+        {% blocktranslate %}
+          Индекс готовности сводит разнородные показатели резервиста к одному
+          числу по шкале от нуля до ста. Он нужен там, где требуется сравнение:
+          выбрать преемника из пяти кандидатов, опираясь на пять разных наборов
+          оценок, человек не может — а сравнить пять чисел может.
+        {% endblocktranslate %}
+      </p>
+      <p>
+        {% blocktranslate %}
+          Число при этом никогда не предъявляется без разбора. Индекс, который
+          нельзя разложить на составляющие, невозможно ни оспорить на кадровой
+          комиссии, ни превратить в план развития, и в кадровом решении он
+          бесполезен.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {# ==== Критерии ======================================================= #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-2">{% translate "Частные критерии" %}</h2>
+      <p class="text-muted mb-6">
+        {% blocktranslate %}
+          Каждый критерий приводится к шкале 0–100 независимо от остальных
+          кандидатов. Это существенно: при нормировании по выборке индекс
+          менялся бы от одного лишь появления в резерве другого человека, а в
+          слабой группе кто-то неизбежно получал бы сто баллов.
+        {% endblocktranslate %}
+      </p>
+
+      {% if criteria %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Критерий" %}</th>
+                <th>{% translate "Что измеряет" %}</th>
+                <th class="text-right">{% translate "Вес" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in criteria %}
+                <tr>
+                  <td class="table__primary">{{ item.name }}</td>
+                  <td class="text-sm text-muted">{{ item.description }}</td>
+                  <td class="text-right tabular">{{ item.percent_share|percent:1 }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">
+          {% translate "Схема оценивания ещё не настроена: состав критериев появится после её создания" %}
+        </p>
+      {% endif %}
+    </section>
+
+    {# ==== Калькулятор ==================================================== #}
+    {% if criteria %}
+      <section class="section section--tight">
+        <h2 class="section__title mb-2">{% translate "Калькулятор" %}</h2>
+        <p class="text-muted mb-6">
+          {% blocktranslate %}
+            Значения ниже — положения движков, а не чьи-либо оценки.
+            Калькулятор воспроизводит ту же свёртку, которую применяет система:
+            взвешенную сумму частных оценок, отнесённую к сумме весов.
+          {% endblocktranslate %}
+        </p>
+
+        <script id="readiness-data" type="application/json">{{ calculator_data|to_json }}</script>
+
+        <div class="card" data-readiness-calculator
+             data-threshold-high="{{ threshold_high }}"
+             data-threshold-medium="{{ threshold_medium }}"
+             hidden>
+          <div class="card__body">
+            <div class="grid grid--2 grid--gap-lg">
+              <div data-calculator-fields></div>
+
+              {# Итог калькулятора. #}
+              <div class="readiness readiness--result">
+                <div class="readiness__head">
+                  <span class="metric__label">{% translate "Индекс готовности" %}</span>
+                  <span class="metric__value" data-calculator-value>0,0</span>
+                </div>
+                <p class="readiness__value" data-calculator-level></p>
+
+                <div class="readiness-scale" aria-hidden="true"
+                     style="--threshold-high: {{ threshold_high }}%; --threshold-medium: {{ threshold_medium }}%">
+                  <div class="readiness-scale__track">
+                    <span class="readiness-scale__marker" data-calculator-marker></span>
+                  </div>
+                  <div class="readiness-scale__labels">
+                    <span>0</span>
+                    <span class="readiness-scale__tick readiness-scale__tick--medium">
+                      {{ threshold_medium }}
+                    </span>
+                    <span class="readiness-scale__tick readiness-scale__tick--high">
+                      {{ threshold_high }}
+                    </span>
+                    <span>100</span>
+                  </div>
+                </div>
+
+                <p class="text-sm text-muted mt-4">
+                  {% blocktranslate with high=threshold_high medium=threshold_medium %}
+                    Пороговые значения организации: {{ high }} баллов — готов к
+                    назначению, {{ medium }} баллов — готов в течение года.
+                  {% endblocktranslate %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+
+    {# ==== Способы определения весов ====================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-2">{% translate "Откуда берутся веса" %}</h2>
+      <p class="text-muted mb-6">
+        {% blocktranslate %}
+          Веса определяют, какой критерий важнее, и потому влияют на итоговый
+          порядок кандидатов сильнее самих оценок. Система поддерживает три
+          способа их получения — не ради выбора, а ради сравнения: расхождение
+          результатов между способами и есть мера устойчивости ранжирования.
+        {% endblocktranslate %}
+      </p>
+
+      <div class="grid grid--3">
+        {% for method in weighting_methods %}
+          <article class="card">
+            <div class="card__body">
+              <h3 class="card__title mb-2">{{ method.name }}</h3>
+              <p class="text-sm text-muted">{{ method.text }}</p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# ==== Оговорки ======================================================= #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-4">{% translate "Чего индекс не делает" %}</h2>
+      <div class="card card--accent">
+        <div class="card__body">
+          <ul class="stack stack--sm text-sm">
+            <li>
+              {% blocktranslate %}
+                <strong>Не принимает решение.</strong> Индекс упорядочивает
+                кандидатов и объясняет порядок; назначает человека человек.
+              {% endblocktranslate %}
+            </li>
+            <li>
+              {% blocktranslate %}
+                <strong>Не заменяет полноту оценки.</strong> Необеспеченный
+                данными критерий исключается из свёртки, а его вес
+                распределяется между остальными. Доля обеспеченного веса
+                хранится вместе с индексом и выводится рядом с ним: иначе
+                рейтинг поощрял бы неполноту оценки.
+              {% endblocktranslate %}
+            </li>
+            <li>
+              {% blocktranslate %}
+                <strong>Не сравнивает несравнимое.</strong> Значение индекса
+                осмысленно относительно конкретной целевой должности: тот же
+                работник получит другой индекс по отношению к другой должности.
+              {% endblocktranslate %}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}

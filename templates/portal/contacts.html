@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Контакты службы сопровождения и адреса филиалов организации. #}
+
+{% block title %}{% translate "Контакты" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" %}
+
+    <div class="split mb-8">
+      <div class="stack">
+
+        <div class="card">
+          <div class="card__header">
+            <p class="card__title">{% translate "Служба сопровождения системы" %}</p>
+          </div>
+          <div class="card__body">
+            <dl class="definition-list">
+              <dt>{% translate "Электронная почта" %}</dt>
+              <dd><a href="mailto:support@{{ SITE_DOMAIN }}">support@{{ SITE_DOMAIN }}</a></dd>
+
+              <dt>{% translate "Режим работы" %}</dt>
+              <dd>{% translate "Пн–Пт, 09:00–18:00 по московскому времени" %}</dd>
+
+              <dt>{% translate "Срок ответа" %}</dt>
+              <dd>{% translate "Один рабочий день по обращениям через форму обратной связи" %}</dd>
+            </dl>
+          </div>
+          <div class="card__footer">
+            {% translate "Вопросы о включении в кадровый резерв адресуйте кадровой службе вашего филиала." %}
+          </div>
+        </div>
+
+        {% if branches %}
+          <div class="card">
+            <div class="card__header">
+              <p class="card__title">{% translate "Филиалы организации" %}</p>
+              <span class="badge badge--outline">{{ branches|length }}</span>
+            </div>
+            <div class="card__body card__body--flush">
+              <div class="table-wrap" style="border:0">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th scope="col">{% translate "Филиал" %}</th>
+                      <th scope="col">{% translate "Город" %}</th>
+                      <th scope="col">{% translate "Адрес" %}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for branch in branches %}
+                      <tr>
+                        <td>
+                          <span class="table__primary">{{ branch.name }}</span>
+                          {% if branch.is_head_office %}
+                          {% endif %}
+                        </td>
+                        <td>{{ branch.city }}</td>
+                        <td class="text-muted">{{ branch.address|default:"—" }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <aside>
+        <div class="card card--accent">
+          <div class="card__body">
+            <h2 class="card__title mb-2">{% translate "Форма обратной связи" %}</h2>
+            <p class="text-sm mb-4">
+              {% translate "Вопрос по работе системы, сообщение об ошибке или предложение по развитию." %}
+            </p>
+            <a class="btn btn--primary btn--block" href="{% url 'portal:feedback' %}">
+              {% icon "mail" 18 %}
+              {% translate "Написать обращение" %}
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+{% endblock %}

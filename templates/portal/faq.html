@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Справка и частые вопросы. #}
+
+{% block title %}{% translate "Справка" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Помощь") %}
+
+    <section class="prose mb-8">
+      <p>
+        {% blocktranslate %}
+          Ниже собраны вопросы, которые возникают при работе с системой чаще
+          других. Если ответа на ваш вопрос здесь нет, воспользуйтесь формой
+          обратной связи: обращение попадает в работу к администратору системы,
+          а не отправляется письмом в никуда.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {% for section in sections %}
+      <section class="section section--tight">
+        <h2 class="section__title mb-1">{{ section.name }}</h2>
+        {% if section.audience %}
+          <p class="text-muted text-sm mb-4">{{ section.audience }}</p>
+        {% endif %}
+
+        <div class="card">
+          <div class="card__body">
+            {% for item in section.items.all %}
+              <details class="disclosure">
+                <summary class="disclosure__summary">
+                  <span class="disclosure__title">{{ item.question }}</span>
+                  <span class="disclosure__action">{% translate "ответ" %}</span>
+                </summary>
+                <div class="disclosure__body">
+                  <p class="text-sm text-muted">{{ item.answer|linebreaksbr }}</p>
+                </div>
+              </details>
+            {% empty %}
+              <p class="text-muted text-sm">{% translate "В разделе пока нет вопросов" %}</p>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    {% empty %}
+      {% include "components/empty_state.html" with icon="help" title=_("Справка не заполнена") text=_("Разделы справки ведёт администратор системы") %}
+    {% endfor %}
+
+    <section class="section section--tight">
+      <div class="card card--accent">
+        <div class="card__body">
+          <h2 class="card__title mb-2">{% translate "Не нашли ответа?" %}</h2>
+          <p class="text-sm text-muted mb-3">
+            {% translate "Опишите вопрос в форме обратной связи — ответ поступит на указанный адрес электронной почты." %}
+          </p>
+          <a class="btn btn--primary btn--sm" href="{% url 'portal:feedback' %}">
+            {% translate "Задать вопрос" %}
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}

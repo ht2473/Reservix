@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Описание программного интерфейса. #}
+
+{% block title %}{% translate "Программный интерфейс" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Интеграция") %}
+
+    <section class="prose mb-8">
+      <p>
+        {% blocktranslate %}
+          Программный интерфейс предназначен для обмена данными со смежными
+          системами организации: учётной системой по труду, порталом обучения,
+          системами отчётности. Он отдаёт данные, а не оформленные страницы,
+          поэтому вынесен за языковые префиксы адресов и версионируется в самом
+          адресе — версия видна в журналах обратного прокси-сервера.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {# ==== Реквизиты ====================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-4">{% translate "Реквизиты интерфейса" %}</h2>
+      <div class="card">
+        <div class="card__body">
+          <dl class="definition-list">
+            <dt>{% translate "Наименование" %}</dt>
+            <dd>{{ api_title }}</dd>
+            <dt>{% translate "Версия" %}</dt>
+            <dd>{{ api_version }}</dd>
+            <dt>{% translate "Базовый адрес" %}</dt>
+            <dd class="text-mono">/api/v1/</dd>
+            <dt>{% translate "Формат обмена" %}</dt>
+            <dd>{% translate "JSON, кодировка UTF-8" %}</dd>
+            <dt>{% translate "Аутентификация" %}</dt>
+            <dd>
+              {% translate "Сессия текущего пользователя либо ключ приложения. Выдача ограничена ролью и областью видимости учётной записи: интерфейс не расширяет права." %}
+            </dd>
+            <dt>{% translate "Ограничение частоты" %}</dt>
+            <dd>{% translate "60 запросов в минуту без авторизации, 600 — с авторизацией" %}</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    {# ==== Разделы ======================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-2">{% translate "Разделы интерфейса" %}</h2>
+      <p class="text-muted mb-6">
+        {% blocktranslate %}
+          Ниже — назначение разделов. Полный перечень методов, схемы запросов и
+          ответов, а также возможность выполнить запрос приведены в
+          интерактивной документации: она формируется из самого кода и не может
+          с ним разойтись.
+        {% endblocktranslate %}
+      </p>
+
+      <div class="grid grid--2 grid--gap-lg">
+        {% for section in endpoints %}
+          <article class="card">
+            <div class="card__header">
+              <h3 class="card__title">{{ section.name }}</h3>
+              <p class="card__subtitle text-mono">{{ section.path }}</p>
+            </div>
+            <div class="card__body">
+              <p class="text-sm text-muted">{{ section.text }}</p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# ==== Спецификация =================================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-4">{% translate "Спецификация" %}</h2>
+      <div class="card card--accent">
+        <div class="card__body">
+          <p class="text-sm mb-4">
+            {% translate "Спецификация OpenAPI и интерактивная документация формируются приложением автоматически и всегда соответствуют действующей версии интерфейса." %}
+          </p>
+          <div class="cluster cluster--sm">
+            <a class="btn btn--primary btn--sm" href="/api/v1/docs" target="_blank" rel="noopener">
+              {% icon "external" 16 %}{% translate "Интерактивная документация" %}
+            </a>
+            <a class="btn btn--secondary btn--sm" href="/api/v1/openapi.json" target="_blank" rel="noopener">
+              {% icon "code" 16 %}{% translate "Спецификация OpenAPI" %}
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}

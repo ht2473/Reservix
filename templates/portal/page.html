@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Статическая страница портала. #}
+
+{% block title %}{{ page.title }}{% endblock %}
+{% block description %}{{ page.meta_description|default:page.subtitle }}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" %}
+
+    <article class="prose">
+      {{ rendered_body }}
+    </article>
+
+    <p class="text-xs text-subtle mt-8">
+      {% translate "Дата последнего изменения:" %} {{ page.updated_at|date_ru:"d.m.Y" }}
+    </p>
+  </div>
+{% endblock %}

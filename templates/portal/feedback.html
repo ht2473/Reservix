@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Форма обратной связи. #}
+
+{% block title %}{% translate "Обратная связь" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--narrow">
+
+    {% include "components/page_header.html" %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors" role="alert" tabindex="-1">
+        <p class="form-errors__title">{% translate "Не удалось отправить обращение" %}</p>
+        <ul>
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" novalidate class="card">
+      {% csrf_token %}
+
+      {# Скрытые поля защиты от автоматических отправок. #}
+      {{ form.website }}
+      {{ form.form_rendered_at }}
+
+      <div class="card__body">
+        <div class="form-grid form-grid--2">
+
+          <div class="form-grid__full">
+            {% include "components/field.html" with field=form.name %}
+          </div>
+
+          {% include "components/field.html" with field=form.email %}
+          {% include "components/field.html" with field=form.phone %}
+
+          {% include "components/field.html" with field=form.organization %}
+          {% include "components/field.html" with field=form.topic %}
+
+          <div class="form-grid__full">
+            {% include "components/field.html" with field=form.subject %}
+          </div>
+
+          <div class="form-grid__full">
+            {% include "components/field.html" with field=form.message %}
+          </div>
+
+          <div class="form-grid__full">
+            {% include "components/field.html" with field=form.consent_given inline=True %}
+            <p class="field__help mt-2">
+              {% translate "Данные обрабатываются в соответствии с" %}
+              <a href="{% url 'portal:page' slug='privacy' %}">{% translate "политикой обработки персональных данных" %}</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card__footer">
+        <div class="cluster cluster--between">
+          <p class="text-xs text-subtle">
+            {% translate "Ответ поступит на указанный адрес электронной почты" %}
+          </p>
+          <button type="submit" class="btn btn--primary">
+            {% icon "mail" 18 %}
+            {% translate "Отправить обращение" %}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load i18n reservix %}
+
+{# Материал базы знаний. #}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    <article>
+      <header class="page-header page-header--plain">
+        <div class="page-header__text">
+          <span class="page-header__eyebrow">{{ article.category.name }}</span>
+          <h1 class="page-header__title">{{ article.title }}</h1>
+          <p class="page-header__subtitle">{{ article.summary }}</p>
+        </div>
+      </header>
+
+      <p class="text-sm text-muted mb-6">
+        {{ article.published_at|date_ru }}
+        {% if article.reading_minutes %}
+          · {{ article.reading_minutes }} {% translate "мин чтения" %}
+        {% endif %}
+        {% if article.author %}
+          · {{ article.author|person }}
+        {% endif %}
+      </p>
+
+      <div class="prose mb-8">{{ rendered_body }}</div>
+
+      {% if article.tag_list %}
+        <div class="filter-chips mb-8">
+          {% for tag in article.tag_list %}
+            <a class="filter-chip" href="{% url 'portal:articles' %}?tag={{ tag|urlencode }}">{{ tag }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </article>
+
+    {% if related %}
+      <section class="section section--tight">
+        <h2 class="section__title mb-4">{% translate "Похожие материалы" %}</h2>
+        <div class="grid grid--3">
+          {% for item in related %}
+            <article class="card card--interactive">
+              <div class="card__body">
+                <h3 class="card__title mb-2">
+                  <a href="{{ item.get_absolute_url }}">{{ item.title }}</a>
+                </h3>
+                <p class="text-sm text-muted line-clamp-2">{{ item.summary }}</p>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    <div class="cluster cluster--sm mt-8">
+      <a class="btn btn--ghost btn--sm" href="{% url 'portal:articles' %}">
+        {% translate "Ко всем материалам" %}
+      </a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'portal:glossary' %}">
+        {% translate "Глоссарий терминов" %}
+      </a>
+    </div>
+
+  </div>
+{% endblock %}

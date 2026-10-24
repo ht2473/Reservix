@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{# Методология работы с кадровым резервом. #}
+
+{% block title %}{% translate "Методология" %}{% endblock %}
+
+{% block content %}
+  <div class="container container--content">
+
+    {% include "components/page_header.html" with page_section_label=_("Методология") %}
+
+    <section class="prose mb-8">
+      <p>
+        {% blocktranslate %}
+          Работа с кадровым резервом описана здесь как последовательность семи
+          этапов. Порядок в ней не формальный: каждый следующий этап опирается
+          на результат предыдущего, и пропуск любого превращает резерв в
+          список фамилий. Отбор без профилей должностей не с чем сравнивать,
+          расчёт готовности без оценки нечем наполнить, а подготовка без
+          назначений ничем не проверяется.
+        {% endblocktranslate %}
+      </p>
+    </section>
+
+    {# ==== Схема процесса ================================================= #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-4">{% translate "Последовательность" %}</h2>
+      {# Цепочка переносится по строкам, а не прокручивается. #}
+      <ol class="cluster cluster--sm mb-6">
+        {% for step in steps %}
+          <li class="badge badge--outline badge--pill">
+            {{ step.number }} · {{ step.title }}
+          </li>
+          {% if not forloop.last %}
+            <li aria-hidden="true" class="text-muted">→</li>
+          {% endif %}
+        {% endfor %}
+      </ol>
+    </section>
+
+    {# ==== Этапы ========================================================== #}
+    <section class="section">
+      <ol class="stage-list">
+        {% for step in steps %}
+          <li class="stage">
+            <span class="stage__number">{{ step.number }}</span>
+            <h2 class="stage__title">{{ step.title }}</h2>
+            <p class="stage__text">{{ step.text }}</p>
+
+            <dl class="definition-list mt-3">
+              <dt>{% translate "На входе" %}</dt>
+              <dd>{{ step.input }}</dd>
+              <dt>{% translate "Результат этапа" %}</dt>
+              <dd>{{ step.output }}</dd>
+            </dl>
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    {# ==== Куда смотреть дальше =========================================== #}
+    <section class="section section--tight">
+      <h2 class="section__title mb-4">{% translate "Подробнее о расчётной части" %}</h2>
+      <div class="grid grid--3">
+        <a class="card card--interactive" href="{% url 'portal:readiness' %}">
+          <div class="card__body">
+            <h3 class="card__title mb-2">{% translate "Индекс готовности" %}</h3>
+            <p class="text-sm text-muted">
+              {% translate "Состав критериев, способы определения весов и калькулятор на демонстрационных значениях" %}
+            </p>
+          </div>
+        </a>
+        <a class="card card--interactive" href="{% url 'portal:ninebox' %}">
+          <div class="card__body">
+            <h3 class="card__title mb-2">{% translate "Матрица 9-box" %}</h3>
+            <p class="text-sm text-muted">
+              {% translate "Девять зон «результативность — потенциал» и управленческое решение по каждой" %}
+            </p>
+          </div>
+        </a>
+        <a class="card card--interactive" href="{% url 'portal:competencies' %}">
+          <div class="card__body">
+            <h3 class="card__title mb-2">{% translate "Модель компетенций" %}</h3>
+            <p class="text-sm text-muted">
+              {% translate "Справочник компетенций и корпоративная шкала владения" %}
+            </p>
+          </div>
+        </a>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}
