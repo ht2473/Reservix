@@ -1,0 +1,5 @@
+# Единый перевод строк LF во всех текстовых файлах
+* text=auto eol=lf
+*.woff2 binary
+*.png binary
+*.docx binary

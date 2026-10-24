@@ -1,0 +1,238 @@
+[project]
+name = "reservix"
+version = "1.0.0"
+description = "Reservix — информационная система формирования и развития кадрового резерва организации"
+readme = "README.md"
+requires-python = "==3.12.*"
+license = { text = "MIT" }
+keywords = ["hr", "succession-planning", "talent-pool", "кадровый-резерв", "django"]
+
+dependencies = [
+    # --- Ядро ---------------------------------------------------------------
+    "django>=5.2,<5.3",              # LTS, поддержка до апреля 2028
+    "psycopg[binary]>=3.2",          # драйвер PostgreSQL 3-го поколения
+    "django-environ>=0.12",          # конфигурация через переменные окружения
+    "django-modeltranslation>=0.20", # двуязычные поля справочников и содержимого
+    "argon2-cffi>=25.1",             # хеширование паролей (рекомендация OWASP)
+
+    # --- Асинхронная обработка ----------------------------------------------
+    "celery[redis]>=5.5",            # фоновые задачи: пересчёт индексов, отчёты
+    "django-celery-beat>=2.8",       # периодические задачи с расписанием в БД
+    "redis>=6.0",                    # брокер, кэш, хранилище сессий
+
+    # --- HTTP-слой ----------------------------------------------------------
+    "django-ninja>=1.4",             # типизированный REST API + OpenAPI
+    "django-htmx>=1.23",             # интеграция HTMX с шаблонами и middleware
+    "whitenoise>=6.9",               # отдача статики без nginx (dev, free-хостинг)
+
+    # --- Безопасность -------------------------------------------------------
+    "django-axes>=8.0",              # защита от перебора учётных данных
+    "django-otp>=1.6",               # двухфакторная аутентификация (TOTP)
+    "qrcode[pil]>=8.2",              # QR-код для привязки TOTP-приложения
+
+    # --- Аналитическое ядро -------------------------------------------------
+    "numpy>=2.2",                    # матричные операции: AHP, TOPSIS
+    "pandas>=2.3",                   # агрегации и срезы для отчётности
+    "scipy>=1.15",                   # корреляция Спирмена, статистика устойчивости
+
+    # --- Генерация документов -----------------------------------------------
+    "python-docx>=1.2",              # выгрузка в .docx
+    "openpyxl>=3.1",                 # выгрузка в .xlsx
+    "reportlab>=4.4",                # PDF без системных зависимостей
+    "pillow>=11.1",                  # обработка фотографий сотрудников
+
+    # --- Утилиты ------------------------------------------------------------
+    "python-dateutil>=2.9",          # арифметика периодов развития
+    "gunicorn>=23.0",                # WSGI-сервер для продакшена
+]
+
+[dependency-groups]
+dev = [
+    # --- Тестирование -------------------------------------------------------
+    "pytest>=8.4",
+    "pytest-django>=4.11",
+    "pytest-cov>=6.1",
+    "pytest-xdist>=3.7",             # параллельный прогон
+    "factory-boy>=3.3",              # фабрики тестовых объектов
+    "faker>=37.0",                   # генерация правдоподобных данных
+    "freezegun>=1.5",                # заморозка времени в тестах дедлайнов
+
+    # --- Статический анализ -------------------------------------------------
+    "ruff>=0.12",                    # линтер и форматтер
+    "mypy>=1.16",
+    "django-stubs[compatible-mypy]>=5.2",
+    "bandit>=1.8",                   # поиск уязвимостей в коде
+    "pip-audit>=2.9",                # аудит зависимостей по базе CVE
+
+    # --- Разработка ---------------------------------------------------------
+    "pre-commit>=4.2",
+    "django-extensions>=4.1",        # shell_plus, graph_models для ERD
+]
+e2e = [
+    "playwright>=1.53",              # сквозные сценарии, кроссбраузерность
+    "pytest-playwright>=0.7",
+]
+load = [
+    "locust>=2.37",                  # нагрузочное и стресс-тестирование
+]
+
+# ============================================================================
+# Ruff — линтер и форматтер
+# ============================================================================
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["*/migrations/*", "history/", ".venv/"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "N",         # pep8-naming
+    "UP",        # pyupgrade
+    "B",         # flake8-bugbear
+    "C4",        # flake8-comprehensions
+    "DJ",        # flake8-django
+    "SIM",       # flake8-simplify
+    "TID",       # flake8-tidy-imports
+    "RUF",       # правила самого ruff
+    "S",         # bandit-подобные проверки безопасности
+    "T20",       # запрет print в продакшен-коде
+    "PTH",       # использование pathlib вместо os.path
+]
+ignore = [
+    "S101",      # assert допустим в тестах
+    "RUF001",    # кириллица в строках — это нормально для локализованного проекта
+    "RUF002",
+    "RUF003",
+    "DJ001",     # null=True на текстовых полях осознанно используется в nullable-справочниках
+]
+
+[tool.ruff.lint.per-file-ignores]
+# RUF012 требует ClassVar для изменяемых атрибутов класса.
+"*/models.py" = ["RUF012"]
+"*/forms.py" = ["RUF012"]
+"*/admin.py" = ["RUF012"]
+"*/views.py" = ["RUF012"]
+"core/mixins.py" = ["RUF012"]
+# В тестах допустимы пароли в открытом виде и генератор случайных чисел
+# без криптографической стойкости.
+"tests/*" = ["S105", "S106", "S311", "RUF012"]
+# Конфигурация собирается через звёздочный импорт базового модуля.
+"*/settings/*" = ["F403", "F405"]
+# Скрипты и команды управления выводят результат в стандартный поток.
+"scripts/*" = ["T20"]
+"*/management/commands/*" = ["T20"]
+# B008 запрещает вызовы в значениях по умолчанию.
+"apps/api/routers/*" = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config", "core"]
+section-order = ["future", "standard-library", "third-party", "django", "first-party", "local-folder"]
+
+[tool.ruff.lint.isort.sections]
+django = ["django"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ============================================================================
+# Mypy — статическая типизация
+# ============================================================================
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+exclude = ["migrations/", "history/", "\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = ["*.migrations.*", "tests.*"]
+ignore_errors = true
+
+# Примеси представлений и модели.
+[[tool.mypy.overrides]]
+module = ["core.mixins", "core.forms", "apps.*.views", "core.views"]
+disable_error_code = ["misc", "attr-defined", "union-attr", "safe-super"]
+
+# Модели.
+[[tool.mypy.overrides]]
+module = ["apps.*.models", "core.models", "apps.*.signals"]
+disable_error_code = ["misc", "assignment", "override", "unreachable"]
+
+# Модули конфигурации собираются звёздочным импортом, из-за чего типы
+# значений, определённых в базовом модуле, недоступны производным.
+[[tool.mypy.overrides]]
+module = ["config.settings.*"]
+disable_error_code = ["index", "attr-defined", "assignment", "arg-type"]
+
+# Библиотеки без аннотаций типов.
+[[tool.mypy.overrides]]
+module = [
+    "axes.*",
+    "celery.*",
+    "django_celery_beat.*",
+    "django_otp.*",
+    "environ.*",
+    "factory.*",
+    # Библиотеки формирования документов: аннотаций не поставляют, стабы
+    # существуют отдельными пакетами и отстают от версий.
+    "openpyxl.*",
+    "reportlab.*",
+]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.typecheck"
+
+# ============================================================================
+# Pytest
+# ============================================================================
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--reuse-db",
+    "-ra",
+]
+markers = [
+    "unit: модульные тесты изолированных компонентов",
+    "integration: интеграционные тесты с базой данных",
+    "e2e: сквозные сценарии через браузер",
+    "smoke: дымовое тестирование основных функций",
+    "security: проверки безопасности",
+    "slow: длительные тесты, исключаются из быстрого прогона",
+]
+filterwarnings = ["error::DeprecationWarning:apps.*"]
+
+[tool.coverage.run]
+source = ["apps", "core"]
+omit = ["*/migrations/*", "*/tests/*", "*/__init__.py", "*/apps.py"]
+branch = true
+
+[tool.coverage.report]
+precision = 1
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "def __repr__",
+]
+
+# ============================================================================
+# Bandit — анализ безопасности
+# ============================================================================
+[tool.bandit]
+exclude_dirs = ["tests", "history", ".venv", "*/migrations"]
+skips = ["B101"]

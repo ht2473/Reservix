@@ -1,0 +1,61 @@
+# =============================================================================
+# Reservix — инфраструктура для разработки
+# Поднимает внешние службы: PostgreSQL, Redis и почтовую заглушку.
+# Запуск: docker compose -f deploy/docker-compose.dev.yml up -d
+# =============================================================================
+
+name: reservix-dev
+
+services:
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reservix
+      POSTGRES_USER: reservix
+      POSTGRES_PASSWORD: reservix
+      # Сортировка кириллицы задаётся провайдером ICU: образ на Alpine
+      # использует musl и системных локалей ru_RU не содержит.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=icu --icu-locale=ru-RU --locale=C.UTF-8"
+    # Порт открыт наружу: к базе разработки подключаются клиентом СУБД
+    # и утилитами миграции. В продакшене такой проброс отсутствует.
+    ports:
+      - "5432:5432"
+    volumes:
+      # PostgreSQL 18 размещает данные в подкаталоге: том монтируется
+      # на /var/lib/postgresql, а не на /var/lib/postgresql/data.
+      - dev_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reservix -d reservix"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Почтовый сервер-заглушка: принимает письма и показывает их в браузере по
+  # адресу http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.32
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  dev_postgres_data:
