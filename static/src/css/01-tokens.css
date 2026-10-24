@@ -1,0 +1,213 @@
+/* ==========================================================================
+   Reservix · Дизайн-токены
+   Холодная графитовая палитра, акцент «петроль», шрифт IBM Plex.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root {
+  /* -------------------------------------------------------
+     --- Поверхности -------------------------------------------------------
+     ------------------------------------------------------- */
+  --surface-canvas: light-dark(#eef1f5, #0b1119);
+  --surface-raised: light-dark(#ffffff, #121a25);
+  --surface-sunken: light-dark(#e6eaf0, #0d141d);
+  --surface-overlay: light-dark(#ffffff, #172130);
+  --surface-inverse: light-dark(#0f1b2d, #e6ebf2);
+
+  /* Тёмная «оболочка»: шапка и меню рабочего места */
+  --chrome-bg: light-dark(#0f1b2d, #080d14);
+  --chrome-bg-raised: light-dark(#18273d, #111a26);
+  --chrome-line: light-dark(#22344f, #1c2735);
+  --chrome-ink: light-dark(#e8edf4, #e6ebf2);
+  --chrome-ink-muted: light-dark(#93a1b5, #8391a5);
+  --chrome-accent: #45c2ca;
+
+  /* -------------------------------------------------------------
+     --- Текст -------------------------------------------------------------
+     ------------------------------------------------------------- */
+  --ink-primary: light-dark(#0f1b2d, #e6ebf2);
+  --ink-secondary: light-dark(#4a5668, #a3afbf);
+  --ink-tertiary: light-dark(#6e7a8c, #77849a);
+  --ink-inverse: light-dark(#ffffff, #0b1119);
+  --ink-on-accent: light-dark(#ffffff, #04191b);
+
+  /* ------------------------------------------------------------
+     --- Акцент ------------------------------------------------------------
+     ------------------------------------------------------------ */
+  --accent: light-dark(#0b6b74, #45c2ca);
+  --accent-hover: light-dark(#095a62, #6dd3d9);
+  --accent-active: light-dark(#074a50, #2fa9b1);
+  --accent-soft: light-dark(#e0f0f1, #0f2e33);
+  --accent-soft-hover: light-dark(#cce6e8, #143a40);
+  --accent-border: light-dark(#94cbd0, #1f5a61);
+
+  /* Дополнительный акцент: отметки и выделение зон */
+  --highlight: light-dark(#e2603f, #f08a6c);
+  --highlight-soft: light-dark(#fcebe5, #3a1d15);
+
+  /* --------------------------------------------------
+     --- Сигнальная шкала --------------------------------------------------
+     -------------------------------------------------- */
+  --signal-ready: light-dark(#13804a, #4ccf8a);
+  --signal-ready-soft: light-dark(#e1f4e9, #0f2d1e);
+  --signal-ready-border: light-dark(#a5dcbc, #1d5a3a);
+
+  --signal-develop: light-dark(#a35a00, #f2b04c);
+  --signal-develop-soft: light-dark(#fbefdc, #33240c);
+  --signal-develop-border: light-dark(#ebc58c, #6a4a17);
+
+  --signal-risk: light-dark(#c0263d, #ff7a8c);
+  --signal-risk-soft: light-dark(#fce6e9, #3a141b);
+  --signal-risk-border: light-dark(#efb0ba, #7a2533);
+
+  --signal-neutral: light-dark(#5b6678, #9aa6b6);
+  --signal-neutral-soft: light-dark(#eceff3, #1a2330);
+  --signal-neutral-border: light-dark(#cfd6df, #2c3746);
+
+  --signal-info: light-dark(#2457c5, #8db1ff);
+  --signal-info-soft: light-dark(#e5edfc, #142445);
+  --signal-info-border: light-dark(#adc3f2, #2b4884);
+
+  /* -------------------------------------------------------------
+     --- Линии -------------------------------------------------------------
+     ------------------------------------------------------------- */
+  --grid-line: light-dark(#d9dfe7, #222d3b);
+  --grid-line-strong: light-dark(#bec8d4, #334052);
+  --grid-line-subtle: light-dark(#e9edf2, #18212d);
+
+  /* --------------------------------------------------------------
+     --- Тени --------------------------------------------------------------
+     -------------------------------------------------------------- */
+  --shadow-xs: 0 1px 1px light-dark(rgb(15 27 45 / 6%), rgb(0 0 0 / 35%));
+  --shadow-sm: 0 1px 2px light-dark(rgb(15 27 45 / 8%), rgb(0 0 0 / 40%)), 0 0 0 1px light-dark(rgb(15 27 45 / 3%), rgb(0 0 0 / 20%));
+  --shadow-md: 0 4px 10px light-dark(rgb(15 27 45 / 10%), rgb(0 0 0 / 45%)), 0 1px 2px light-dark(rgb(15 27 45 / 6%), rgb(0 0 0 / 30%));
+  --shadow-lg: 0 14px 30px light-dark(rgb(15 27 45 / 16%), rgb(0 0 0 / 55%)), 0 2px 6px light-dark(rgb(15 27 45 / 8%), rgb(0 0 0 / 35%));
+  --shadow-focus: 0 0 0 3px light-dark(rgb(11 107 116 / 25%), rgb(69 194 202 / 35%));
+
+  /* --------------------------
+     --- Матрица 9-box: зоны от низкой к «звёздам» --------------------------
+     -------------------------- */
+  --box-zone-low: light-dark(#f1f3f6, #141c27);
+  --box-zone-mid: light-dark(#e3f0f1, #10282c);
+  --box-zone-high: light-dark(#c9e4e7, #143a40);
+  --box-zone-star: light-dark(#a3d3d8, #1b525a);
+
+  /* -------------------------------------------------------
+     --- Типографика -------------------------------------------------------
+     ------------------------------------------------------- */
+  --font-display: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+
+  --text-2xs: 0.6875rem;  /* 11px */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.1875rem;   /* 19px */
+  --text-xl: 1.4375rem;   /* 23px */
+  --text-2xl: 1.75rem;    /* 28px */
+  --text-3xl: 2.125rem;   /* 34px */
+  --text-4xl: 2.75rem;    /* 44px */
+  --text-5xl: 3.5rem;     /* 56px */
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+  --tracking-caps: 0.08em;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 700;
+
+  /* -------------------------------------------------
+     --- Отступы: шаг 4 px -------------------------------------------------
+     ------------------------------------------------- */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Строгие углы: интерфейс собран из прямоугольников */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-pill: 999px;
+
+  --container-narrow: 42rem;
+  --container-content: 64rem;
+  --container-wide: 90rem;
+  --container-full: 100rem;
+
+  --header-height: 3.5rem;
+  --sidebar-width: 15.5rem;
+  --sidebar-width-collapsed: 3.5rem;
+
+  /* --------------------------------------------------------------
+     --- Слои --------------------------------------------------------------
+     -------------------------------------------------------------- */
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-header: 200;
+  --z-dropdown: 300;
+  --z-overlay: 400;
+  --z-modal: 500;
+  --z-toast: 600;
+  --z-tooltip: 700;
+
+  /* ----------------------------------------------------------
+     --- Движение ----------------------------------------------------------
+     ---------------------------------------------------------- */
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+
+/* Плотная компоновка, выбирается в настройках профиля */
+:root[data-density="compact"] {
+  --space-4: 0.75rem;
+  --space-5: 0.875rem;
+  --space-6: 1rem;
+  --text-base: 0.8125rem;
+  --text-sm: 0.75rem;
+}

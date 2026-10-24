@@ -1,0 +1,781 @@
+/* ==========================================================================
+   Reservix · Компоненты предметной области
+   Матрица 9-box, шкала готовности, разрывы компетенций, этапы, лента событий, первый экран
+   портала, диаграммы.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Матрица 9-box
+   Вертикаль — результативность, горизонталь — потенциал.
+   -------------------------------------------------------------------------- */
+.ninebox {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(5.5rem, 1fr)) auto;
+  gap: 4px;
+  padding: var(--space-4);
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-raised);
+}
+
+.ninebox--compact {
+  grid-template-rows: repeat(3, minmax(3rem, auto)) auto;
+  padding: var(--space-2);
+}
+
+/* Подпись вертикальной оси на три строки сетки */
+.ninebox__axis-y {
+  grid-row: 1 / 4;
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: var(--space-2);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--ink-tertiary);
+  white-space: nowrap;
+}
+
+.ninebox__axis-x {
+  grid-row: 4;
+  grid-column: 2 / -1;
+  padding-top: var(--space-2);
+  text-align: center;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--ink-tertiary);
+}
+
+.ninebox__cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--box-zone-low);
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: box-shadow var(--duration-fast) var(--ease-out),
+    outline-color var(--duration-fast) var(--ease-out);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.ninebox__cell:hover {
+  outline-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+}
+
+.ninebox__cell--zone-1 {
+  background-color: var(--box-zone-low);
+}
+
+.ninebox__cell--zone-2 {
+  background-color: var(--box-zone-mid);
+}
+
+.ninebox__cell--zone-3 {
+  background-color: var(--box-zone-high);
+}
+
+.ninebox__cell--zone-4 {
+  background-color: var(--box-zone-star);
+}
+
+/* Ячейки — источники резерва: метка не зависит только от оттенка. */
+.ninebox__cell--pool {
+  box-shadow: inset 0 3px 0 var(--highlight);
+}
+
+.ninebox__cell-name {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1.25;
+  color: var(--ink-secondary);
+  overflow-wrap: anywhere;
+}
+
+.ninebox__cell-count {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  color: var(--ink-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ninebox__cell-share {
+  font-size: var(--text-2xs);
+  color: var(--ink-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Точка сотрудника в режиме россыпи */
+.ninebox__dot {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--surface-raised);
+  border-radius: 0;
+  background-color: var(--accent);
+  transform: translate(-50%, 50%) rotate(45deg);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.ninebox__dot:hover {
+  transform: translate(-50%, 50%) rotate(45deg) scale(1.6);
+  z-index: var(--z-base);
+}
+
+.ninebox__dot--ready {
+  background-color: var(--signal-ready);
+}
+
+.ninebox__dot--develop {
+  background-color: var(--signal-develop);
+}
+
+.ninebox__dot--risk {
+  background-color: var(--signal-risk);
+}
+
+.ninebox-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+}
+
+.ninebox-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ninebox-legend__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--grid-line);
+}
+
+/* --------------------------------------------------------------------------
+   Индикатор готовности: шкала с порогами и точным значением
+   -------------------------------------------------------------------------- */
+.readiness {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.readiness__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.readiness__value {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--tracking-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.readiness__value--ready {
+  color: var(--signal-ready);
+}
+
+.readiness__value--develop {
+  color: var(--signal-develop);
+}
+
+.readiness__value--risk {
+  color: var(--signal-risk);
+}
+
+.readiness__scale {
+  position: relative;
+  height: 0.625rem;
+  margin-top: var(--space-2);
+  background:
+    linear-gradient(to right,
+      var(--signal-risk-soft) 0 calc(var(--t-medium, 55%) - 1px),
+      var(--surface-raised) calc(var(--t-medium, 55%) - 1px) calc(var(--t-medium, 55%) + 1px),
+      var(--signal-develop-soft) calc(var(--t-medium, 55%) + 1px) calc(var(--t-high, 75%) - 1px),
+      var(--surface-raised) calc(var(--t-high, 75%) - 1px) calc(var(--t-high, 75%) + 1px),
+      var(--signal-ready-soft) calc(var(--t-high, 75%) + 1px) 100%);
+  outline: 1px solid var(--grid-line);
+  overflow: visible;
+}
+
+.readiness__marker {
+  position: absolute;
+  top: -0.5rem;
+  width: 0;
+  height: calc(100% + 0.5rem);
+  border-left: 2px solid var(--ink-primary);
+  transform: translateX(-1px);
+  transition: left var(--duration-slow) var(--ease-out);
+}
+
+/* Засечки порогов уровней готовности */
+.readiness__threshold {
+  position: absolute;
+  top: 100%;
+  width: 1px;
+  height: 0.375rem;
+  background-color: var(--ink-tertiary);
+}
+
+.readiness__ticks {
+  position: relative;
+  height: 1rem;
+  margin-top: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--ink-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.readiness__ticks > span {
+  position: absolute;
+  top: 0;
+}
+
+.readiness__ticks > span:nth-child(1) {
+  left: 0;
+}
+
+.readiness__ticks > span:nth-child(2) {
+  left: var(--t-medium, 55%);
+  transform: translateX(-50%);
+}
+
+.readiness__ticks > span:nth-child(3) {
+  left: var(--t-high, 75%);
+  transform: translateX(-50%);
+}
+
+.readiness__ticks > span:nth-child(4) {
+  right: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Разрыв компетенции: «требуется — фактически»
+   -------------------------------------------------------------------------- */
+.gap-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem 4rem;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--grid-line-subtle);
+}
+
+@media (max-width: 640px) {
+  .gap-row {
+    grid-template-columns: minmax(0, 1fr) 4rem;
+  }
+
+  .gap-row__scale {
+    grid-column: 1 / -1;
+  }
+}
+
+.gap-row__name {
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gap-row__weight {
+  display: block;
+  font-size: var(--text-2xs);
+  color: var(--ink-tertiary);
+}
+
+/* Шкала 1–5: заполненные сегменты — факт, метка — требуемый уровень. */
+.gap-row__scale {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 1.25rem;
+}
+
+.gap-row__step {
+  flex: 1 1 0;
+  height: 40%;
+  border-radius: 0;
+  background-color: var(--surface-sunken);
+  outline: 1px solid var(--grid-line);
+}
+
+.gap-row__step:nth-child(2) {
+  height: 55%;
+}
+
+.gap-row__step:nth-child(3) {
+  height: 70%;
+}
+
+.gap-row__step:nth-child(4) {
+  height: 85%;
+}
+
+.gap-row__step:nth-child(5) {
+  height: 100%;
+}
+
+.gap-row--negative .gap-row__step--filled {
+  background-color: var(--signal-develop);
+}
+
+.gap-row--negative .gap-row__step--filled-partial {
+  background-color: color-mix(in srgb, var(--signal-develop) 40%, var(--surface-sunken));
+}
+
+.gap-row__step--filled {
+  background-color: var(--signal-ready);
+}
+
+.gap-row__step--filled-partial {
+  background-color: color-mix(in srgb, var(--signal-ready) 40%, var(--surface-sunken));
+}
+
+.gap-row__target {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  background-color: var(--highlight);
+}
+
+.gap-row__delta {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.gap-row__delta--negative {
+  color: var(--signal-risk);
+}
+
+.gap-row__delta--zero {
+  color: var(--signal-ready);
+}
+
+.gap-row__delta--positive {
+  color: var(--signal-ready);
+}
+
+/* --------------------------------------------------------------------------
+   Этапы методики
+   -------------------------------------------------------------------------- */
+.stage-list {
+  display: grid;
+  gap: var(--space-5);
+  counter-reset: stage;
+}
+
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  padding-bottom: var(--space-5);
+}
+
+/* Номер в первой колонке, описание этапа во второй. */
+.stage__number {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.stage > :not(.stage__number) {
+  grid-column: 2;
+}
+
+/* Линия, соединяющая этапы */
+.stage:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 2.75rem;
+  bottom: 0;
+  left: 1.25rem;
+  width: 2px;
+  background-color: var(--grid-line);
+}
+
+.stage__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: var(--ink-on-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+
+.stage__title {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.stage__text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--ink-secondary);
+  max-width: 68ch;
+}
+
+/* --------------------------------------------------------------------------
+   Лента событий
+   -------------------------------------------------------------------------- */
+.timeline {
+  position: relative;
+  padding-left: var(--space-6);
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.3125rem;
+  width: 1px;
+  background-color: var(--grid-line);
+}
+
+.timeline__item {
+  position: relative;
+  padding-bottom: var(--space-5);
+}
+
+.timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline__dot {
+  position: absolute;
+  top: 0.4rem;
+  left: calc(var(--space-6) * -1 + 0.0625rem);
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 2px solid var(--surface-canvas);
+  border-radius: 0;
+  background-color: var(--grid-line-strong);
+}
+
+.timeline__dot--ready {
+  background-color: var(--signal-ready);
+}
+
+.timeline__dot--develop {
+  background-color: var(--signal-develop);
+}
+
+.timeline__dot--risk {
+  background-color: var(--signal-risk);
+}
+
+.timeline__dot--accent {
+  background-color: var(--accent);
+}
+
+.timeline__time {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--ink-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline__title {
+  margin-top: 2px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.timeline__body {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Первый экран публичных страниц
+   -------------------------------------------------------------------------- */
+.hero {
+  position: relative;
+  padding-block: var(--space-16) var(--space-20);
+  overflow: hidden;
+}
+
+.hero__inner {
+  display: grid;
+  gap: var(--space-10);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .hero__inner {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: var(--space-16);
+  }
+}
+
+.hero__title {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.12;
+  letter-spacing: var(--tracking-tight);
+}
+
+@media (min-width: 768px) {
+  .hero__title {
+    font-size: var(--text-4xl);
+  }
+}
+
+.hero__lead {
+  margin-top: var(--space-5);
+  max-width: 54ch;
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--ink-secondary);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+/* Сводка показателей под первым экраном */
+.hero__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--space-6);
+  margin-top: var(--space-10);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--grid-line);
+}
+
+.hero__stat-value {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.hero__stat-label {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Обёртка диаграммы
+   -------------------------------------------------------------------------- */
+.chart {
+  width: 100%;
+  min-height: 16rem;
+}
+
+.chart--tall {
+  min-height: 24rem;
+}
+
+.chart--short {
+  min-height: 10rem;
+}
+
+.chart__caption {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  color: var(--ink-tertiary);
+}
+
+/* Без сценариев диаграмма заменяется таблицей исходных данных. */
+.chart-fallback {
+  display: none;
+}
+
+.no-js .chart {
+  display: none;
+}
+
+.no-js .chart-fallback {
+  display: block;
+}
+
+
+/* Ячейка-кнопка на главной: выбор зоны показывает решение под матрицей. */
+button.ninebox__cell {
+  cursor: pointer;
+}
+
+button.ninebox__cell:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+button.ninebox__cell:focus-visible {
+  outline-color: var(--accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Решение по выбранной зоне; минимальная высота убирает скачки. */
+.ninebox-decision {
+  display: block;
+  min-height: 7.5rem;
+}
+
+.ninebox-decision__zone {
+  margin-bottom: var(--space-1);
+  font-weight: var(--weight-bold);
+  color: var(--ink-primary);
+}
+
+.ninebox-decision__text {
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+}
+
+.ninebox-decision__hint {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--grid-line-subtle);
+  font-size: var(--text-2xs);
+  color: var(--ink-tertiary);
+}
+
+@media (max-width: 639px) {
+  .ninebox-decision {
+    min-height: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Шкала индекса готовности
+   Пороги задаются переменными --threshold-medium и --threshold-high.
+   -------------------------------------------------------------------------- */
+.readiness--result {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-4));
+  align-self: start;
+}
+
+.readiness-scale {
+  margin-top: var(--space-4);
+}
+
+.readiness-scale__track {
+  position: relative;
+  height: 0.75rem;
+  outline: 1px solid var(--grid-line);
+  background:
+    repeating-linear-gradient(to right, transparent 0 calc(10% - 1px), var(--surface-raised) calc(10% - 1px) 10%),
+    linear-gradient(to right,
+      var(--signal-risk-soft) 0 var(--threshold-medium, 55%),
+      var(--signal-develop-soft) var(--threshold-medium, 55%) var(--threshold-high, 75%),
+      var(--signal-ready-soft) var(--threshold-high, 75%) 100%);
+}
+
+/* Положение отметки задаёт сценарий через --readiness-position. */
+.readiness-scale__marker {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: var(--readiness-position, 0%);
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid var(--ink-primary);
+  transform: translateX(-50%);
+  transition: left var(--duration-fast) var(--ease-out),
+    border-top-color var(--duration-fast) var(--ease-out);
+}
+
+.readiness-scale__marker[data-signal="ready"] {
+  border-top-color: var(--signal-ready);
+}
+
+.readiness-scale__marker[data-signal="develop"] {
+  border-top-color: var(--signal-develop);
+}
+
+.readiness-scale__marker[data-signal="risk"] {
+  border-top-color: var(--signal-risk);
+}
+
+/* Подписи порогов стоят на своих позициях шкалы. */
+.readiness-scale__labels {
+  position: relative;
+  height: 1.25rem;
+  margin-top: var(--space-1);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-tertiary);
+}
+
+.readiness-scale__labels > span:first-child {
+  position: absolute;
+  left: 0;
+}
+
+.readiness-scale__labels > span:last-child {
+  position: absolute;
+  right: 0;
+}
+
+.readiness-scale__tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-weight: var(--weight-medium);
+}
+
+.readiness-scale__tick--medium {
+  left: var(--threshold-medium, 55%);
+  color: var(--signal-develop);
+}
+
+.readiness-scale__tick--high {
+  left: var(--threshold-high, 75%);
+  color: var(--signal-ready);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readiness-scale__marker {
+    transition: none;
+  }
+}

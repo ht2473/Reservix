@@ -1,0 +1,569 @@
+/* ==========================================================================
+   Reservix · Формы
+   Поля ввода, подписи, ошибки, панели фильтров.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Структура поля
+   -------------------------------------------------------------------------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field + .field {
+  margin-top: var(--space-5);
+}
+
+.field__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-primary);
+}
+
+.field__required {
+  color: var(--signal-risk);
+  font-weight: var(--weight-bold);
+}
+
+.field__optional {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--ink-tertiary);
+}
+
+.field__help {
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  color: var(--ink-tertiary);
+}
+
+.field-errors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--signal-risk);
+}
+
+/* --------------------------------------------------------------------------
+   Элементы ввода
+   -------------------------------------------------------------------------- */
+.field-input,
+.field-select,
+.field-textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  min-height: 2.25rem;
+  border: 1px solid var(--grid-line-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-raised);
+  color: var(--ink-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  transition: border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.field-input::placeholder,
+.field-textarea::placeholder {
+  color: var(--ink-tertiary);
+}
+
+.field-input:hover,
+.field-select:hover,
+.field-textarea:hover {
+  border-color: var(--ink-tertiary);
+}
+
+.field-input:focus,
+.field-select:focus,
+.field-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.field-input:disabled,
+.field-select:disabled,
+.field-textarea:disabled {
+  background-color: var(--surface-sunken);
+  color: var(--ink-tertiary);
+  cursor: not-allowed;
+}
+
+.field-input[readonly] {
+  background-color: var(--surface-sunken);
+}
+
+.field-input.is-invalid,
+.field-select.is-invalid,
+.field-textarea.is-invalid {
+  border-color: var(--signal-risk);
+}
+
+.field-input.is-invalid:focus,
+.field-textarea.is-invalid:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal-risk) 18%, transparent);
+}
+
+.field-textarea {
+  min-height: 6rem;
+  resize: vertical;
+  line-height: var(--leading-normal);
+}
+
+/* Числовые поля: выравнивание вправо, моноширинные цифры. */
+.field-input--numeric {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.field-input--date {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Поле одноразового кода */
+.field-input--otp {
+  max-width: 10rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  letter-spacing: 0.4em;
+  text-align: center;
+  padding-left: calc(var(--space-3) + 0.4em);
+}
+
+/* Собственная стрелка выпадающего списка */
+.field-select {
+  appearance: none;
+  padding-right: var(--space-8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='%236e7a8c'%3E%3Cpath d='M3.5 6h9L8 11z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  cursor: pointer;
+}
+
+.field-select--multiple {
+  min-height: 8rem;
+  background-image: none;
+  padding-right: var(--space-3);
+}
+
+/* --------------------------------------------------------------------------
+   Ползунок (калькулятор индекса готовности)
+   Псевдоэлементы WebKit и Gecko объявлены раздельно.
+   -------------------------------------------------------------------------- */
+.field--range {
+  gap: var(--space-2);
+}
+
+.field-range__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.field-range {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.25rem;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: none;
+  cursor: pointer;
+}
+
+.field-range:focus-visible {
+  outline: none;
+}
+
+/* Заполненная доля задаётся сценарием через --range-fill. */
+.field-range::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border: 1px solid var(--grid-line-strong);
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(to right, transparent 0 calc(10% - 1px), var(--grid-line) calc(10% - 1px) 10%),
+    linear-gradient(to right,
+      var(--accent) 0 var(--range-fill, 50%),
+      var(--surface-sunken) var(--range-fill, 50%) 100%);
+}
+
+.field-range::-moz-range-track {
+  height: 0.5rem;
+  border: 1px solid var(--grid-line-strong);
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(to right, transparent 0 calc(10% - 1px), var(--grid-line) calc(10% - 1px) 10%),
+    linear-gradient(to right,
+      var(--accent) 0 var(--range-fill, 50%),
+      var(--surface-sunken) var(--range-fill, 50%) 100%);
+}
+
+.field-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 0.75rem;
+  height: 1.25rem;
+  margin-top: -0.4375rem;
+  border: 2px solid var(--surface-raised);
+  border-radius: var(--radius-xs);
+  background-color: var(--ink-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.field-range::-moz-range-thumb {
+  width: 0.75rem;
+  height: 1.25rem;
+  border: 2px solid var(--surface-raised);
+  border-radius: var(--radius-xs);
+  background-color: var(--ink-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.field-range:hover::-webkit-slider-thumb,
+.field-range:active::-webkit-slider-thumb {
+  background-color: var(--accent);
+}
+
+.field-range:hover::-moz-range-thumb,
+.field-range:active::-moz-range-thumb {
+  background-color: var(--accent);
+}
+
+.field-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--shadow-focus);
+}
+
+.field-range:focus-visible::-moz-range-thumb {
+  box-shadow: var(--shadow-focus);
+}
+
+/* Значение рядом с ползунком: фиксированная ширина, строка не дёргается. */
+.field-range__value {
+  flex-shrink: 0;
+  min-width: 2.75rem;
+  padding: 0.125rem var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-range::-webkit-slider-thumb,
+  .field-range::-moz-range-thumb {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Флажки и переключатели
+   -------------------------------------------------------------------------- */
+.field--inline {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.field-checkbox,
+.field-radio {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.field-checkgroup,
+.field-radiogroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.field-checkgroup li,
+.field-radiogroup li {
+  margin: 0;
+}
+
+.field-checkgroup label,
+.field-radiogroup label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+/* Поле-ловушка для ботов: скрыто смещением, а не display: none. */
+.field-honeypot {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Загрузка файлов
+   -------------------------------------------------------------------------- */
+.field-file {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px dashed var(--grid-line-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-sunken);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.field-file:hover {
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+}
+
+.field-file::file-selector-button {
+  margin-right: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--grid-line-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-raised);
+  color: var(--ink-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Компоновка форм
+   -------------------------------------------------------------------------- */
+.form-grid {
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .form-grid--2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-grid--3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.form-grid .field + .field {
+  margin-top: 0;
+}
+
+.form-grid__full {
+  grid-column: 1 / -1;
+}
+
+.form-section {
+  padding-block: var(--space-6);
+}
+
+.form-section + .form-section {
+  border-top: 1px solid var(--grid-line);
+}
+
+.form-section__title {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.form-section__hint {
+  margin-bottom: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--grid-line);
+}
+
+.form-actions--sticky {
+  position: sticky;
+  bottom: 0;
+  margin-top: var(--space-6);
+  padding: var(--space-4) 0;
+  background-color: var(--surface-canvas);
+}
+
+/* Сводка ошибок над формой */
+.form-errors {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  border: 1px solid var(--signal-risk-border);
+  border-radius: var(--radius-md);
+  background-color: var(--signal-risk-soft);
+  color: var(--signal-risk);
+}
+
+.form-errors__title {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.form-errors ul {
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Панель фильтров
+   -------------------------------------------------------------------------- */
+.filter-panel {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-raised);
+}
+
+.filter-panel__row {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: end;
+}
+
+@media (min-width: 640px) {
+  .filter-panel__row {
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  }
+}
+
+/* Все поля фильтра необязательны: пометка не выводится, подпись в одну строку, поэтому поля ввода
+   стоят на одной линии. */
+.filter-panel .field {
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.filter-panel .field + .field {
+  margin-top: 0;
+}
+
+.filter-panel .field__optional,
+.filter-panel .field__help {
+  display: none;
+}
+
+.filter-panel .field__label {
+  display: block;
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.filter-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+.filter-chip__remove {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.filter-chip__remove:hover {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Поисковая строка
+   -------------------------------------------------------------------------- */
+.search-field {
+  position: relative;
+}
+
+.search-field__icon {
+  position: absolute;
+  top: 50%;
+  left: var(--space-3);
+  transform: translateY(-50%);
+  color: var(--ink-tertiary);
+  pointer-events: none;
+}
+
+.search-field .field-input {
+  padding-left: var(--space-10);
+}
+
+.search-field__spinner {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 2px solid var(--grid-line-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.search-field.htmx-request .search-field__spinner {
+  opacity: 1;
+}

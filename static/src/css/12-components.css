@@ -1,0 +1,603 @@
+/* ==========================================================================
+   Reservix · Составные компоненты
+   Тепловые матрицы, радар, гистограмма, вопросы тестов, строки оценки, состав ячеек 9-box,
+   всплывающий список уведомлений.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Компактная таблица
+   -------------------------------------------------------------------------- */
+.table--compact th,
+.table--compact td {
+  padding: var(--space-2) var(--space-3);
+}
+
+/* --------------------------------------------------------------------------
+   Тепловая матрица: разрывы компетенций, критичность и риск
+   -------------------------------------------------------------------------- */
+.matrix {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: var(--text-sm);
+}
+
+.matrix th,
+.matrix td {
+  padding: var(--space-2) var(--space-3);
+  vertical-align: middle;
+}
+
+.matrix thead th {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrix__person {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-base);
+  min-width: 12rem;
+  background-color: var(--surface-canvas);
+  text-align: left !important;
+  white-space: nowrap;
+}
+
+.matrix__person a {
+  font-weight: var(--weight-medium);
+  color: var(--ink-primary);
+  text-decoration: none;
+}
+
+.matrix__person a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.matrix__head {
+  min-width: 3.5rem;
+  max-width: 7rem;
+  vertical-align: bottom;
+}
+
+.matrix__head-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matrix__cell {
+  min-width: 3.5rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--signal-neutral-soft);
+  color: var(--ink-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrix__cell--ready {
+  background-color: var(--signal-ready-soft);
+  color: var(--signal-ready);
+}
+
+.matrix__cell--develop {
+  background-color: var(--signal-develop-soft);
+  color: var(--signal-develop);
+}
+
+.matrix__cell--risk {
+  background-color: var(--signal-risk-soft);
+  color: var(--signal-risk);
+  font-weight: var(--weight-semibold);
+}
+
+.matrix__cell--accent {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.matrix__cell--neutral {
+  background-color: var(--signal-neutral-soft);
+  color: var(--signal-neutral);
+}
+
+/* --------------------------------------------------------------------------
+   Лепестковая диаграмма профиля
+   -------------------------------------------------------------------------- */
+.radar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.radar__svg {
+  width: 100%;
+  max-width: 26rem;
+  height: auto;
+  overflow: visible;
+}
+
+.radar__ring {
+  stroke: var(--grid-line);
+  stroke-width: 1;
+}
+
+.radar__spoke {
+  stroke: var(--grid-line);
+  stroke-width: 1;
+}
+
+.radar__target {
+  fill: none;
+  stroke: var(--ink-tertiary);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.radar__actual {
+  fill: color-mix(in srgb, var(--accent) 22%, transparent);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.radar__label {
+  fill: var(--ink-secondary);
+  font-family: var(--font-body);
+  font-size: 11px;
+}
+
+.radar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+}
+
+.radar__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.radar__legend-item::before {
+  content: "";
+  width: 1rem;
+  height: 0.625rem;
+  border-radius: var(--radius-xs);
+}
+
+.radar__legend-item--actual::before {
+  border: 2px solid var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.radar__legend-item--target::before {
+  border: 1.5px dashed var(--ink-tertiary);
+}
+
+.radar__data {
+  width: 100%;
+  margin-top: var(--space-4);
+}
+
+/* --------------------------------------------------------------------------
+   Гистограмма распределения уровней
+   -------------------------------------------------------------------------- */
+.histogram {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  height: 11rem;
+  padding-top: var(--space-2);
+}
+
+.histogram__bar {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.histogram__fill {
+  display: block;
+  min-height: 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background-color: var(--accent);
+}
+
+.histogram__label {
+  font-size: var(--text-2xs);
+  color: var(--ink-tertiary);
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Вопрос теста и разбор ответов
+   -------------------------------------------------------------------------- */
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-raised);
+}
+
+.question + .question {
+  margin-top: var(--space-4);
+}
+
+.question__number {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--accent);
+}
+
+.question__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--ink-tertiary);
+}
+
+/* Экспертная проверка развёрнутого ответа. */
+.answer-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.answer-check__label {
+  flex-basis: 100%;
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+}
+
+.answer-check__input {
+  width: 7rem;
+}
+
+.question__explanation {
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--signal-info);
+  background-color: var(--signal-info-soft);
+  font-size: var(--text-sm);
+  color: var(--ink-primary);
+}
+
+.option-review {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--grid-line);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+
+.option-review + .option-review {
+  margin-top: var(--space-2);
+}
+
+.option-review--correct {
+  border-color: var(--signal-ready-border);
+  border-left-color: var(--signal-ready);
+  background-color: var(--signal-ready-soft);
+}
+
+.option-review--wrong {
+  border-color: var(--signal-risk-border);
+  border-left-color: var(--signal-risk);
+  background-color: var(--signal-risk-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Строка оценки компетенции в листе оценивания
+   -------------------------------------------------------------------------- */
+.score-row {
+  padding: var(--space-5);
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-raised);
+}
+
+.score-row + .score-row {
+  margin-top: var(--space-4);
+}
+
+.score-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.score-row__head > div {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.score-row__name {
+  margin-right: var(--space-2);
+  font-weight: var(--weight-semibold);
+}
+
+.score-row__definition {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+}
+
+.score-row__target {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.score-row__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+@media (min-width: 900px) {
+  .score-row__body {
+    grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  }
+}
+
+.score-row__scale {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.score-row__scale dt {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-tertiary);
+  text-align: center;
+}
+
+.score-row__scale dt[data-target="true"] {
+  border-radius: var(--radius-xs);
+  background-color: var(--accent);
+  color: var(--ink-on-accent);
+}
+
+.score-row__scale dd {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Состав ячеек 9-box: имя, отметка и оценки в выровненных колонках
+   -------------------------------------------------------------------------- */
+.ninebox-members {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.ninebox-members__row {
+  display: contents;
+}
+
+.ninebox-members__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ninebox-members__score {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-tertiary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ninebox-members__mark {
+  justify-self: start;
+}
+
+.ninebox-card {
+  height: 100%;
+}
+
+.ninebox-card .card__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.ninebox-card__more {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  font-size: var(--text-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Всплывающий список уведомлений в шапке
+   -------------------------------------------------------------------------- */
+.notify-trigger {
+  position: relative;
+}
+
+.notify-trigger__count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 3px;
+  border-radius: var(--radius-sm);
+  background-color: var(--highlight);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  line-height: 1rem;
+  text-align: center;
+}
+
+.notify-menu {
+  width: min(24rem, calc(100vw - var(--space-6)));
+  padding: 0;
+  color: var(--ink-primary);
+}
+
+.notify-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--grid-line);
+}
+
+.notify-menu__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.notify-menu__list {
+  max-height: 22rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.notify-menu__list li + li {
+  margin-top: 0;
+}
+
+.notify-menu__item {
+  display: block;
+  width: 100%;
+  border-top: 0;
+  border-right: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--grid-line-subtle);
+  border-left: 3px solid transparent;
+  color: inherit;
+  text-decoration: none;
+}
+
+.notify-menu__item:hover {
+  background-color: var(--surface-sunken);
+  color: inherit;
+}
+
+.notify-menu__item--unread {
+  border-left-color: var(--accent);
+  background-color: var(--accent-soft);
+}
+
+.notify-menu__item-title {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+}
+
+.notify-menu__item-time {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-2xs);
+  color: var(--ink-tertiary);
+}
+
+.notify-menu__empty {
+  padding: var(--space-6) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--ink-tertiary);
+  text-align: center;
+}
+
+.notify-menu__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--surface-sunken);
+  font-size: var(--text-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Перечень с выровненной датой и пометкой (планы на пересмотр и т. п.)
+   -------------------------------------------------------------------------- */
+.due-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface-raised);
+}
+
+.due-list__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.due-list__item + .due-list__item {
+  margin-top: 0;
+  border-top: 1px solid var(--grid-line-subtle);
+}
+
+.due-list__item .deadline {
+  align-items: flex-end;
+  text-align: right;
+}
+
+@media (max-width: 559px) {
+  .due-list__item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .due-list__item .deadline {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
