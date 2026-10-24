@@ -171,6 +171,19 @@ class TestFiltering:
         assert response.status_code == 200
         assert len(response.context["entries"]) == 1
 
+    def test_closed_entry_has_no_overdue_review(self, hr_client, department, position):
+        """Пересмотр нужен только действующей записи: у закрытой срок не просрочивается."""
+        ReserveEntryFactory(
+            employee=EmployeeFactory(department=department),
+            target_position=position,
+            status=ReserveStatus.APPOINTED,
+            review_date=timezone.localdate() - dt.timedelta(days=30),
+        )
+
+        response = hr_client.get(reverse("reserve:list"))
+
+        assert "deadline--risk" not in response.content.decode()
+
     def test_candidate_search_requires_position(self, hr_client):
         """Подбор без должности не выполняется."""
         response = hr_client.get(reverse("reserve:candidates"))

@@ -59,7 +59,7 @@
           <dt>{% translate "Плановая готовность" %}</dt>
           <dd>{{ entry.expected_ready_date|date_ru|default:"—" }}</dd>
           <dt>{% translate "Пересмотр" %}</dt>
-          <dd>{{ entry.review_date|deadline }}</dd>
+          <dd>{% if entry.is_active %}{{ entry.review_date|deadline }}{% else %}—{% endif %}</dd>
         </dl>
         {% if can_manage %}
           <div class="cluster cluster--sm mt-3">
