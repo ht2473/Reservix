@@ -1,0 +1,227 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Обзор преемственности. #}
+
+{% block title %}{% translate "Преемственность" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Критичных должностей" %}</span>
+      <span class="metric__value">{{ report.total }}</span>
+      <span class="metric__footer">{% translate "в планировании преемственности" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Покрытие" %}</span>
+      <span class="metric__value">{{ report.coverage|percent:1 }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with covered=report.covered %}{{ covered }} должностей с преемниками{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Глубина скамейки" %}</span>
+      <span class="metric__value">{{ report.bench_depth|score:2 }}</span>
+      <span class="metric__footer">{% translate "преемников на должность" %}</span>
+    </div>
+    <div class="metric {% if report.ready_coverage < 50 %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Готовы сейчас" %}</span>
+      <span class="metric__value">{{ report.ready_coverage|percent:1 }}</span>
+      <span class="metric__footer">{% translate "должностей с готовым преемником" %}</span>
+    </div>
+  </div>
+
+  <div class="cluster cluster--sm mb-6">
+    <a class="btn btn--primary btn--sm" href="{% url 'succession:key_positions' %}">
+      {% translate "Критичные должности" %}
+    </a>
+    <a class="btn btn--secondary btn--sm" href="{% url 'succession:plans' %}">
+      {% translate "Планы преемственности" %}
+    </a>
+    <a class="btn btn--ghost btn--sm" href="{% url 'succession:appointments' %}">
+      {% translate "Назначения" %}
+    </a>
+    <a class="btn btn--ghost btn--sm" href="{% url 'succession:coverage' %}">
+      {% translate "Обеспеченность в разрезах" %}
+    </a>
+  </div>
+
+  {# --- Матрица риска -------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Критичность и риск освобождения" %}</h2>
+      <p class="section__lead">
+        {% translate "Приоритет планирования — произведение критичности на риск: должность критичности 3 с высоким риском срочнее должности критичности 5 с низким" %}
+      </p>
+    </div>
+
+    <div class="scroll-x">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th class="matrix__person">{% translate "Риск ↓ / критичность →" %}</th>
+            <th class="matrix__head"><span class="matrix__head-label">1</span></th>
+            <th class="matrix__head"><span class="matrix__head-label">2</span></th>
+            <th class="matrix__head"><span class="matrix__head-label">3</span></th>
+            <th class="matrix__head"><span class="matrix__head-label">4</span></th>
+            <th class="matrix__head"><span class="matrix__head-label">5</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in matrix %}
+            <tr>
+              <td class="matrix__person">
+                {% if row.0.risk == 3 %}{% translate "Высокий" %}
+                {% elif row.0.risk == 2 %}{% translate "Средний" %}
+                {% else %}{% translate "Низкий" %}{% endif %}
+              </td>
+              {% for cell in row %}
+                <td class="matrix__cell matrix__cell--{{ cell.signal }}"
+                    title="{% blocktranslate with priority=cell.priority %}приоритет {{ priority }}{% endblocktranslate %}">
+                  {% if cell.positions %}
+                    <span class="tabular">{{ cell.positions|length }}</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# --- Незакрытые должности --------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Должности без действующего плана" %}</h2>
+      <p class="section__lead">
+        {% translate "Отбор ведётся по отсутствию действующего плана, а не плана вообще: должность с отменённым планом обеспечена не лучше должности без плана" %}
+      </p>
+    </div>
+
+    {% if uncovered %}
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Действующий сотрудник" %}</th>
+              <th class="text-right">{% translate "Критичность" %}</th>
+              <th class="text-right">{% translate "Риск" %}</th>
+              <th class="text-right">{% translate "Приоритет" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for position in uncovered %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ position.get_absolute_url }}">{{ position.position.name }}</a>
+                </td>
+                <td class="text-sm">
+                  {% if position.incumbent %}
+                    {{ position.incumbent.short_name }}
+                  {% else %}
+                    <span class="badge badge--risk badge--pill">{% translate "вакантна" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right text-sm">{{ position.get_criticality_display }}</td>
+                <td class="text-right text-sm">{{ position.get_vacancy_risk_display }}</td>
+                <td class="text-right tabular">{{ position.priority_score }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="check" title=_("Все критичные должности обеспечены планами") %}
+    {% endif %}
+  </section>
+
+  {# --- Результативность -------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Назначения за последние 12 месяцев" %}</h2>
+      <p class="section__lead">
+        {% translate "Доля назначений из резерва — единственный показатель, отвечающий на вопрос, работает ли подготовка преемников" %}
+      </p>
+    </div>
+
+    <div class="grid grid--3 mb-4">
+      <div class="metric">
+        <span class="metric__label">{% translate "Всего назначений" %}</span>
+        <span class="metric__value">{{ statistics.total }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with count=statistics.on_key_positions %}из них на критичные — {{ count }}{% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Доля из резерва" %}</span>
+        <span class="metric__value">{{ statistics.reserve_share|percent:1 }}</span>
+        <span class="metric__footer">
+          {% blocktranslate with count=statistics.from_reserve %}{{ count }} назначений{% endblocktranslate %}
+        </span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Средний срок подготовки" %}</span>
+        <span class="metric__value">
+          {% if statistics.average_months %}{{ statistics.average_months|score:1 }}{% else %}—{% endif %}
+        </span>
+        <span class="metric__unit">{% translate "мес." %}</span>
+        <span class="metric__footer">{% translate "от включения в резерв до назначения" %}</span>
+      </div>
+    </div>
+
+    {% if recent_appointments %}
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Источник" %}</th>
+              <th>{% translate "Дата" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appointment in recent_appointments %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ appointment.get_absolute_url }}">{{ appointment.employee.short_name }}</a>
+                </td>
+                <td class="text-sm">{{ appointment.position.name }}</td>
+                <td class="text-sm">
+                  {% if appointment.is_from_reserve %}
+                    <span class="badge badge--ready">{{ appointment.get_kind_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ appointment.get_kind_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ appointment.appointment_date|date_ru }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if due_plans %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Планы, требующие пересмотра" %}</h2>
+      </div>
+      <ul class="due-list">
+        {% for plan in due_plans %}
+          <li class="due-list__item">
+            <a href="{{ plan.get_absolute_url }}">{{ plan.title }}</a>
+            {{ plan.review_date|deadline }}
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

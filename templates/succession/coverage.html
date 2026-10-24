@@ -1,0 +1,150 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Обеспеченность преемниками в разрезе критичности. #}
+
+{% block title %}{% translate "Обеспеченность преемниками" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Покрытие" %}</span>
+      <span class="metric__value">{{ report.coverage|percent:1 }}</span>
+      <span class="metric__footer">{% translate "должностей хотя бы с одним преемником" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Готовы сейчас" %}</span>
+      <span class="metric__value">{{ report.ready_coverage|percent:1 }}</span>
+      <span class="metric__footer">{% translate "с преемником, готовым к назначению" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Экстренная замена" %}</span>
+      <span class="metric__value">{{ report.with_emergency }}</span>
+      <span class="metric__footer">{% translate "должностей с кандидатом на немедленный ввод" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Всего преемников" %}</span>
+      <span class="metric__value">{{ report.successors }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with depth=report.bench_depth %}глубина скамейки — {{ depth }}{% endblocktranslate %}
+      </span>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "По уровням критичности" %}</h2>
+      <p class="section__lead">
+        {% translate "Строки идут от самой критичной группы: если провал приходится на неё, общий показатель покрытия значения не имеет" %}
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Критичность" %}</th>
+            <th class="text-right">{% translate "Должностей" %}</th>
+            <th class="text-right">{% translate "С преемниками" %}</th>
+            <th class="text-right">{% translate "С готовыми" %}</th>
+            <th class="text-right">{% translate "Преемников" %}</th>
+            <th class="text-right">{% translate "Покрытие" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for level, row in criticality_rows %}
+            <tr>
+              <td class="table__primary">
+                {% if level == 5 %}{% translate "Критическая" %}
+                {% elif level == 4 %}{% translate "Высокая" %}
+                {% elif level == 3 %}{% translate "Значительная" %}
+                {% elif level == 2 %}{% translate "Умеренная" %}
+                {% else %}{% translate "Низкая" %}{% endif %}
+              </td>
+              <td class="text-right tabular">{{ row.total }}</td>
+              <td class="text-right tabular">{{ row.covered }}</td>
+              <td class="text-right tabular">{{ row.ready }}</td>
+              <td class="text-right tabular">{{ row.successors }}</td>
+              <td class="text-right">
+                {% widthratio row.covered row.total 100 as share %}
+                {% progress_bar share 100 _("Покрытие") %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Результативность за два года" %}</h2>
+    </div>
+
+    <div class="grid grid--4">
+      <div class="metric">
+        <span class="metric__label">{% translate "Назначений" %}</span>
+        <span class="metric__value">{{ statistics.total }}</span>
+        <span class="metric__footer">{% translate "за 24 месяца" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Из резерва" %}</span>
+        <span class="metric__value">{{ statistics.reserve_share|percent:1 }}</span>
+        <span class="metric__footer">{{ statistics.from_reserve }} {% translate "назначений" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Средний срок подготовки" %}</span>
+        <span class="metric__value">
+          {% if statistics.average_years %}{{ statistics.average_years|score:1 }}{% else %}—{% endif %}
+        </span>
+        <span class="metric__unit">{% translate "лет" %}</span>
+        <span class="metric__footer">{% translate "от включения в резерв" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Индекс при назначении" %}</span>
+        <span class="metric__value">
+          {% if statistics.average_index %}{{ statistics.average_index|score:1 }}{% else %}—{% endif %}
+        </span>
+        <span class="metric__footer">
+          {% translate "фиксируется, чтобы позже проверить прогностическую силу индекса" %}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  {% if report.uncovered %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Должности без преемников" %}</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Критичность" %}</th>
+              <th>{% translate "Риск" %}</th>
+              <th class="text-right">{% translate "Приоритет" %}</th>
+              <th class="text-right">{% translate "Требуется преемников" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for position in report.uncovered %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ position.get_absolute_url }}">{{ position.position.name }}</a>
+                </td>
+                <td class="text-sm">{{ position.get_criticality_display }}</td>
+                <td class="text-sm">{{ position.get_vacancy_risk_display }}</td>
+                <td class="text-right tabular">{{ position.priority_score }}</td>
+                <td class="text-right tabular">{{ position.required_successors }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}

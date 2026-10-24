@@ -1,0 +1,284 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# План преемственности: список преемников, риски, пополнение. #}
+
+{% block title %}{{ plan.title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{{ plan.key_position.position.name }}</p>
+        <p class="card__subtitle">
+          {% if plan.key_position.incumbent %}
+            {{ plan.key_position.incumbent.full_name }}
+          {% else %}
+            {% translate "должность вакантна" %}
+          {% endif %}
+        </p>
+        <dl class="definition-list mt-3">
+          <dt>{% translate "Критичность" %}</dt>
+          <dd>{{ plan.key_position.get_criticality_display }}</dd>
+          <dt>{% translate "Риск освобождения" %}</dt>
+          <dd>{{ plan.key_position.get_vacancy_risk_display }}</dd>
+          <dt>{% translate "Горизонт планирования" %}</dt>
+          <dd>{{ plan.horizon_months|counted:_("месяц,месяца,месяцев") }}</dd>
+          <dt>{% translate "Пересмотр" %}</dt>
+          <dd>{{ plan.review_date|deadline }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Состояние плана" %}</p>
+        <p class="text-lg text-semibold mt-2">{{ plan.get_status_display }}</p>
+        <p class="text-sm text-muted mt-2">
+          {% blocktranslate with count=slate|length required=plan.key_position.required_successors %}
+            преемников {{ count }} при требуемых {{ required }}
+          {% endblocktranslate %}
+        </p>
+
+        {% if can_plan %}
+          <div class="cluster cluster--sm mt-3">
+            {% if plan.status == "draft" or plan.status == "on_review" %}
+              <form method="post" action="{% url 'succession:plan_action' plan.public_id 'activate' %}">
+                {% csrf_token %}
+                <button class="btn btn--primary btn--sm" type="submit">
+                  {% translate "Ввести в действие" %}
+                </button>
+              </form>
+            {% endif %}
+            {% if plan.status == "active" %}
+              <form method="post" action="{% url 'succession:plan_action' plan.public_id 'sync' %}">
+                {% csrf_token %}
+                <button class="btn btn--secondary btn--sm" type="submit"
+                        title="{% translate 'Переносит текущую готовность из записей резерва' %}">
+                  {% translate "Обновить готовность" %}
+                </button>
+              </form>
+              <form method="post" action="{% url 'succession:plan_action' plan.public_id 'close' %}">
+                {% csrf_token %}
+                <button class="btn btn--ghost btn--sm" type="submit">{% translate "Закрыть" %}</button>
+              </form>
+            {% endif %}
+            <a class="btn btn--ghost btn--sm" href="{% url 'succession:plan_edit' plan.public_id %}">
+              {% translate "Изменить" %}
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Риски исполнения" %}</p>
+        <p class="text-sm mt-2">{{ plan.risks|linebreaksbr|default:"—" }}</p>
+        {% if plan.notes %}
+          <p class="text-sm text-muted mt-3">{{ plan.notes|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# --- Список преемников ----------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Преемники" %}</h2>
+      <p class="section__lead">
+        {% translate "Ранг задаёт порядок рассмотрения при замещении; расхождение ранга с индексом показывает, где суждение расходится с расчётом" %}
+      </p>
+    </div>
+
+    {% if slate %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="text-right">{% translate "Ранг" %}</th>
+              <th>{% translate "Преемник" %}</th>
+              <th>{% translate "Готовность" %}</th>
+              <th class="text-right">{% translate "Индекс" %}</th>
+              <th>{% translate "Фокус подготовки" %}</th>
+              {% if can_plan %}<th class="text-right">{% translate "Действие" %}</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for successor in slate %}
+              <tr>
+                <td class="text-right tabular">
+                  {{ successor.rank }}
+                  {% if successor.is_emergency_successor %}
+                    <span class="badge badge--accent badge--pill"
+                          title="{% translate 'Способен принять должность немедленно и без подготовки' %}">
+                      {% translate "экстренно" %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="table__primary">
+                  {{ successor.employee.full_name }}
+                  <div class="table__secondary">
+                    {% if successor.entry %}
+                      <a href="{{ successor.entry.get_absolute_url }}">{% translate "запись резерва" %}</a>
+                    {% else %}
+                      {% translate "вне кадрового резерва" %}
+                    {% endif %}
+                  </div>
+                </td>
+                <td>{% readiness_badge successor.readiness_level %}</td>
+                <td class="text-right tabular">
+                  {% if successor.readiness_index is not None %}
+                    {{ successor.readiness_index|score:1 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ successor.development_focus|default:"—"|truncatewords:12 }}</td>
+                {% if can_plan %}
+                  <td class="text-right">
+                    <a class="btn btn--ghost btn--sm"
+                       href="{% url 'succession:slate_remove' successor.pk %}">
+                      {% translate "Исключить" %}
+                    </a>
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if can_plan and slate|length > 1 %}
+        <form method="post" action="{% url 'succession:slate_order' plan.public_id %}" class="mt-3">
+          {% csrf_token %}
+          <input type="hidden" name="order"
+                 value="{% for successor in slate %}{{ successor.pk }}{% if not forloop.last %},{% endif %}{% endfor %}">
+          <p class="text-sm text-muted">
+            {% translate "Порядок можно изменить, переставив кандидатов; перестановка выполняется одной операцией, чтобы ранги оставались уникальными" %}
+          </p>
+        </form>
+      {% endif %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="users" title=_("Преемников нет") text=_("План без преемников нельзя ввести в действие: он заявлял бы обеспеченность, которой нет") %}
+    {% endif %}
+  </section>
+
+  {# --- Пополнение ------------------------------------------------------------ #}
+  {% if can_plan and plan.status != "closed" and plan.status != "cancelled" %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Добавить преемника" %}</h2>
+        <p class="section__lead">
+          {% translate "Готовность переносится из записи резерва и вручную не задаётся: преемник, отмеченный готовым вопреки расчёту, обесценивает показатель обеспеченности" %}
+        </p>
+      </div>
+
+      <form method="post" action="{% url 'succession:slate_add' plan.public_id %}" class="card" novalidate>
+        {% csrf_token %}
+        <div class="card__body">
+          <div class="form-grid">
+            {% include "components/field.html" with field=slate_form.employee %}
+            <div class="form-grid__full">
+              {% include "components/field.html" with field=slate_form.is_emergency_successor inline=True %}
+            </div>
+            <div class="form-grid__full">
+              {% include "components/field.html" with field=slate_form.development_focus %}
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn--primary" type="submit">{% translate "Включить в план" %}</button>
+          </div>
+        </div>
+      </form>
+    </section>
+  {% endif %}
+
+  {# --- Предложения ------------------------------------------------------------ #}
+  {% if suggestions %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Кого можно рассмотреть" %}</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Кандидат" %}</th>
+              <th>{% translate "Источник" %}</th>
+              <th class="text-right">{% translate "Соответствие" %}</th>
+              <th>{% translate "Готовность" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for suggestion in suggestions %}
+              <tr>
+                <td class="table__primary">{{ suggestion.employee.short_name }}</td>
+                <td class="text-sm">
+                  {% if suggestion.from_reserve %}
+                    {% translate "в резерве на должность" %}
+                  {% else %}
+                    <span class="badge badge--outline badge--pill">
+                      {% translate "в резерв не выдвигался" %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ suggestion.match|percent:1 }}</td>
+                <td>{% readiness_badge suggestion.readiness_level %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {# --- Исключённые и назначения ------------------------------------------------ #}
+  {% if removed %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Выбывшие из плана" %}</h2>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Кандидат" %}</th>
+              <th>{% translate "Исключён" %}</th>
+              <th>{% translate "Основание" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for successor in removed %}
+              <tr>
+                <td class="table__primary">{{ successor.employee.short_name }}</td>
+                <td class="text-sm">{{ successor.removed_on|date_ru }}</td>
+                <td class="text-sm">{{ successor.removal_reason|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if appointments %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Назначения по плану" %}</h2>
+      </div>
+      <ul class="stack stack--sm">
+        {% for appointment in appointments %}
+          <li>
+            <a href="{{ appointment.get_absolute_url }}">{{ appointment.employee.short_name }}</a>
+            <span class="text-sm text-muted">
+              — {{ appointment.appointment_date|date_ru }}, {{ appointment.get_kind_display }}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

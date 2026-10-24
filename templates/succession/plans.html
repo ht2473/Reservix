@@ -1,0 +1,81 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Планы преемственности организации. #}
+
+{% block title %}{% translate "Планы преемственности" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.scope %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'succession:plans' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if plans %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "План" %}</th>
+              <th>{% translate "Критичная должность" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th class="text-right">{% translate "Преемников" %}</th>
+              <th>{% translate "Ответственный" %}</th>
+              <th>{% translate "Пересмотр" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for plan in plans %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ plan.get_absolute_url }}">{{ plan.title }}</a>
+                  <div class="table__secondary">
+                    {% blocktranslate with horizon=plan.horizon_months %}
+                      горизонт {{ horizon }} мес.
+                    {% endblocktranslate %}
+                  </div>
+                </td>
+                <td class="text-sm">
+                  <a href="{{ plan.key_position.get_absolute_url }}">
+                    {{ plan.key_position.position.name }}
+                  </a>
+                </td>
+                <td>
+                  {% if plan.status == "active" %}
+                    <span class="badge badge--ready">{{ plan.get_status_display }}</span>
+                  {% elif plan.status == "draft" %}
+                    <span class="badge badge--develop">{{ plan.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ plan.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">
+                  {{ plan.successors_total }}
+                  <span class="text-muted">/ {{ plan.key_position.required_successors }}</span>
+                </td>
+                <td class="text-sm">{{ plan.owner|person }}</td>
+                <td class="text-sm">{{ plan.review_date|deadline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="route" title=_("Планов преемственности нет") text=_("План создаётся из карточки критичной должности") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

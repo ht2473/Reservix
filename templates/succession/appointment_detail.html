@@ -1,0 +1,100 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка назначения. #}
+
+{% block title %}
+  {% blocktranslate with name=appointment.employee.short_name %}Назначение: {{ name }}{% endblocktranslate %}
+{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{{ appointment.employee.full_name }}</p>
+        <p class="card__subtitle">{{ appointment.position.name }}</p>
+        <dl class="definition-list mt-3">
+          <dt>{% translate "Дата назначения" %}</dt>
+          <dd>{{ appointment.appointment_date|date_ru }}</dd>
+          <dt>{% translate "Источник" %}</dt>
+          <dd>{{ appointment.get_kind_display }}</dd>
+          <dt>{% translate "Номер приказа" %}</dt>
+          <dd>{{ appointment.order_number|default:"—" }}</dd>
+          <dt>{% translate "Испытательный срок до" %}</dt>
+          <dd>{{ appointment.probation_until|date_ru|default:"—" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Подготовка" %}</p>
+        <p class="metric__value">
+          {% if appointment.months_in_reserve %}{{ appointment.months_in_reserve }}{% else %}—{% endif %}
+        </p>
+        <p class="text-sm text-muted">{% translate "месяцев в резерве до назначения" %}</p>
+        <dl class="definition-list mt-3">
+          <dt>{% translate "Индекс при назначении" %}</dt>
+          <dd>
+            {% if appointment.readiness_index_at_appointment is not None %}
+              {{ appointment.readiness_index_at_appointment|score:1 }}
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+          <dt>{% translate "Запись резерва" %}</dt>
+          <dd>
+            {% if appointment.entry %}
+              <a href="{{ appointment.entry.get_absolute_url }}">
+                {{ appointment.entry.target_position.name }}
+              </a>
+            {% else %}
+              {% translate "назначение вне резерва" %}
+            {% endif %}
+          </dd>
+          <dt>{% translate "План преемственности" %}</dt>
+          <dd>
+            {% if appointment.plan %}
+              <a href="{{ appointment.plan.get_absolute_url }}">{{ appointment.plan.title }}</a>
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Предшественник" %}</p>
+        {% if appointment.predecessor %}
+          <p class="text-lg text-semibold mt-2">{{ appointment.predecessor.full_name }}</p>
+          <p class="text-sm text-muted">{{ appointment.predecessor.get_status_display }}</p>
+        {% else %}
+          <p class="text-sm text-muted mt-2">
+            {% translate "Должность была вакантна либо предшественник не установлен" %}
+          </p>
+        {% endif %}
+
+        {% if appointment.comment %}
+          <p class="text-sm mt-4">{{ appointment.comment|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert--info">
+    <p class="alert__title">{% translate "Что изменило это назначение" %}</p>
+    <ul>
+      <li>{% translate "запись резерва переведена в состояние «назначен» и покинула скамейку" %}</li>
+      <li>{% translate "сотрудник исключён из списков преемников этой должности" %}</li>
+      <li>{% translate "карточка сотрудника переведена на новую должность" %}</li>
+      <li>{% translate "критичная должность получила нового обладателя" %}</li>
+    </ul>
+    <p class="text-sm mt-2">
+      {% translate "Все изменения выполнены одной операцией: иначе система осталась бы в состоянии, где человек назначен и одновременно числится собственным преемником" %}
+    </p>
+  </div>
+
+{% endblock %}

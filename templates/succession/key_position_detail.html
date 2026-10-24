@@ -1,0 +1,202 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка критичной должности. #}
+
+{% block title %}{{ key_position.position.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{{ key_position.position.name }}</p>
+        <p class="card__subtitle">{{ key_position.position.grade.name }}</p>
+        <dl class="definition-list mt-3">
+          <dt>{% translate "Подразделение" %}</dt>
+          <dd>{{ key_position.position.department.name|default:"—" }}</dd>
+          <dt>{% translate "Действующий сотрудник" %}</dt>
+          <dd>
+            {% if key_position.incumbent %}
+              {{ key_position.incumbent.full_name }}
+            {% else %}
+              <span class="badge badge--risk badge--pill">{% translate "вакантна" %}</span>
+            {% endif %}
+          </dd>
+          <dt>{% translate "Требуется преемников" %}</dt>
+          <dd>{{ key_position.required_successors }}</dd>
+          <dt>{% translate "Горизонт освобождения" %}</dt>
+          <dd>
+            {% if key_position.vacancy_horizon_months %}
+              {{ key_position.vacancy_horizon_months|counted:_("месяц,месяца,месяцев") }}
+            {% else %}
+              —
+            {% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Приоритет планирования" %}</p>
+        <p class="metric__value">{{ key_position.priority_score }}</p>
+        <p class="text-sm text-muted">
+          {% blocktranslate with criticality=key_position.get_criticality_display risk=key_position.get_vacancy_risk_display %}
+            критичность «{{ criticality }}» × риск «{{ risk }}»
+          {% endblocktranslate %}
+        </p>
+        <p class="text-xs text-muted mt-3">
+          {% translate "Диапазон 1–15. Должность критичности 3 с высоким риском срочнее должности критичности 5 с низким" %}
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <p class="card__title">{% translate "Обеспеченность" %}</p>
+        <p class="metric__value">
+          {{ key_position.successor_count }}<span class="text-muted"> / {{ key_position.required_successors }}</span>
+        </p>
+        <p class="text-sm text-muted">
+          {% blocktranslate with ready=key_position.ready_successor_count %}
+            готовы к назначению: {{ ready }}
+          {% endblocktranslate %}
+        </p>
+        {% if can_plan and not active_plan %}
+          <form method="post" action="{% url 'succession:plan_create' key_position.pk %}" class="mt-3">
+            {% csrf_token %}
+            <button class="btn btn--primary btn--sm" type="submit">
+              {% translate "Создать план преемственности" %}
+            </button>
+          </form>
+        {% elif active_plan %}
+          <a class="btn btn--secondary btn--sm mt-3" href="{{ active_plan.get_absolute_url }}">
+            {% translate "Открыть действующий план" %}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if key_position.impact_of_loss or key_position.justification %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Почему должность критична" %}</h2>
+      </div>
+      <div class="card">
+        <div class="card__body">
+          {% if key_position.impact_of_loss %}
+            <h3 class="card__title">{% translate "Последствия ухода" %}</h3>
+            <p>{{ key_position.impact_of_loss|linebreaksbr }}</p>
+          {% endif %}
+          {% if key_position.justification %}
+            <h3 class="card__title mt-4">{% translate "Обоснование критичности" %}</h3>
+            <p class="text-sm">{{ key_position.justification|linebreaksbr }}</p>
+          {% endif %}
+          {% if can_plan %}
+            <a class="btn btn--ghost btn--sm mt-3"
+               href="{% url 'succession:key_position_edit' key_position.pk %}">
+              {% translate "Изменить" %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {# --- Планы --------------------------------------------------------------- #}
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Планы преемственности" %}</h2>
+      <p class="section__lead">
+        {% translate "Действующий план по должности может быть только один: два плана означали бы два несогласованных списка преемников" %}
+      </p>
+    </div>
+
+    {% if plans %}
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "План" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th class="text-right">{% translate "Преемников" %}</th>
+              <th>{% translate "Ответственный" %}</th>
+              <th>{% translate "Пересмотр" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for plan in plans %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ plan.get_absolute_url }}">{{ plan.title }}</a>
+                </td>
+                <td>
+                  {% if plan.status == "active" %}
+                    <span class="badge badge--ready">{{ plan.get_status_display }}</span>
+                  {% elif plan.status == "draft" %}
+                    <span class="badge badge--develop">{{ plan.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ plan.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ plan.successors }}</td>
+                <td class="text-sm">{{ plan.owner|person }}</td>
+                <td class="text-sm">{{ plan.review_date|deadline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="route" title=_("Планов преемственности нет") text=_("Должность отнесена к критичным, но замены у неё не запланировано") %}
+    {% endif %}
+  </section>
+
+  {# --- Предложения ---------------------------------------------------------- #}
+  {% if suggestions %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Кого можно рассмотреть" %}</h2>
+        <p class="section__lead">
+          {% translate "Сначала резервисты, целевой должностью которых является эта; затем сотрудники, подходящие по компетенциям, но в резерв не выдвигавшиеся" %}
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table--compact">
+          <thead>
+            <tr>
+              <th>{% translate "Кандидат" %}</th>
+              <th>{% translate "Источник" %}</th>
+              <th class="text-right">{% translate "Соответствие" %}</th>
+              <th>{% translate "Готовность" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for suggestion in suggestions %}
+              <tr>
+                <td class="table__primary">{{ suggestion.employee.short_name }}</td>
+                <td class="text-sm">
+                  {% if suggestion.from_reserve %}
+                    <a href="{{ suggestion.entry.get_absolute_url }}">
+                      {% translate "в резерве на должность" %}
+                    </a>
+                  {% else %}
+                    <span class="badge badge--outline badge--pill">
+                      {% translate "в резерв не выдвигался" %}
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ suggestion.match|percent:1 }}</td>
+                <td>{% readiness_badge suggestion.readiness_level %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}

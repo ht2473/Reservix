@@ -1,0 +1,55 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Регистрация назначения. #}
+
+{% block title %}{% translate "Регистрация назначения" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Кто и на какую должность" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Регистрация назначения меняет пять вещей сразу: создаёт запись, закрывает запись резерва, исключает преемника из планов, переводит карточку сотрудника и назначает нового обладателя критичной должности." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.employee %}
+        {% include "components/field.html" with field=form.position %}
+        {% include "components/field.html" with field=form.kind %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Реквизиты" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Дата назначения определяет отчётный период. Назначение старше года через эту форму не регистрируется: оно изменило бы уже сданную статистику." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.appointment_date %}
+        {% include "components/field.html" with field=form.order_number %}
+        {% include "components/field.html" with field=form.probation_until %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.comment %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Зарегистрировать" %}</button>
+      <a class="btn btn--ghost" href="{% url 'succession:appointments' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

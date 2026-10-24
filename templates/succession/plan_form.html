@@ -1,0 +1,59 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Параметры плана преемственности. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Рамки плана" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Горизонт планирования задаёт, на какой срок вперёд организация обязана иметь подготовленную замену. Пересмотр назначается раньше окончания горизонта: план, пересматриваемый в день истечения, уже опоздал." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.title %}
+        </div>
+        {% include "components/field.html" with field=form.owner %}
+        {% include "components/field.html" with field=form.horizon_months %}
+        {% include "components/field.html" with field=form.start_date %}
+        {% include "components/field.html" with field=form.review_date %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Риски и примечания" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Риск исполнения — то, что помешает подготовить преемников в срок: отсутствие бюджета на обучение, вероятный уход кандидата, отсутствие подходящих ролей для ротации." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.risks %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.notes %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{{ object.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

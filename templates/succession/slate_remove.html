@@ -1,0 +1,46 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Исключение преемника из плана. #}
+
+{% block title %}{% translate "Исключение преемника" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="card mb-6">
+    <div class="card__body">
+      <p class="card__title">{{ slate.employee.full_name }}</p>
+      <p class="card__subtitle">
+        {% blocktranslate with plan=slate.plan.title rank=slate.rank %}
+          план «{{ plan }}», ранг {{ rank }}
+        {% endblocktranslate %}
+      </p>
+      {% if slate.development_focus %}
+        <p class="text-sm text-muted mt-3">{{ slate.development_focus }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Основание исключения" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Основание сохраняется в плане: отказ кандидата, изменение целей подготовки и увольнение — разные причины с разными последствиями для планирования." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.reason %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--danger" type="submit">{% translate "Исключить из плана" %}</button>
+      <a class="btn btn--ghost" href="{{ slate.plan.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

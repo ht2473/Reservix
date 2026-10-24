@@ -1,0 +1,71 @@
+{% extends "layout/workspace.html" %}
+{% load i18n %}
+
+{# Отнесение должности к критичным. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" class="stack stack--lg" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors">
+        <p class="form-errors__title">{% translate "Проверьте заполнение формы" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Должность" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Действующий сотрудник указывается для оценки риска: возраст, стаж в должности и планы конкретного человека определяют вероятность освобождения." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.position %}
+        {% include "components/field.html" with field=form.incumbent %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Критичность и риск" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Произведение критичности и риска даёт приоритет планирования от 1 до 15 — по нему кадровая служба распределяет усилия. Должность критичности 3 с высоким риском срочнее должности критичности 5 с низким." %}
+      </p>
+
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.criticality %}
+        {% include "components/field.html" with field=form.vacancy_risk %}
+        {% include "components/field.html" with field=form.required_successors %}
+        {% include "components/field.html" with field=form.vacancy_horizon_months %}
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Обоснование" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Перечень критичных должностей пересматривается ежегодно. Через год решение будет обсуждаться по этому тексту, а не по памяти." %}
+      </p>
+
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.impact_of_loss %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.justification %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.is_active inline=True %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{% url 'succession:key_positions' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Назначения — итог работы всей системы. #}
+
+{% block title %}{% translate "Назначения" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "За текущий год" %}</span>
+      <span class="metric__value">{{ statistics.total }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with count=statistics.on_key_positions %}на критичные — {{ count }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Доля из резерва за год" %}</span>
+      <span class="metric__value">{{ statistics.reserve_share|percent:1 }}</span>
+      <span class="metric__footer">{{ statistics.from_reserve }} {% translate "назначений" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Доля из резерва всего" %}</span>
+      <span class="metric__value">{{ statistics_all.reserve_share|percent:1 }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with total=statistics_all.total %}из {{ total }} назначений{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Срок подготовки" %}</span>
+      <span class="metric__value">
+        {% if statistics_all.average_months %}{{ statistics_all.average_months|score:1 }}{% else %}—{% endif %}
+      </span>
+      <span class="metric__unit">{% translate "мес." %}</span>
+      <span class="metric__footer">{% translate "в среднем от включения в резерв" %}</span>
+    </div>
+  </div>
+
+  {% if can_plan %}
+    <div class="cluster cluster--sm mb-4">
+      <a class="btn btn--primary btn--sm" href="{% url 'succession:appointment_create' %}">
+        {% translate "Зарегистрировать назначение" %}
+      </a>
+    </div>
+  {% endif %}
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.kind %}
+      {% include "components/field.html" with field=filter_form.year %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'succession:appointments' %}">
+          {% translate "Сбросить" %}
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if appointments %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Назначенный" %}</th>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Источник" %}</th>
+              <th>{% translate "Дата" %}</th>
+              <th class="text-right">{% translate "Срок подготовки" %}</th>
+              <th class="text-right">{% translate "Индекс при назначении" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appointment in appointments %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ appointment.get_absolute_url }}">{{ appointment.employee.short_name }}</a>
+                  {% if appointment.predecessor %}
+                    <div class="table__secondary">
+                      {% blocktranslate with name=appointment.predecessor.short_name %}
+                        сменил: {{ name }}
+                      {% endblocktranslate %}
+                    </div>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ appointment.position.name }}</td>
+                <td>
+                  {% if appointment.is_from_reserve %}
+                    <span class="badge badge--ready">{{ appointment.get_kind_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ appointment.get_kind_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ appointment.appointment_date|date_ru }}</td>
+                <td class="text-right text-sm">
+                  {% if appointment.months_in_reserve %}
+                    {{ appointment.months_in_reserve|tenure }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">
+                  {% if appointment.readiness_index_at_appointment is not None %}
+                    {{ appointment.readiness_index_at_appointment|score:1 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="check" title=_("Назначений нет") text=_("Назначение замыкает цикл: выдвижение — резерв — развитие — должность") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

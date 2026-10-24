@@ -1,0 +1,118 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Перечень критичных должностей. #}
+
+{% block title %}{% translate "Критичные должности" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "В планировании" %}</span>
+      <span class="metric__value">{{ report.total }}</span>
+      <span class="metric__footer">{% translate "критичных должностей" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Покрытие" %}</span>
+      <span class="metric__value">{{ report.coverage|percent:1 }}</span>
+      <span class="metric__footer">{% translate "имеют хотя бы одного преемника" %}</span>
+    </div>
+    <div class="metric {% if report.ready_coverage < 50 %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Готовы сейчас" %}</span>
+      <span class="metric__value">{{ report.ready_coverage|percent:1 }}</span>
+      <span class="metric__footer">{% translate "с преемником, готовым к назначению" %}</span>
+    </div>
+  </div>
+
+  {% if can_plan %}
+    <div class="cluster cluster--between mb-4">
+      <a class="btn btn--primary btn--sm" href="{% url 'succession:key_position_create' %}">
+        {% translate "Добавить должность" %}
+      </a>
+      <form method="post" action="{% url 'succession:key_positions_sync' %}">
+        {% csrf_token %}
+        <button class="btn btn--ghost btn--sm" type="submit"
+                title="{% translate 'Сверяет перечень с признаком критичности в штатном расписании' %}">
+          {% translate "Сверить со штатным расписанием" %}
+        </button>
+      </form>
+    </div>
+  {% endif %}
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.criticality %}
+      {% include "components/field.html" with field=filter_form.vacancy_risk %}
+      {% include "components/field.html" with field=filter_form.department %}
+      {% include "components/field.html" with field=filter_form.coverage %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'succession:key_positions' %}">
+          {% translate "Сбросить" %}
+        </a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if positions %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Должность" %}</th>
+              <th>{% translate "Действующий сотрудник" %}</th>
+              <th>{% translate "Критичность" %}</th>
+              <th>{% translate "Риск" %}</th>
+              <th class="text-right">{% translate "Приоритет" %}</th>
+              <th class="text-right">{% translate "Преемников" %}</th>
+              <th class="text-right">{% translate "Готовы" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for position in positions %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ position.get_absolute_url }}">{{ position.position.name }}</a>
+                  <div class="table__secondary">
+                    {{ position.position.department.name|default:position.position.grade.name }}
+                  </div>
+                </td>
+                <td class="text-sm">
+                  {% if position.incumbent %}
+                    {{ position.incumbent.short_name }}
+                  {% else %}
+                    <span class="badge badge--risk badge--pill">{% translate "вакантна" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ position.get_criticality_display }}</td>
+                <td class="text-sm">{{ position.get_vacancy_risk_display }}</td>
+                <td class="text-right tabular">{{ position.priority_score }}</td>
+                <td class="text-right tabular">
+                  {{ position.successors_total }}
+                  <span class="text-muted">/ {{ position.required_successors }}</span>
+                </td>
+                <td class="text-right tabular">
+                  {% if position.successors_ready %}
+                    <span class="text-ready">{{ position.successors_ready }}</span>
+                  {% else %}
+                    <span class="text-risk">0</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="shield" title=_("Критичные должности не определены") text=_("Начните со сверки со штатным расписанием: признак критичности задан в справочнике должностей") %}
+    {% endif %}
+  </section>
+
+{% endblock %}
