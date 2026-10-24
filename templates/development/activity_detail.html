@@ -1,0 +1,197 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка мероприятия развития. #}
+
+{% block title %}{{ activity.title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Состояние" %}</span>
+      <span class="metric__value text-lg">{{ activity.get_status_display }}</span>
+      <span class="metric__footer">{{ activity.get_activity_type_display }}</span>
+    </div>
+    <div class="metric {% if activity.is_overdue %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Срок" %}</span>
+      <span class="metric__value text-lg">{{ activity.due_date|date_ru }}</span>
+      <span class="metric__footer">{{ activity.due_date|deadline }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Вклад в план" %}</span>
+      <span class="metric__value">{{ activity.weight }}</span>
+      <span class="metric__footer">{% translate "вес мероприятия при пересчёте" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Подтверждений" %}</span>
+      <span class="metric__value">{{ evidences|length }}</span>
+      <span class="metric__footer">
+        {% if activity.is_on_the_job %}
+          {% translate "развитие на рабочем месте" %}
+        {% else %}
+          {% translate "формальное обучение" %}
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Что и зачем" %}</h2>
+      </div>
+      {% if activity.description %}
+        <p class="prose">{{ activity.description|linebreaksbr }}</p>
+      {% endif %}
+      <dl class="definition-list mt-4">
+        <dt>{% translate "План развития" %}</dt>
+        <dd><a href="{{ activity.plan.get_absolute_url }}">{{ activity.plan.title }}</a></dd>
+        <dt>{% translate "Закрывает разрыв" %}</dt>
+        <dd>
+          {% if activity.competency %}
+            {{ activity.competency.name }}
+          {% else %}
+            <span class="text-muted">{% translate "компетенция не указана" %}</span>
+          {% endif %}
+        </dd>
+        <dt>{% translate "Исполнитель" %}</dt>
+        <dd>{% if activity.responsible %}{{ activity.responsible.full_name }}{% else %}—{% endif %}</dd>
+        <dt>{% translate "Наставник" %}</dt>
+        <dd>{{ activity.mentor|person }}</dd>
+        <dt>{% translate "Материал" %}</dt>
+        <dd>
+          {% if activity.resource %}
+            <a href="{{ activity.resource.get_absolute_url }}">{{ activity.resource.name }}</a>
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </dl>
+
+      {% if activity.result %}
+        <div class="panel panel--outlined mt-4">
+          <p class="panel__title">{% translate "Достигнутый результат" %}</p>
+          <p class="text-sm">{{ activity.result|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Отчёт о выполнении" %}</h2>
+      </div>
+
+      {% if can_complete %}
+        <form method="post" action="{% url 'development:activity_complete' activity.public_id %}" novalidate>
+          {% csrf_token %}
+          <div class="form-grid">
+            {% include "components/field.html" with field=completion_form.completion_date %}
+            <div class="form-grid__full">
+              {% include "components/field.html" with field=completion_form.result %}
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn--primary btn--sm" type="submit">
+              {% icon "check" 16 %}{% translate "Отметить выполненным" %}
+            </button>
+          </div>
+        </form>
+      {% else %}
+        <p class="text-muted text-sm">
+          {% translate "Мероприятие закрыто. Изменения вносятся правкой карточки." %}
+        </p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Подтверждения выполнения" %}</h2>
+      <p class="section__lead">
+        {% translate "Мероприятие закрывается документом, а не сменой состояния: сертификат, отчёт, отзыв наставника" %}
+      </p>
+    </div>
+
+    {% if evidences %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Подтверждение" %}</th>
+              <th>{% translate "Вид" %}</th>
+              <th>{% translate "Приложил" %}</th>
+              <th>{% translate "Проверка" %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for evidence in evidences %}
+              <tr>
+                <td class="table__primary">
+                  {{ evidence.title }}
+                  {% if evidence.external_url %}
+                    <div class="table__secondary">
+                      <a href="{{ evidence.external_url }}" rel="noopener noreferrer" target="_blank">
+                        {% translate "внешняя ссылка" %} {% icon "external" 12 %}
+                      </a>
+                    </div>
+                  {% elif evidence.file %}
+                    <div class="table__secondary">
+                      <a href="{{ evidence.file.url }}">{% translate "приложенный файл" %}</a>
+                    </div>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ evidence.get_kind_display }}</td>
+                <td class="text-sm">
+                  {{ evidence.submitted_by|person }}
+                  <div class="table__secondary">{{ evidence.created_at|date_ru }}</div>
+                </td>
+                <td>
+                  {% if evidence.is_verified %}
+                    <span class="badge badge--ready">{% translate "проверено" %}</span>
+                    <div class="table__secondary">{{ evidence.verified_by|person }}</div>
+                  {% else %}
+                    <span class="badge badge--develop">{% translate "не проверено" %}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right">
+                  {% if not evidence.is_verified %}
+                    <form method="post" action="{% url 'development:evidence_verify' evidence.pk %}">
+                      {% csrf_token %}
+                      <button class="btn btn--ghost btn--sm" type="submit">
+                        {% translate "Проверено" %}
+                      </button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted text-sm mb-4">{% translate "Подтверждений пока нет" %}</p>
+    {% endif %}
+
+    <form class="mt-4" method="post" enctype="multipart/form-data"
+          action="{% url 'development:evidence_add' activity.public_id %}" novalidate>
+      {% csrf_token %}
+      <div class="form-grid">
+        {% include "components/field.html" with field=evidence_form.kind %}
+        {% include "components/field.html" with field=evidence_form.title %}
+        {% include "components/field.html" with field=evidence_form.file %}
+        {% include "components/field.html" with field=evidence_form.external_url %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=evidence_form.comment %}
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn--secondary btn--sm" type="submit">
+          {% translate "Приложить подтверждение" %}
+        </button>
+      </div>
+    </form>
+  </section>
+
+{% endblock %}

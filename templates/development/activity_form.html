@@ -1,0 +1,69 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Форма мероприятия развития. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="panel panel--outlined mb-6">
+    <p class="panel__title">{{ plan.title }}</p>
+    <p class="text-sm text-muted">
+      {{ plan.employee.full_name }} · {{ plan.start_date|date_ru }} — {{ plan.end_date|date_ru }}
+    </p>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors" role="alert">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Что делаем" %}</h2>
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.title %}
+        </div>
+        {% include "components/field.html" with field=form.activity_type %}
+        {% include "components/field.html" with field=form.resource %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.description %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Какой разрыв закрывает" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Привязка к компетенции превращает план в проверяемый: по завершении видно не «пройдено пять курсов», а по каким компетенциям разрыв закрыт" %}
+      </p>
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.competency %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Сроки, исполнители, ресурсы" %}</h2>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.start_date %}
+        {% include "components/field.html" with field=form.due_date %}
+        {% include "components/field.html" with field=form.responsible %}
+        {% include "components/field.html" with field=form.mentor %}
+        {% include "components/field.html" with field=form.weight %}
+        {% include "components/field.html" with field=form.planned_hours %}
+        {% include "components/field.html" with field=form.cost %}
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      <a class="btn btn--ghost" href="{{ plan.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

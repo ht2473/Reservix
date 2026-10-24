@@ -1,0 +1,58 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Форма плана развития. #}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors" role="alert">
+        <p class="form-errors__title">{% translate "План не сохранён" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Кому и зачем" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Если план ведётся под целевую должность, укажите запись резерва: мероприятия будут подобраны по разрывам относительно требований этой должности, а не текущей" %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.employee %}
+        {% include "components/field.html" with field=form.entry %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.title %}
+        </div>
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.goal %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Срок и ответственность" %}</h2>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.start_date %}
+        {% include "components/field.html" with field=form.end_date %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.supervisor %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Сохранить" %}</button>
+      {% if form.instance.pk %}
+        <a class="btn btn--ghost" href="{{ form.instance.get_absolute_url }}">{% translate "Отмена" %}</a>
+      {% else %}
+        <a class="btn btn--ghost" href="{% url 'development:list' %}">{% translate "Отмена" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+{% endblock %}

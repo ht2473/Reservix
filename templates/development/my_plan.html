@@ -1,0 +1,146 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Личный план развития сотрудника. #}
+
+{% block title %}{% translate "Мой план развития" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if not employee %}
+    {% include "components/empty_state.html" with icon="user" title=_("Карточка сотрудника не найдена") text=_("Учётная запись не связана с кадровой карточкой. Обратитесь в кадровую службу.") %}
+
+  {% elif not plan %}
+    {% include "components/empty_state.html" with icon="target" title=_("План развития не назначен") text=_("План составляется кадровой службой по результатам оценки компетенций и утверждается руководителем") %}
+
+  {% else %}
+
+    <div class="grid grid--3 mb-6">
+      <div class="metric metric--accent">
+        <span class="metric__label">{% translate "Выполнение плана" %}</span>
+        <span class="metric__value">{{ plan.completion_rate|percent:0 }}</span>
+        <span class="metric__footer">{% translate "по весам мероприятий" %}</span>
+      </div>
+      <div class="metric">
+        <span class="metric__label">{% translate "Состояние" %}</span>
+        <span class="metric__value text-lg">{{ plan.get_status_display }}</span>
+        <span class="metric__footer">{{ plan.title|shorten:40 }}</span>
+      </div>
+      <div class="metric {% if plan.is_overdue %}metric--accent{% endif %}">
+        <span class="metric__label">{% translate "Срок плана" %}</span>
+        <span class="metric__value text-lg">{{ plan.end_date|date_ru }}</span>
+        <span class="metric__footer">{{ plan.end_date|deadline }}</span>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Мои мероприятия" %}</h2>
+        <p class="section__lead">{{ plan.goal }}</p>
+      </div>
+
+      {% if activities %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Мероприятие" %}</th>
+                <th>{% translate "Что развиваем" %}</th>
+                <th>{% translate "Вид" %}</th>
+                <th>{% translate "Состояние" %}</th>
+                <th>{% translate "Срок" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for activity in activities %}
+                <tr>
+                  <td class="table__primary">
+                    <a href="{{ activity.get_absolute_url }}">{{ activity.title }}</a>
+                    {% if activity.evidence_total %}
+                      <div class="table__secondary">
+                        {% icon "check-circle" 12 "text-ready" %}
+                        {% blocktranslate with count=activity.evidence_total %}подтверждений: {{ count }}{% endblocktranslate %}
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td class="text-sm">
+                    {% if activity.competency %}{{ activity.competency.name|shorten:34 }}{% else %}—{% endif %}
+                  </td>
+                  <td class="text-sm">{{ activity.get_activity_type_display }}</td>
+                  <td>
+                    {% if activity.status == "completed" %}
+                      <span class="badge badge--ready">{{ activity.get_status_display }}</span>
+                    {% elif activity.due_date < today and activity.status != "cancelled" %}
+                      <span class="badge badge--risk">{% translate "Просрочено" %}</span>
+                    {% else %}
+                      <span class="badge badge--neutral">{{ activity.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-sm">{{ activity.due_date|deadline }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted text-sm">{% translate "Мероприятия ещё не назначены" %}</p>
+      {% endif %}
+    </section>
+
+    {% if mentorships %}
+      <section class="section section--tight">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Мой наставник" %}</h2>
+        </div>
+        <ul class="stack stack--sm">
+          {% for pair in mentorships %}
+            <li class="person">
+              <span class="avatar avatar--sm">{{ pair.mentor.initials }}</span>
+              <span class="person__text">
+                <span class="person__name">{{ pair.mentor|person }}</span>
+                <span class="person__meta">
+                  <span class="line-clamp-2" title="{{ pair.goal }}">{{ pair.goal }}</span>
+                  {% if pair.last_meeting_at %}
+                    · {% blocktranslate with date=pair.last_meeting_at|date_ru %}последняя встреча {{ date }}{% endblocktranslate %}
+                  {% endif %}
+                </span>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+    {% if plan.summary %}
+      <section class="section section--tight">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Итог плана" %}</h2>
+        </div>
+        <p class="prose">{{ plan.summary|linebreaksbr }}</p>
+      </section>
+    {% endif %}
+
+    {% if history %}
+      <section class="section section--tight">
+        <div class="section__header">
+          <h2 class="section__title">{% translate "Прежние планы" %}</h2>
+        </div>
+        <ul class="timeline">
+          {% for item in history %}
+            <li class="timeline__item">
+              <span class="timeline__dot"></span>
+              <span class="timeline__time">{{ item.start_date|date_ru }}</span>
+              <span class="timeline__title">{{ item.title }}</span>
+              <p class="timeline__body">
+                {{ item.get_status_display }} ·
+                {% blocktranslate with rate=item.completion_rate %}выполнение {{ rate }} %{% endblocktranslate %}
+              </p>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endif %}
+
+  {% endif %}
+
+{% endblock %}

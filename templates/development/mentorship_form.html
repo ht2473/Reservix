@@ -1,0 +1,51 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Форма наставнической пары. #}
+
+{% block title %}{% translate "Новая пара наставничества" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-errors" role="alert">
+        <p class="form-errors__title">{% translate "Пара не создана" %}</p>
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Кто с кем" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Наставник выбирается из пользователей с ролью наставника, руководителя или кадровой службы" %}
+      </p>
+      <div class="form-grid">
+        {% include "components/field.html" with field=form.mentor %}
+        {% include "components/field.html" with field=form.mentee %}
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.plan %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Цель и ритм" %}</h2>
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.goal %}
+        </div>
+        {% include "components/field.html" with field=form.end_date %}
+        {% include "components/field.html" with field=form.meeting_frequency_days %}
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Создать пару" %}</button>
+      <a class="btn btn--ghost" href="{% url 'development:mentorship' %}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

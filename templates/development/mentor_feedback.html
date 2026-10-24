@@ -1,0 +1,86 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Обратная связь наставника. #}
+
+{% block title %}{% translate "Обратная связь" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Ожидают проверки" %}</h2>
+      <p class="section__lead">
+        {% translate "Подтверждение проверяет не тот, кто его приложил: иначе проверка вырождается в формальность" %}
+      </p>
+    </div>
+
+    {% if evidences %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Подтверждение" %}</th>
+              <th>{% translate "Мероприятие" %}</th>
+              <th>{% translate "Подопечный" %}</th>
+              <th>{% translate "Приложено" %}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for evidence in evidences %}
+              <tr>
+                <td class="table__primary">
+                  {{ evidence.title }}
+                  <div class="table__secondary">{{ evidence.get_kind_display }}</div>
+                </td>
+                <td class="text-sm">
+                  <a href="{{ evidence.activity.get_absolute_url }}">
+                    {{ evidence.activity.title|shorten:40 }}
+                  </a>
+                </td>
+                <td class="text-sm">{{ evidence.activity.plan.employee.short_name }}</td>
+                <td class="text-sm">
+                  {{ evidence.submitted_by|person }}
+                  <div class="table__secondary">{{ evidence.created_at|date_ru }}</div>
+                </td>
+                <td class="text-right">
+                  <form method="post" action="{% url 'development:evidence_verify' evidence.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn--ghost btn--sm" type="submit">
+                      {% icon "check" 14 %}{% translate "Проверено" %}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="check-circle" title=_("Непроверенных подтверждений нет") text=_("Здесь появятся документы, приложенные подопечными к выполненным мероприятиям") %}
+    {% endif %}
+  </section>
+
+  {% if pairs %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Действующие пары" %}</h2>
+      </div>
+      <ul class="stack stack--sm">
+        {% for pair in pairs %}
+          <li class="cluster cluster--between">
+            <span class="person__text">
+              <a class="person__name" href="{{ pair.get_absolute_url }}">{{ pair.mentee.full_name }}</a>
+              <span class="person__meta"><span class="line-clamp-2" title="{{ pair.goal }}">{{ pair.goal }}</span></span>
+            </span>
+            <span class="text-sm">
+              {% blocktranslate with count=pair.meetings_count %}встреч: {{ count }}{% endblocktranslate %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

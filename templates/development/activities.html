@@ -1,0 +1,93 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Сводный перечень мероприятий развития. #}
+
+{% block title %}{% translate "Мероприятия развития" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Всего мероприятий" %}</span>
+      <span class="metric__value">{{ summary.activities }}</span>
+    </div>
+    <div class="metric {% if summary.overdue_activities %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Просрочено" %}</span>
+      <span class="metric__value">{{ summary.overdue_activities }}</span>
+      <span class="metric__footer">{% translate "срок истёк, состояние не изменилось" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Срок подходит" %}</span>
+      <span class="metric__value">{{ summary.due_soon }}</span>
+      <span class="metric__footer">{% translate "в ближайшие две недели" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Без подтверждения" %}</span>
+      <span class="metric__value">{{ summary.unconfirmed }}</span>
+      <span class="metric__footer">{% translate "выполнено, документ не приложен" %}</span>
+    </div>
+  </div>
+
+  <form class="filter-panel" method="get">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.activity_type %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'development:activities' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if activities %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Мероприятие" %}</th>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Вид" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th>{% translate "Срок" %}</th>
+              <th class="text-right">{% translate "Подтверждений" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for activity in activities %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ activity.get_absolute_url }}">{{ activity.title }}</a>
+                  {% if activity.competency %}
+                    <div class="table__secondary">{{ activity.competency.name|shorten:40 }}</div>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ activity.plan.employee.short_name }}</td>
+                <td class="text-sm">{{ activity.get_activity_type_display }}</td>
+                <td>
+                  {% if activity.status == "completed" %}
+                    <span class="badge badge--ready">{{ activity.get_status_display }}</span>
+                  {% elif activity.due_date < today and activity.status != "cancelled" %}
+                    <span class="badge badge--risk">{% translate "Просрочено" %}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ activity.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ activity.due_date|deadline }}</td>
+                <td class="text-right tabular">{{ activity.evidence_total|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="target" title=_("Мероприятий нет") text=_("Мероприятия появляются при наполнении планов развития") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

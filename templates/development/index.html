@@ -1,0 +1,153 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Планы развития организации. #}
+
+{% block title %}{% translate "Планы развития" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Планов развития" %}</span>
+      <span class="metric__value">{{ summary.plans }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with active=summary.active_plans %}действующих — {{ active }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Среднее выполнение" %}</span>
+      <span class="metric__value">{{ summary.average_completion|percent:1 }}</span>
+      <span class="metric__footer">{% translate "по весам мероприятий, а не по их числу" %}</span>
+    </div>
+    <div class="metric {% if summary.overdue_activities %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Просрочено мероприятий" %}</span>
+      <span class="metric__value">{{ summary.overdue_activities }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with soon=summary.due_soon %}срок подходит у {{ soon }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Без подтверждения" %}</span>
+      <span class="metric__value">{{ summary.unconfirmed }}</span>
+      <span class="metric__footer">{% translate "выполнено, но документ не приложен" %}</span>
+    </div>
+  </div>
+
+  <div class="cluster cluster--sm mb-6">
+    {% if can_plan %}
+      <a class="btn btn--primary btn--sm" href="{% url 'development:plan_create' %}">
+        {% icon "plus" 16 %}{% translate "Новый план" %}
+      </a>
+    {% endif %}
+    <a class="btn btn--secondary btn--sm" href="{% url 'development:activities' %}">
+      {% translate "Мероприятия и сроки" %}
+    </a>
+    <a class="btn btn--ghost btn--sm" href="{% url 'development:mentorship' %}">
+      {% translate "Наставничество" %}
+    </a>
+    <a class="btn btn--ghost btn--sm" href="{% url 'development:resources' %}">
+      {% translate "Библиотека развития" %}
+    </a>
+  </div>
+
+  {% if overdue %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Требуют разбора" %}</h2>
+        <p class="section__lead">
+          {% translate "Мероприятия, срок которых истёк, а состояние не изменилось" %}
+        </p>
+      </div>
+      <ul class="stack stack--sm">
+        {% for activity in overdue %}
+          <li class="cluster cluster--between">
+            <span class="person__text">
+              <a class="person__name" href="{{ activity.get_absolute_url }}">{{ activity.title }}</a>
+              <span class="person__meta">
+                {{ activity.plan.employee.short_name }} · {{ activity.get_activity_type_display }}
+              </span>
+            </span>
+            <span class="text-sm">{{ activity.due_date|deadline }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.status %}
+      {% include "components/field.html" with field=filter_form.progress %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'development:list' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if plans %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "План" %}</th>
+              <th>{% translate "Сотрудник" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th>{% translate "Выполнение" %}</th>
+              <th class="text-right">{% translate "Мероприятий" %}</th>
+              <th class="text-right">{% translate "Просрочено" %}</th>
+              <th>{% translate "Срок" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for plan in plans %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ plan.get_absolute_url }}">{{ plan.title }}</a>
+                  {% if plan.entry %}
+                    <div class="table__secondary">
+                      {% translate "цель" %}: {{ plan.entry.target_position.name|shorten:36 }}
+                    </div>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ plan.employee.short_name }}</td>
+                <td>
+                  {% if plan.status == "active" %}
+                    <span class="badge badge--ready">{{ plan.get_status_display }}</span>
+                  {% elif plan.status == "on_approval" %}
+                    <span class="badge badge--develop">{{ plan.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ plan.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td>{% progress_bar plan.completion_rate 100 %}</td>
+                <td class="text-right tabular">
+                  {{ plan.activities_done }}<span class="text-muted"> / {{ plan.activities_total }}</span>
+                </td>
+                <td class="text-right tabular">
+                  {% if plan.activities_overdue %}
+                    <span class="text-risk">{{ plan.activities_overdue }}</span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ plan.end_date|deadline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% url 'development:plan_create' as create_url %}
+      {% include "components/empty_state.html" with icon="target" title=_("Планов развития нет") text=_("План строится от разрывов компетенций: система предложит мероприятия по результатам оценки") action_url=create_url action_label=_("Создать план") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Планы развития подопечных. #}
+
+{% block title %}{% translate "Планы подопечных" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <section class="section">
+    {% if plans %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Подопечный" %}</th>
+              <th>{% translate "План" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th>{% translate "Выполнение" %}</th>
+              <th class="text-right">{% translate "Мероприятий" %}</th>
+              <th class="text-right">{% translate "Просрочено" %}</th>
+              <th>{% translate "Срок" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for plan in plans %}
+              <tr>
+                <td class="table__primary">{{ plan.employee.full_name }}</td>
+                <td class="text-sm">
+                  <a href="{{ plan.get_absolute_url }}">{{ plan.title|shorten:40 }}</a>
+                </td>
+                <td>
+                  {% if plan.status == "active" %}
+                    <span class="badge badge--ready">{{ plan.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ plan.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td>{% progress_bar plan.completion_rate 100 %}</td>
+                <td class="text-right tabular">
+                  {{ plan.activities_done }}<span class="text-muted"> / {{ plan.activities_total }}</span>
+                </td>
+                <td class="text-right tabular">
+                  {% if plan.activities_overdue %}
+                    <span class="text-risk">{{ plan.activities_overdue }}</span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ plan.end_date|deadline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="target" title=_("Планов подопечных нет") text=_("Планы появятся здесь после закрепления за вами резервистов") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

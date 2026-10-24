@@ -1,0 +1,108 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Подопечные наставника. #}
+
+{% block title %}{% translate "Мои подопечные" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--3 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Действующих пар" %}</span>
+      <span class="metric__value">{{ active_count }}</span>
+    </div>
+    <div class="metric {% if due %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Наступил срок встречи" %}</span>
+      <span class="metric__value">{{ due|length }}</span>
+      <span class="metric__footer">{% translate "по заданному ритму сопровождения" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Всего пар" %}</span>
+      <span class="metric__value">{{ pairs|length }}</span>
+      <span class="metric__footer">{% translate "включая завершённые" %}</span>
+    </div>
+  </div>
+
+  {% if due %}
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Требуют встречи" %}</h2>
+      </div>
+      <ul class="stack stack--sm">
+        {% for pair in due %}
+          <li class="cluster cluster--between">
+            <span class="person__text">
+              <a class="person__name" href="{{ pair.get_absolute_url }}">{{ pair.mentee.full_name }}</a>
+              <span class="person__meta"><span class="line-clamp-2" title="{{ pair.goal }}">{{ pair.goal }}</span></span>
+            </span>
+            <span class="text-sm">
+              {% if pair.last_meeting_at %}
+                {% blocktranslate with date=pair.last_meeting_at|date_ru %}последняя встреча {{ date }}{% endblocktranslate %}
+              {% else %}
+                {% translate "встреч ещё не было" %}
+              {% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Все закреплённые сотрудники" %}</h2>
+    </div>
+
+    {% if pairs %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Подопечный" %}</th>
+              <th>{% translate "Подразделение" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th class="text-right">{% translate "Встреч" %}</th>
+              <th>{% translate "Последняя" %}</th>
+              <th>{% translate "План развития" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pair in pairs %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ pair.get_absolute_url }}">{{ pair.mentee.full_name }}</a>
+                  <div class="table__secondary">{{ pair.mentee.position_title|shorten:38 }}</div>
+                </td>
+                <td class="text-sm">{{ pair.mentee.department|default:"—" }}</td>
+                <td>
+                  {% if pair.status == "active" %}
+                    <span class="badge badge--ready">{{ pair.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ pair.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ pair.meetings_count }}</td>
+                <td class="text-sm">
+                  {% if pair.last_meeting_at %}{{ pair.last_meeting_at|date_ru }}{% else %}—{% endif %}
+                </td>
+                <td class="text-sm">
+                  {% if pair.plan %}
+                    <a href="{{ pair.plan.get_absolute_url }}">
+                      {% blocktranslate with rate=pair.plan.completion_rate %}{{ rate }} %{% endblocktranslate %}
+                    </a>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="handshake" title=_("Подопечных нет") text=_("Пары наставничества создаёт кадровая служба при утверждении планов развития") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

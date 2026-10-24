@@ -1,0 +1,89 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Библиотека развития. #}
+
+{% block title %}{% translate "Библиотека развития" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Материалов" %}</span>
+      <span class="metric__value">{{ statistics.total }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with internal=statistics.internal %}внутренних — {{ internal }}{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Средняя оценка" %}</span>
+      <span class="metric__value">{{ statistics.average_rating|score:2 }}</span>
+      <span class="metric__footer">{% translate "по отзывам участников" %}</span>
+    </div>
+    <div class="metric {% if statistics.uncovered_competencies %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Компетенций без материалов" %}</span>
+      <span class="metric__value">{{ statistics.uncovered_competencies }}</span>
+      <span class="metric__footer">{% translate "разрыв по ним нечем закрывать" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Форматов" %}</span>
+      <span class="metric__value">{{ statistics.by_format|length }}</span>
+      <span class="metric__footer">
+        {% for name, count in statistics.by_format|slice:":2" %}{{ name }} — {{ count }}{% if not forloop.last %} · {% endif %}{% endfor %}
+      </span>
+    </div>
+  </div>
+
+  <form class="filter-panel" method="get" role="search">
+    <div class="filter-panel__row">
+      {% include "components/field.html" with field=filter_form.q %}
+      {% include "components/field.html" with field=filter_form.resource_format %}
+      {% include "components/field.html" with field=filter_form.is_internal %}
+    </div>
+    <div class="filter-panel__actions">
+      <button class="btn btn--primary btn--sm" type="submit">{% translate "Показать" %}</button>
+      {% if has_active_filters %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'development:resources' %}">{% translate "Сбросить" %}</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <section class="section">
+    {% if resources %}
+      <div class="grid grid--3">
+        {% for resource in resources %}
+          <article class="card card--interactive">
+            <div class="card__header">
+              <h2 class="card__title">
+                <a href="{{ resource.get_absolute_url }}">{{ resource.name }}</a>
+              </h2>
+              <p class="card__subtitle">
+                <span class="badge badge--outline">{{ resource.get_resource_format_display }}</span>
+                {% if resource.is_internal %}
+                  <span class="badge badge--neutral">{% translate "внутренний" %}</span>
+                {% endif %}
+              </p>
+            </div>
+            <div class="card__body">
+              <p class="text-sm text-muted line-clamp-3">{{ resource.description }}</p>
+            </div>
+            <div class="card__footer">
+              <span class="text-xs text-muted">
+                {% if resource.duration_hours %}
+                  {{ resource.duration_hours }} {% translate "ч." %} ·
+                {% endif %}
+                {% blocktranslate with low=resource.target_level_min high=resource.target_level_max %}уровни {{ low }}–{{ high }}{% endblocktranslate %}
+                {% if resource.rating %} · {{ resource.rating|score:1 }}{% endif %}
+              </span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+      {% include "components/pagination.html" %}
+    {% else %}
+      {% include "components/empty_state.html" with icon="book" title=_("Материалов нет") text=_("Библиотеку ведёт кадровая служба: материалы привязываются к компетенциям и уровням") %}
+    {% endif %}
+  </section>
+
+{% endblock %}

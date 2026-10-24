@@ -1,0 +1,120 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Наставничество организации. #}
+
+{% block title %}{% translate "Наставничество" %}{% endblock %}
+
+{% block workspace_content %}
+
+  {% if can_plan %}
+    <div class="cluster cluster--sm mb-6">
+      <a class="btn btn--primary btn--sm" href="{% url 'development:mentorship_create' %}">
+        {% icon "plus" 16 %}{% translate "Новая пара" %}
+      </a>
+    </div>
+  {% endif %}
+
+  <div class="grid grid--2 grid--gap-lg">
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Пары наставничества" %}</h2>
+      </div>
+
+      {% if pairs %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Наставник" %}</th>
+                <th>{% translate "Подопечный" %}</th>
+                <th>{% translate "Состояние" %}</th>
+                <th class="text-right">{% translate "Встреч" %}</th>
+                <th>{% translate "Последняя" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pair in pairs %}
+                <tr>
+                  <td class="table__primary">
+                    <a href="{{ pair.get_absolute_url }}">{{ pair.mentor|person }}</a>
+                  </td>
+                  <td class="text-sm">{{ pair.mentee.short_name }}</td>
+                  <td>
+                    {% if pair.status == "active" %}
+                      <span class="badge badge--ready">{{ pair.get_status_display }}</span>
+                    {% elif pair.status == "completed" %}
+                      <span class="badge badge--neutral">{{ pair.get_status_display }}</span>
+                    {% else %}
+                      <span class="badge badge--develop">{{ pair.get_status_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-right tabular">
+                    {{ pair.meetings_count }}
+                    <span class="text-muted">/ {{ pair.meeting_frequency_days }} {% translate "дн." %}</span>
+                  </td>
+                  <td class="text-sm">
+                    {% if pair.is_meeting_due %}
+                      <span class="badge badge--develop">{% translate "срок встречи" %}</span>
+                    {% elif pair.last_meeting_at %}
+                      {{ pair.last_meeting_at|date_ru }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% include "components/pagination.html" %}
+      {% else %}
+        {% include "components/empty_state.html" with icon="handshake" title=_("Пар наставничества нет") text=_("Наставник закрепляется за резервистом на время выполнения плана развития") %}
+      {% endif %}
+    </section>
+
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Нагрузка наставников" %}</h2>
+        <p class="section__lead">
+          {% translate "Число подопечных без числа доведённых до результата не говорит о работе наставника" %}
+        </p>
+      </div>
+
+      {% if load %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>{% translate "Наставник" %}</th>
+                <th class="text-right">{% translate "Ведёт" %}</th>
+                <th class="text-right">{% translate "Завершено" %}</th>
+                <th class="text-right">{% translate "Встреч" %}</th>
+                <th class="text-right">{% translate "Оценка" %}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in load %}
+                <tr>
+                  <td class="table__primary">{{ row.mentor|person }}</td>
+                  <td class="text-right tabular">{{ row.active }}</td>
+                  <td class="text-right tabular">{{ row.completed }}</td>
+                  <td class="text-right tabular">{{ row.meetings }}</td>
+                  <td class="text-right tabular">
+                    {% if row.average_effectiveness %}{{ row.average_effectiveness|score:2 }}{% else %}—{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted text-sm">{% translate "Наставники не назначены" %}</p>
+      {% endif %}
+    </section>
+
+  </div>
+
+{% endblock %}

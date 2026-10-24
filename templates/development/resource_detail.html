@@ -1,0 +1,104 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка учебного ресурса. #}
+
+{% block title %}{{ resource.name }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Формат" %}</span>
+      <span class="metric__value text-lg">{{ resource.get_resource_format_display }}</span>
+      <span class="metric__footer">
+        {% if resource.is_internal %}
+          {% translate "внутренний ресурс организации" %}
+        {% else %}
+          {{ resource.provider|default:_("внешний поставщик") }}
+        {% endif %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Продолжительность" %}</span>
+      <span class="metric__value">{{ resource.duration_hours|default:"—" }}</span>
+      <span class="metric__footer">{% translate "академических часов" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Уровни" %}</span>
+      <span class="metric__value text-lg">
+        {{ resource.target_level_min }}–{{ resource.target_level_max }}
+      </span>
+      <span class="metric__footer">{% translate "до какого уровня доводит" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Оценка" %}</span>
+      <span class="metric__value">{{ resource.rating|score:1 }}</span>
+      <span class="metric__footer">{% translate "по отзывам участников" %}</span>
+    </div>
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg">
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Описание" %}</h2>
+      </div>
+      <p class="prose">{{ resource.description|linebreaksbr }}</p>
+
+      {% if resource.url %}
+        <a class="btn btn--secondary btn--sm mt-4" href="{{ resource.url }}"
+           rel="noopener noreferrer" target="_blank">
+          {% icon "external" 16 %}{% translate "Открыть материал" %}
+        </a>
+      {% endif %}
+    </section>
+
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Развиваемые компетенции" %}</h2>
+      </div>
+      {% if resource.competencies.all %}
+        <ul class="stack stack--sm">
+          {% for competency in resource.competencies.all %}
+            <li class="cluster cluster--between">
+              <span class="text-sm">{{ competency.name }}</span>
+              <span class="badge badge--outline">{{ competency.get_kind_display }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted text-sm">
+          {% translate "Компетенции не указаны: материал не попадёт в подбор по разрывам" %}
+        </p>
+      {% endif %}
+
+      {% if resource.cost %}
+        <dl class="definition-list mt-4">
+          <dt>{% translate "Стоимость" %}</dt>
+          <dd class="tabular">{{ resource.cost|spaced:2 }}</dd>
+        </dl>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if activities %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Где применяется" %}</h2>
+        <p class="section__lead">{% translate "Мероприятия планов развития, опирающиеся на этот материал" %}</p>
+      </div>
+      <ul class="stack stack--sm">
+        {% for activity in activities %}
+          <li class="cluster cluster--between">
+            <span class="person__text">
+              <a class="person__name" href="{{ activity.get_absolute_url }}">{{ activity.title }}</a>
+              <span class="person__meta">{{ activity.plan.employee.short_name }}</span>
+            </span>
+            <span class="text-sm">{{ activity.get_status_display }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+{% endblock %}

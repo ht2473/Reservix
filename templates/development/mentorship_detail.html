@@ -1,0 +1,125 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка наставнической пары. #}
+
+{% block title %}{% translate "Наставничество" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Наставник" %}</span>
+      <span class="metric__value text-lg">{{ pair.mentor|person }}</span>
+      <span class="metric__footer">{{ pair.get_status_display }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Подопечный" %}</span>
+      <span class="metric__value text-lg">{{ pair.mentee.short_name }}</span>
+      <span class="metric__footer">{{ pair.mentee.position_title|default:pair.mentee.position }}</span>
+    </div>
+    <div class="metric {% if pair.is_meeting_due %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Встреч проведено" %}</span>
+      <span class="metric__value">{{ pair.meetings_count }}</span>
+      <span class="metric__footer">
+        {% blocktranslate with days=pair.meeting_frequency_days %}ритм — раз в {{ days }} дн.{% endblocktranslate %}
+      </span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Сопровождение" %}</span>
+      <span class="metric__value">{{ pair.duration_days }}</span>
+      <span class="metric__footer">{% translate "дней с начала пары" %}</span>
+    </div>
+  </div>
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Цель и ход" %}</h2>
+      </div>
+      <p class="prose">{{ pair.goal|linebreaksbr }}</p>
+
+      <dl class="definition-list mt-4">
+        <dt>{% translate "Начало" %}</dt>
+        <dd>{{ pair.start_date|date_ru }}</dd>
+        <dt>{% translate "Плановое окончание" %}</dt>
+        <dd>{% if pair.end_date %}{{ pair.end_date|date_ru }}{% else %}{% translate "не задано" %}{% endif %}</dd>
+        <dt>{% translate "Последняя встреча" %}</dt>
+        <dd>
+          {% if pair.last_meeting_at %}
+            {{ pair.last_meeting_at|date_ru }}
+          {% else %}
+            {% translate "встреч не было" %}
+          {% endif %}
+        </dd>
+        <dt>{% translate "План развития" %}</dt>
+        <dd>
+          {% if pair.plan %}
+            <a href="{{ pair.plan.get_absolute_url }}">{{ pair.plan.title }}</a>
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </dl>
+
+      {% if pair.result %}
+        <div class="panel panel--outlined mt-4">
+          <p class="panel__title">{% translate "Записи и результат" %}</p>
+          <p class="text-sm">{{ pair.result|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+
+      {% if pair.mentee_feedback %}
+        <div class="panel panel--outlined mt-4">
+          <p class="panel__title">{% translate "Отзыв подопечного" %}</p>
+          <p class="text-sm">{{ pair.mentee_feedback|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    {% if can_manage and pair.status == "active" %}
+      <div class="stack">
+        <section class="section section--tight">
+          <div class="section__header">
+            <h2 class="section__title">{% translate "Отметить встречу" %}</h2>
+          </div>
+          <form method="post" action="{% url 'development:mentorship_meeting' pair.public_id %}" novalidate>
+            {% csrf_token %}
+            <div class="form-grid">
+              {% include "components/field.html" with field=meeting_form.meeting_date %}
+              <div class="form-grid__full">
+                {% include "components/field.html" with field=meeting_form.note %}
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn--secondary btn--sm" type="submit">
+                {% translate "Записать встречу" %}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="section section--tight">
+          <div class="section__header">
+            <h2 class="section__title">{% translate "Завершить наставничество" %}</h2>
+          </div>
+          <form method="post" action="{% url 'development:mentorship_complete' pair.public_id %}" novalidate>
+            {% csrf_token %}
+            <div class="form-grid">
+              <div class="form-grid__full">
+                {% include "components/field.html" with field=completion_form.result %}
+              </div>
+              {% include "components/field.html" with field=completion_form.effectiveness %}
+            </div>
+            <div class="form-actions">
+              <button class="btn btn--primary btn--sm" type="submit">
+                {% translate "Завершить пару" %}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    {% endif %}
+  </div>
+
+{% endblock %}

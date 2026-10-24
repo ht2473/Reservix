@@ -1,0 +1,40 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Завершение плана развития. #}
+
+{% block title %}{% translate "Завершение плана развития" %}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="panel panel--outlined mb-6">
+    <p class="panel__title">{{ plan.title }}</p>
+    <p class="text-sm text-muted">
+      {{ plan.employee.full_name }} ·
+      {{ plan.start_date|date_ru }} — {{ plan.end_date|date_ru }} ·
+      {% blocktranslate with rate=plan.completion_rate %}выполнение {{ rate }} %{% endblocktranslate %}
+    </p>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <section class="form-section">
+      <h2 class="form-section__title">{% translate "Итог" %}</h2>
+      <p class="form-section__hint">
+        {% translate "Итог войдёт в карточку плана и будет виден при следующем цикле планирования. По завершении плана готовность резервиста пересчитывается." %}
+      </p>
+      <div class="form-grid">
+        <div class="form-grid__full">
+          {% include "components/field.html" with field=form.summary %}
+        </div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">{% translate "Завершить план" %}</button>
+      <a class="btn btn--ghost" href="{{ plan.get_absolute_url }}">{% translate "Отмена" %}</a>
+    </div>
+  </form>
+
+{% endblock %}

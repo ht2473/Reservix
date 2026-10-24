@@ -1,0 +1,230 @@
+{% extends "layout/workspace.html" %}
+{% load i18n reservix %}
+
+{# Карточка индивидуального плана развития. #}
+
+{% block title %}{{ plan.title }}{% endblock %}
+
+{% block workspace_content %}
+
+  <div class="grid grid--4 mb-6">
+    <div class="metric">
+      <span class="metric__label">{% translate "Сотрудник" %}</span>
+      <span class="metric__value text-lg">{{ plan.employee.short_name }}</span>
+      <span class="metric__footer">{{ plan.employee.position_title|default:plan.employee.position }}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Выполнение" %}</span>
+      <span class="metric__value">{{ plan.completion_rate|percent:0 }}</span>
+      <span class="metric__footer">{% translate "по весам мероприятий" %}</span>
+    </div>
+    <div class="metric">
+      <span class="metric__label">{% translate "Состояние" %}</span>
+      <span class="metric__value text-lg">{{ plan.get_status_display }}</span>
+      <span class="metric__footer">
+        {% if plan.approved_at %}
+          {% blocktranslate with date=plan.approved_at|date_ru %}утверждён {{ date }}{% endblocktranslate %}
+        {% else %}
+          {% translate "не утверждён" %}
+        {% endif %}
+      </span>
+    </div>
+    <div class="metric {% if plan.is_overdue %}metric--accent{% endif %}">
+      <span class="metric__label">{% translate "Срок плана" %}</span>
+      <span class="metric__value text-lg">{{ plan.end_date|date_ru }}</span>
+      <span class="metric__footer">{{ plan.end_date|deadline }}</span>
+    </div>
+  </div>
+
+  {% if can_manage %}
+    <div class="cluster cluster--sm mb-6">
+      {% if plan.status == "draft" %}
+        <form method="post" action="{% url 'development:plan_action' plan.public_id 'fill' %}">
+          {% csrf_token %}
+          <button class="btn btn--primary btn--sm" type="submit">
+            {% icon "target" 16 %}{% translate "Наполнить по разрывам" %}
+          </button>
+        </form>
+        <form method="post" action="{% url 'development:plan_action' plan.public_id 'submit' %}">
+          {% csrf_token %}
+          <button class="btn btn--secondary btn--sm" type="submit">
+            {% translate "На утверждение" %}
+          </button>
+        </form>
+      {% elif plan.status == "on_approval" %}
+        <form method="post" action="{% url 'development:plan_action' plan.public_id 'approve' %}">
+          {% csrf_token %}
+          <button class="btn btn--primary btn--sm" type="submit">
+            {% icon "check" 16 %}{% translate "Утвердить и ввести в действие" %}
+          </button>
+        </form>
+      {% elif plan.status == "active" %}
+        <a class="btn btn--primary btn--sm" href="{% url 'development:plan_complete' plan.public_id %}">
+          {% translate "Завершить с итогом" %}
+        </a>
+      {% endif %}
+
+      {% if can_plan %}
+        <a class="btn btn--ghost btn--sm" href="{% url 'development:activity_create' plan.public_id %}">
+          {% icon "plus" 16 %}{% translate "Добавить мероприятие" %}
+        </a>
+        <a class="btn btn--ghost btn--sm" href="{% url 'development:plan_edit' plan.public_id %}">
+          {% icon "edit" 16 %}{% translate "Править" %}
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="grid grid--2 grid--gap-lg mb-6">
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Цель плана" %}</h2>
+      </div>
+      <p class="prose">{{ plan.goal|linebreaksbr }}</p>
+      {% if plan.summary %}
+        <div class="panel panel--outlined mt-4">
+          <p class="panel__title">{% translate "Итог выполнения" %}</p>
+          <p class="text-sm">{{ plan.summary|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="section section--tight">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Реквизиты" %}</h2>
+      </div>
+      <dl class="definition-list">
+        <dt>{% translate "Период" %}</dt>
+        <dd>{{ plan.start_date|date_ru }} — {{ plan.end_date|date_ru }}</dd>
+        <dt>{% translate "Куратор" %}</dt>
+        <dd>{{ plan.supervisor|person }}</dd>
+        <dt>{% translate "Целевая должность" %}</dt>
+        <dd>
+          {% if can_open_entry %}
+            <a href="{{ plan.entry.get_absolute_url }}">{{ plan.entry.target_position.name }}</a>
+          {% elif plan.entry %}
+            {# Запись резерва вне области видимости: должность видна, карточка — нет. #}
+            {{ plan.entry.target_position.name }}
+          {% else %}
+            {% translate "развитие в текущей должности" %}
+          {% endif %}
+        </dd>
+        <dt>{% translate "Наставник" %}</dt>
+        <dd>
+          {% for pair in mentorships %}
+            {% if pair.pk in open_pairs %}<a href="{{ pair.get_absolute_url }}">{{ pair.mentor|person }}</a>{% else %}{{ pair.mentor|person }}{% endif %}{% if not forloop.last %}, {% endif %}
+          {% empty %}
+            {% translate "не назначен" %}
+          {% endfor %}
+        </dd>
+      </dl>
+    </section>
+  </div>
+
+  {% if suggestions %}
+    <section class="section">
+      <div class="section__header">
+        <h2 class="section__title">{% translate "Предложения по разрывам" %}</h2>
+        <p class="section__lead">
+          {% translate "Порядок задан недобранными баллами: разрыв в один уровень по весомой компетенции важнее разрыва в два уровня по второстепенной" %}
+        </p>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Компетенция" %}</th>
+              <th class="text-right">{% translate "Текущий" %}</th>
+              <th class="text-right">{% translate "Целевой" %}</th>
+              <th class="text-right">{% translate "Недобрано баллов" %}</th>
+              <th>{% translate "Предлагается" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for suggestion in suggestions %}
+              <tr>
+                <td class="table__primary">{{ suggestion.competency_name }}</td>
+                <td class="text-right tabular">{{ suggestion.actual_level|score:1 }}</td>
+                <td class="text-right tabular">{{ suggestion.target_level }}</td>
+                <td class="text-right tabular">{{ suggestion.lost_points|score:2 }}</td>
+                <td class="text-sm">
+                  {{ suggestion.title }}
+                  {% if suggestion.resource %}
+                    <div class="table__secondary">
+                      <a href="{{ suggestion.resource.get_absolute_url }}">{% translate "материал библиотеки" %}</a>
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="section">
+    <div class="section__header">
+      <h2 class="section__title">{% translate "Мероприятия плана" %}</h2>
+    </div>
+
+    {% if activities %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>{% translate "Мероприятие" %}</th>
+              <th>{% translate "Вид" %}</th>
+              <th>{% translate "Закрывает разрыв" %}</th>
+              <th>{% translate "Состояние" %}</th>
+              <th class="text-right">{% translate "Вес" %}</th>
+              <th>{% translate "Срок" %}</th>
+              <th>{% translate "Подтверждение" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for activity in activities %}
+              <tr>
+                <td class="table__primary">
+                  <a href="{{ activity.get_absolute_url }}">{{ activity.title }}</a>
+                  {% if activity.responsible %}
+                    <div class="table__secondary">{{ activity.responsible.short_name }}</div>
+                  {% endif %}
+                </td>
+                <td class="text-sm">{{ activity.get_activity_type_display }}</td>
+                <td class="text-sm">
+                  {% if activity.competency %}
+                    {{ activity.competency.name|shorten:32 }}
+                  {% else %}
+                    <span class="text-muted">{% translate "не привязано" %}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if activity.status == "completed" %}
+                    <span class="badge badge--ready">{{ activity.get_status_display }}</span>
+                  {% elif activity.due_date < today and activity.status != "cancelled" %}
+                    <span class="badge badge--risk">{% translate "Просрочено" %}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ activity.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-right tabular">{{ activity.weight }}</td>
+                <td class="text-sm">{{ activity.due_date|deadline }}</td>
+                <td class="text-sm">
+                  {% if activity.evidence_total %}
+                    {% icon "check-circle" 14 "text-ready" %} {{ activity.evidence_total }}
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {% include "components/empty_state.html" with icon="target" title=_("Мероприятий нет") text=_("Наполните план по разрывам компетенций или добавьте мероприятие вручную") %}
+    {% endif %}
+  </section>
+
+{% endblock %}
