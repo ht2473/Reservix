@@ -1,0 +1,21 @@
+name: Предложение
+description: Новая возможность или изменение методики
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу кадровой работы это решает
+      description: Опишите ситуацию, а не готовое решение
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Предлагаемое решение
+  - type: textarea
+    id: methodology
+    attributes:
+      label: Влияние на методику расчёта
+      description: Меняет ли предложение критерии, веса или пороги индекса готовности

@@ -1,0 +1,45 @@
+name: Ошибка
+description: Система ведёт себя не так, как описано в документации
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Об уязвимостях сообщайте закрыто — см. [политику безопасности](../blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Версия
+      description: Указана в подвале интерфейса и в описании API
+      placeholder: "1.0.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Роль пользователя
+      options: [Сотрудник, Руководитель, Наставник, HR-специалист, Администратор, Без входа в систему]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      placeholder: |
+        1. Войти под …
+        2. Открыть …
+        3. Нажать …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ожидаемое и фактическое поведение
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Журналы и снимки экрана
+      description: Без персональных данных работников
