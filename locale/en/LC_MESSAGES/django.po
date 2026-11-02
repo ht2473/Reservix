@@ -200,7 +200,7 @@ msgstr "user profiles"
 msgid "действует до"
 msgstr "valid until"
 
-#: apps/accounts/models.py:419 apps/audit/models.py:141 apps/people/models.py:573 apps/reserve/models.py:409
+#: apps/accounts/models.py:419 apps/audit/models.py:141 apps/people/models.py:573 apps/reserve/models.py:415
 msgid "основание"
 msgstr "reason"
 
@@ -1309,7 +1309,7 @@ msgstr "The lower, the better"
 #: apps/analytics/models.py:61 apps/analytics/models.py:114 apps/assessment/models.py:87 apps/assessment/models.py:634
 #: apps/competencies/models.py:91 apps/competencies/models.py:220 apps/development/models.py:636 apps/org/models.py:33
 #: apps/org/models.py:118 apps/org/models.py:241 apps/org/models.py:282 apps/reporting/models.py:41
-#: apps/reserve/models.py:43 core/models.py:197
+#: apps/reserve/models.py:44 core/models.py:197
 msgid "код"
 msgstr "code"
 
@@ -1389,7 +1389,7 @@ msgstr "raw value"
 msgid "ранг важности"
 msgstr "importance rank"
 
-#: apps/analytics/models.py:247 apps/reserve/models.py:533
+#: apps/analytics/models.py:247 apps/reserve/models.py:539
 msgid "обоснование"
 msgstr "justification"
 
@@ -1401,11 +1401,11 @@ msgstr "criterion weight"
 msgid "веса критериев"
 msgstr "criterion weights"
 
-#: apps/analytics/models.py:301 apps/reserve/models.py:216 apps/succession/models.py:330
+#: apps/analytics/models.py:301 apps/reserve/models.py:217 apps/succession/models.py:330
 msgid "индекс готовности"
 msgstr "readiness index"
 
-#: apps/analytics/models.py:307 apps/reserve/models.py:208
+#: apps/analytics/models.py:307 apps/reserve/models.py:209
 msgid "уровень готовности"
 msgstr "readiness level"
 
@@ -1460,7 +1460,7 @@ msgstr "date held"
 
 #: apps/analytics/models.py:375 apps/assessment/models.py:96 apps/assessment/models.py:289 apps/assessment/models.py:562
 #: apps/assessment/models.py:837 apps/development/models.py:88 apps/development/models.py:302 apps/development/models.py:544
-#: apps/reporting/models.py:137 apps/reserve/models.py:519 apps/succession/models.py:204
+#: apps/reporting/models.py:137 apps/reserve/models.py:525 apps/succession/models.py:204
 msgid "состояние"
 msgstr "state"
 
@@ -1584,8 +1584,8 @@ msgstr "Expert score or eigenvector component before normalisation"
 msgid "Порядковое место критерия по значимости"
 msgstr "Ordinal place of the criterion by importance"
 
-#: apps/analytics/models.py:290 apps/development/models.py:74 apps/reserve/models.py:268 apps/reserve/models.py:390
-#: apps/reserve/models.py:640 apps/succession/models.py:309 apps/succession/models.py:429 templates/succession/plan_detail.html:124
+#: apps/analytics/models.py:290 apps/development/models.py:74 apps/reserve/models.py:269 apps/reserve/models.py:396
+#: apps/reserve/models.py:646 apps/succession/models.py:309 apps/succession/models.py:429 templates/succession/plan_detail.html:124
 msgid "запись резерва"
 msgstr "pool record"
 
@@ -2081,7 +2081,7 @@ msgstr "Expert assessment"
 msgid "Центр оценки"
 msgstr "Assessment centre"
 
-#: apps/assessment/models.py:59 apps/development/models.py:31 apps/reserve/models.py:449 apps/succession/models.py:169
+#: apps/assessment/models.py:59 apps/development/models.py:31 apps/reserve/models.py:455 apps/succession/models.py:169
 msgid "Черновик"
 msgstr "Draft"
 
@@ -2133,7 +2133,7 @@ msgstr "Submitted"
 msgid "Утверждена"
 msgstr "Approved"
 
-#: apps/assessment/models.py:210 apps/reserve/models.py:454
+#: apps/assessment/models.py:210 apps/reserve/models.py:460
 msgid "Отклонена"
 msgstr "Rejected"
 
@@ -2186,7 +2186,7 @@ msgid "подтверждение"
 msgstr "evidence"
 
 #: apps/assessment/models.py:456 apps/development/models.py:126 apps/development/models.py:352 apps/people/models.py:327
-#: apps/reserve/models.py:258 apps/reserve/models.py:419
+#: apps/reserve/models.py:259 apps/reserve/models.py:425
 msgid "идентификатор в исходной базе"
 msgstr "identifier in the source database"
 
@@ -2256,7 +2256,7 @@ msgstr "reminder sent"
 msgid "заполнил"
 msgstr "completed"
 
-#: apps/assessment/models.py:587 apps/reserve/models.py:566
+#: apps/assessment/models.py:587 apps/reserve/models.py:572
 msgid "причина отказа"
 msgstr "reason for declining"
 
@@ -4761,7 +4761,7 @@ msgstr "notifications"
 msgid "получатель"
 msgstr "recipient"
 
-#: apps/notifications/models.py:93 apps/reserve/models.py:527
+#: apps/notifications/models.py:93 apps/reserve/models.py:533
 msgid "инициатор"
 msgstr "initiator"
 
@@ -5123,7 +5123,7 @@ msgstr "education"
 msgid "наименование должности"
 msgstr "position title"
 
-#: apps/people/models.py:258 apps/portal/models.py:289 apps/reserve/models.py:201
+#: apps/people/models.py:258 apps/portal/models.py:289 apps/reserve/models.py:202
 msgid "статус"
 msgstr "status"
 
@@ -5175,7 +5175,7 @@ msgstr "excluded from consideration"
 msgid "основание исключения"
 msgstr "grounds for exclusion"
 
-#: apps/people/models.py:323 apps/reserve/models.py:256 apps/succession/models.py:237
+#: apps/people/models.py:323 apps/reserve/models.py:257 apps/succession/models.py:237
 msgid "примечания"
 msgstr "notes"
 
@@ -5536,8 +5536,8 @@ msgid "Профессиональный стандарт «Специалист 
 msgstr "Professional standard «Human Resources Management Specialist»"
 
 #: apps/portal/content.py:351
-msgid "приказ Минтруда России № 691н"
-msgstr "order of the Ministry of Labour of Russia No. 691n"
+msgid "приказ Минтруда России от 09.03.2022 № 109н"
+msgstr "order of the Ministry of Labour of Russia of 09.03.2022 No. 109n"
 
 #: apps/portal/content.py:352
 msgid "Описывает трудовые функции, связанные с оценкой и развитием персонала. Служит основанием для состава компетенций кадровой службы в модели компетенций организации."
@@ -6815,321 +6815,321 @@ msgstr "Grounds for the decision"
 msgid "В группе уже состоит %(count)s человек"
 msgstr "The group already has %(count)s members"
 
-#: apps/reserve/models.py:33
+#: apps/reserve/models.py:34
 msgid "Оперативный резерв"
 msgstr "Operational pool"
 
-#: apps/reserve/models.py:34
+#: apps/reserve/models.py:35
 msgid "Стратегический резерв"
 msgstr "Strategic pool"
 
-#: apps/reserve/models.py:35
+#: apps/reserve/models.py:36
 msgid "Управленческий резерв"
 msgstr "Management pool"
 
-#: apps/reserve/models.py:36
+#: apps/reserve/models.py:37
 msgid "Молодёжный резерв"
 msgstr "Early-career pool"
 
-#: apps/reserve/models.py:37
+#: apps/reserve/models.py:38
 msgid "Профессиональный резерв"
 msgstr "Professional pool"
 
-#: apps/reserve/models.py:45
+#: apps/reserve/models.py:46
 msgid "вид резерва"
 msgstr "pool type"
 
-#: apps/reserve/models.py:52
+#: apps/reserve/models.py:53
 msgid "горизонт подготовки, месяцев"
 msgstr "preparation horizon, months"
 
-#: apps/reserve/models.py:57
+#: apps/reserve/models.py:58
 msgid "предельный возраст"
 msgstr "age limit"
 
-#: apps/reserve/models.py:63
+#: apps/reserve/models.py:64
 msgid "минимальный стаж в организации, месяцев"
 msgstr "minimum tenure with the organisation, months"
 
-#: apps/reserve/models.py:67
+#: apps/reserve/models.py:68
 msgid "минимальный индекс готовности"
 msgstr "minimum readiness index"
 
-#: apps/reserve/models.py:73
+#: apps/reserve/models.py:74
 msgid "предельная численность"
 msgstr "headcount limit"
 
-#: apps/reserve/models.py:88 apps/reserve/models.py:194 apps/reserve/models.py:505 apps/reserve/models.py:628
+#: apps/reserve/models.py:89 apps/reserve/models.py:195 apps/reserve/models.py:511 apps/reserve/models.py:634
 msgid "группа резерва"
 msgstr "pool group"
 
-#: apps/reserve/models.py:89
+#: apps/reserve/models.py:90
 msgid "группы резерва"
 msgstr "pool groups"
 
-#: apps/reserve/models.py:113 templates/reserve/entry_detail.html:158 templates/reserve/nomination_detail.html:186 templates/reserve/nominations.html:42
+#: apps/reserve/models.py:114 templates/reserve/entry_detail.html:158 templates/reserve/nomination_detail.html:186 templates/reserve/nominations.html:42
 #: templates/succession/key_position_detail.html:171 templates/succession/plan_detail.html:208 templates/succession/plan_detail.html:247
 msgid "Кандидат"
 msgstr "Candidate"
 
-#: apps/reserve/models.py:114 apps/reserve/services.py:1021 templates/reserve/entry_status.html:21 templates/reserve/reviews.html:18
+#: apps/reserve/models.py:115 apps/reserve/services.py:1021 templates/reserve/entry_status.html:21 templates/reserve/reviews.html:18
 #: templates/reserve/team.html:45
 msgid "В резерве"
 msgstr "In the pool"
 
-#: apps/reserve/models.py:115
+#: apps/reserve/models.py:116
 msgid "Приостановлен"
 msgstr "Suspended"
 
-#: apps/reserve/models.py:116
+#: apps/reserve/models.py:117
 msgid "Назначен"
 msgstr "Appointed"
 
-#: apps/reserve/models.py:117 templates/succession/plan_detail.html:248
+#: apps/reserve/models.py:118 templates/succession/plan_detail.html:248
 msgid "Исключён"
 msgstr "Removed"
 
-#: apps/reserve/models.py:225
+#: apps/reserve/models.py:226
 msgid "индекс рассчитан"
 msgstr "index calculated"
 
-#: apps/reserve/models.py:228
+#: apps/reserve/models.py:229
 msgid "ранг в списке преемников"
 msgstr "rank in the list of successors"
 
-#: apps/reserve/models.py:234
+#: apps/reserve/models.py:235
 msgid "дата включения"
 msgstr "admission date"
 
-#: apps/reserve/models.py:237
+#: apps/reserve/models.py:238
 msgid "плановая готовность"
 msgstr "planned readiness"
 
-#: apps/reserve/models.py:243 apps/succession/models.py:225
+#: apps/reserve/models.py:244 apps/succession/models.py:225
 msgid "дата пересмотра"
 msgstr "review date"
 
-#: apps/reserve/models.py:249
+#: apps/reserve/models.py:250
 msgid "дата исключения"
 msgstr "removal date"
 
-#: apps/reserve/models.py:250 apps/succession/models.py:349
+#: apps/reserve/models.py:251 apps/succession/models.py:349
 msgid "причина исключения"
 msgstr "reason for removal"
 
-#: apps/reserve/models.py:252
+#: apps/reserve/models.py:253
 msgid "обоснование включения"
 msgstr "grounds for admission"
 
-#: apps/reserve/models.py:269 templates/people/index.html:29
+#: apps/reserve/models.py:270 templates/people/index.html:29
 msgid "кадровый резерв"
 msgstr "talent pool"
 
-#: apps/reserve/models.py:395
+#: apps/reserve/models.py:401
 msgid "прежний статус"
 msgstr "previous status"
 
-#: apps/reserve/models.py:400
+#: apps/reserve/models.py:406
 msgid "новый статус"
 msgstr "new status"
 
-#: apps/reserve/models.py:411
+#: apps/reserve/models.py:417
 msgid "индекс готовности на момент перехода"
 msgstr "readiness index at the time of the transition"
 
-#: apps/reserve/models.py:417
+#: apps/reserve/models.py:423
 msgid "дата изменения"
 msgstr "change date"
 
-#: apps/reserve/models.py:427
+#: apps/reserve/models.py:433
 msgid "изменение статуса резерва"
 msgstr "pool status change"
 
-#: apps/reserve/models.py:428
+#: apps/reserve/models.py:434
 msgid "история статусов резерва"
 msgstr "pool status history"
 
-#: apps/reserve/models.py:441
+#: apps/reserve/models.py:447
 msgid "Самовыдвижение"
 msgstr "Self-nomination"
 
-#: apps/reserve/models.py:442
+#: apps/reserve/models.py:448
 msgid "Выдвижение руководителем"
 msgstr "Nomination by a manager"
 
-#: apps/reserve/models.py:443
+#: apps/reserve/models.py:449
 msgid "Выдвижение кадровой службой"
 msgstr "Nomination by HR"
 
-#: apps/reserve/models.py:450 templates/reserve/apply.html:50 templates/reserve/nomination_detail.html:58
+#: apps/reserve/models.py:456 templates/reserve/apply.html:50 templates/reserve/nomination_detail.html:58
 msgid "Подана"
 msgstr "Submitted"
 
-#: apps/reserve/models.py:451
+#: apps/reserve/models.py:457
 msgid "На согласовании у руководителя"
 msgstr "Awaiting the manager's approval"
 
-#: apps/reserve/models.py:452
+#: apps/reserve/models.py:458
 msgid "На рассмотрении кадровой службы"
 msgstr "Under review by HR"
 
-#: apps/reserve/models.py:453
+#: apps/reserve/models.py:459
 msgid "Одобрена"
 msgstr "Approved"
 
-#: apps/reserve/models.py:455
+#: apps/reserve/models.py:461
 msgid "Отозвана"
 msgstr "Withdrawn"
 
-#: apps/reserve/models.py:512
+#: apps/reserve/models.py:518
 msgid "вид выдвижения"
 msgstr "nomination type"
 
-#: apps/reserve/models.py:537
+#: apps/reserve/models.py:543
 msgid "достижения кандидата"
 msgstr "candidate's achievements"
 
-#: apps/reserve/models.py:541
+#: apps/reserve/models.py:547
 msgid "подана"
 msgstr "submitted"
 
-#: apps/reserve/models.py:552
+#: apps/reserve/models.py:558
 msgid "решение руководителя"
 msgstr "manager's decision"
 
-#: apps/reserve/models.py:553
+#: apps/reserve/models.py:559
 msgid "комментарий руководителя"
 msgstr "manager's comment"
 
-#: apps/reserve/models.py:564
+#: apps/reserve/models.py:570
 msgid "решение кадровой службы"
 msgstr "HR decision"
 
-#: apps/reserve/models.py:565
+#: apps/reserve/models.py:571
 msgid "комментарий кадровой службы"
 msgstr "HR comment"
 
-#: apps/reserve/models.py:581
+#: apps/reserve/models.py:587
 msgid "заявка на выдвижение"
 msgstr "nomination application"
 
-#: apps/reserve/models.py:582
+#: apps/reserve/models.py:588
 msgid "заявки на выдвижение"
 msgstr "nomination applications"
 
-#: apps/reserve/models.py:646 templates/dashboard/employee.html:120
+#: apps/reserve/models.py:652 templates/dashboard/employee.html:120
 msgid "зачислен"
 msgstr "enrolled"
 
-#: apps/reserve/models.py:647
+#: apps/reserve/models.py:653
 msgid "выбыл"
 msgstr "left"
 
-#: apps/reserve/models.py:648
+#: apps/reserve/models.py:654
 msgid "причина выбытия"
 msgstr "reason for leaving"
 
-#: apps/reserve/models.py:650
+#: apps/reserve/models.py:656
 msgid "подтверждено куратором"
 msgstr "confirmed by the sponsor"
 
-#: apps/reserve/models.py:656
+#: apps/reserve/models.py:662
 msgid "участие в группе резерва"
 msgstr "membership in a pool group"
 
-#: apps/reserve/models.py:657
+#: apps/reserve/models.py:663
 msgid "участие в группах резерва"
 msgstr "memberships in pool groups"
 
-#: apps/reserve/models.py:54
+#: apps/reserve/models.py:55
 msgid "Срок, за который резервист должен быть готов к назначению"
 msgstr "The period within which a pool member must be ready for appointment"
 
-#: apps/reserve/models.py:60
+#: apps/reserve/models.py:61
 msgid "Ограничение молодёжного резерва; пусто — без ограничения"
 msgstr "A limit for the early-career pool; empty — no limit"
 
-#: apps/reserve/models.py:70
+#: apps/reserve/models.py:71
 msgid "Порог зачисления в группу по композитному индексу"
 msgstr "The composite index threshold for admission to the group"
 
-#: apps/reserve/models.py:76
+#: apps/reserve/models.py:77
 msgid "Пусто — численность не ограничена"
 msgstr "Empty — the headcount is not limited"
 
-#: apps/reserve/models.py:80
+#: apps/reserve/models.py:81
 msgid "куратор группы"
 msgstr "group sponsor"
 
-#: apps/reserve/models.py:182 apps/reserve/models.py:634
+#: apps/reserve/models.py:183 apps/reserve/models.py:640
 msgid "резервист"
 msgstr "pool member"
 
-#: apps/reserve/models.py:188 apps/reserve/models.py:499
+#: apps/reserve/models.py:189 apps/reserve/models.py:505
 msgid "целевая должность"
 msgstr "target position"
 
-#: apps/reserve/models.py:213
+#: apps/reserve/models.py:214
 msgid "Рассчитывается по индексу готовности; вручную не задаётся"
 msgstr "Derived from the readiness index; not set by hand"
 
-#: apps/reserve/models.py:222
+#: apps/reserve/models.py:223
 msgid "Композитный индекс готовности резервиста, 0–100"
 msgstr "The pool member's composite readiness index, 0–100"
 
-#: apps/reserve/models.py:231
+#: apps/reserve/models.py:232
 msgid "Место кандидата среди претендентов на должность"
 msgstr "The candidate's place among the contenders for the position"
 
-#: apps/reserve/models.py:240
+#: apps/reserve/models.py:241
 msgid "Дата, к которой резервист должен быть готов к назначению"
 msgstr "The date by which the pool member must be ready for appointment"
 
-#: apps/reserve/models.py:247
+#: apps/reserve/models.py:248
 msgid "Когда состав резерва по этой записи подлежит пересмотру"
 msgstr "When the pool composition for this record is due for review"
 
-#: apps/reserve/models.py:254
+#: apps/reserve/models.py:255
 msgid "Переносится из заявки на выдвижение"
 msgstr "Carried over from the nomination application"
 
-#: apps/reserve/models.py:403
+#: apps/reserve/models.py:409
 msgid "автор изменения"
 msgstr "author of the change"
 
-#: apps/reserve/models.py:493
+#: apps/reserve/models.py:499
 msgid "кандидат"
 msgstr "candidate"
 
-#: apps/reserve/models.py:534
+#: apps/reserve/models.py:540
 msgid "Достижения и основания, подтверждающие готовность кандидата"
 msgstr "Achievements and grounds supporting the candidate's readiness"
 
-#: apps/reserve/models.py:539
+#: apps/reserve/models.py:545
 msgid "Результаты, подтверждающие потенциал"
 msgstr "Results supporting the potential"
 
-#: apps/reserve/models.py:546
+#: apps/reserve/models.py:552
 msgid "согласующий руководитель"
 msgstr "approving manager"
 
-#: apps/reserve/models.py:558
+#: apps/reserve/models.py:564
 msgid "согласующий от кадровой службы"
 msgstr "HR approver"
 
-#: apps/reserve/models.py:570
+#: apps/reserve/models.py:576
 msgid "созданная запись резерва"
 msgstr "pool record created"
 
-#: apps/reserve/models.py:575
+#: apps/reserve/models.py:581
 msgid "Заполняется при одобрении заявки"
 msgstr "Filled in when the application is approved"
 
-#: apps/reserve/models.py:652
+#: apps/reserve/models.py:658
 msgid "Куратор группы подтверждает участие в программе подготовки"
 msgstr "The group sponsor confirms participation in the preparation programme"
 
-#: apps/reserve/models.py:600
+#: apps/reserve/models.py:606
 msgid "Заявка: %(employee)s → %(position)s"
 msgstr "Nomination: %(employee)s → %(position)s"
 
@@ -7790,7 +7790,7 @@ msgstr "The successor has already been removed from the list"
 msgid "Перечень преемников не совпадает с составом плана"
 msgstr "The list of successors does not match the composition of the plan"
 
-#: apps/succession/services.py:471
+#: apps/succession/services.py:475
 msgid "Назначен на должность"
 msgstr "Appointed to the position"
 
@@ -7798,7 +7798,7 @@ msgstr "Appointed to the position"
 msgid "По должности «%(position)s» уже действует план преемственности"
 msgstr "A succession plan is already in effect for the position «%(position)s»"
 
-#: apps/succession/services.py:533
+#: apps/succession/services.py:537
 msgid "Назначение на должность «%(position)s»: %(name)s"
 msgstr "Appointment to the position «%(position)s»: %(name)s"
 
@@ -7806,7 +7806,7 @@ msgstr "Appointment to the position «%(position)s»: %(name)s"
 msgid "%(name)s уже включён в список преемников"
 msgstr "%(name)s is already on the list of successors"
 
-#: apps/succession/services.py:538
+#: apps/succession/services.py:542
 msgid "Источник назначения — %(kind)s"
 msgstr "The appointment source is %(kind)s"
 
@@ -7814,7 +7814,7 @@ msgstr "The appointment source is %(kind)s"
 msgid "Преемственность: %(position)s"
 msgstr "Succession: %(position)s"
 
-#: apps/succession/services.py:454
+#: apps/succession/services.py:458
 msgid "Назначен на целевую должность"
 msgstr "Appointed to the target position"
 

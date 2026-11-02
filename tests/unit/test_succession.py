@@ -330,6 +330,27 @@ class TestAppointments:
         assert appointment.readiness_index_at_appointment == Decimal("79.00")
         assert appointment.months_in_reserve == 13
 
+    def test_backdated_appointment_counts_months_to_appointment_date(
+        self, position, department, hr_user
+    ):
+        """Назначение, внесённое задним числом, считает срок до даты назначения, а не до ввода."""
+        employee = EmployeeFactory(department=department)
+        today = timezone.localdate()
+        ReserveEntryFactory(
+            employee=employee,
+            target_position=position,
+            inclusion_date=today - dt.timedelta(days=400),
+        )
+
+        appointment = register_appointment(
+            employee=employee,
+            position=position,
+            appointment_date=today - dt.timedelta(days=200),
+            actor=hr_user,
+        )
+
+        assert appointment.months_in_reserve == 6
+
     def test_appointment_removes_from_slate(self, position, department, hr_user):
         """Назначенный больше не преемник: он занял должность."""
         employee = EmployeeFactory(department=department)

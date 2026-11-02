@@ -421,7 +421,11 @@ def register_appointment(
 ) -> Appointment:
     """Регистрирует назначение — операция, замыкающая цикл системы."""
     linked_entry = entry or _entry_for(employee, position.pk)
-    months = linked_entry.months_in_reserve if linked_entry is not None else None
+    # Срок считается до даты назначения, а не до дня регистрации: назначение нередко вносят задним
+    # числом, по приказу.
+    months = (
+        linked_entry.months_in_reserve_on(appointment_date) if linked_entry is not None else None
+    )
     index = linked_entry.readiness_index if linked_entry is not None else None
     predecessor = _incumbent_of(position, exclude=employee)
 

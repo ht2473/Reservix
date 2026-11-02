@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Сообщить об уязвимости
+    url: https://github.com/ht2473/Reservix/security/advisories/new
+    about: Закрытое сообщение — не публикуйте уязвимости в открытых задачах
+  - name: Документация
+    url: https://github.com/ht2473/Reservix/tree/main/docs
+    about: Архитектура, методика, API, развёртывание и руководство пользователя

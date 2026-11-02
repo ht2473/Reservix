@@ -545,6 +545,7 @@ nginx: база данных и Redis доступны исключительн�
 | [USER_GUIDE.md](docs/USER_GUIDE.md) | Руководство пользователя по ролям |
 | [CREDENTIALS.md](docs/CREDENTIALS.md) | Демонстрационные учётные записи |
 | [API.md](docs/API.md) | Программный интерфейс |
+| [SECURITY.md](SECURITY.md) | Поддерживаемые версии и закрытое сообщение об уязвимостях |
 
 ---
 
