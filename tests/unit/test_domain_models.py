@@ -218,6 +218,12 @@ class TestReserveWorkflow:
         entry = ReserveEntryFactory(inclusion_date=timezone.localdate() - dt.timedelta(days=365))
         assert 11 <= entry.months_in_reserve <= 13
 
+    def test_months_in_reserve_counts_full_months(self):
+        """Неполный месяц на границе не засчитывается: считаются полные месяцы."""
+        entry = ReserveEntryFactory(inclusion_date=dt.date(2025, 9, 29))
+        assert entry.months_in_reserve_on(dt.date(2026, 11, 3)) == 13
+        assert entry.months_in_reserve_on(dt.date(2026, 11, 29)) == 14
+
 
 # ---------------------------------------------------------------------------
 # Компетенции

@@ -24,6 +24,7 @@ from core.models import (
     UUIDModel,
 )
 from core.settings_types import get_reservix_settings
+from core.utils import calculate_tenure_months
 from core.validators import code_validator
 
 
@@ -307,12 +308,17 @@ class ReserveEntry(UUIDModel, AuthoredModel, TimeStampedModel):
 
     @property
     def months_in_reserve(self) -> int:
-        """Продолжительность пребывания в резерве в месяцах."""
-        end = self.exclusion_date or timezone.localdate()
-        months = (end.year - self.inclusion_date.year) * 12 + (
-            end.month - self.inclusion_date.month
-        )
-        return max(months, 0)
+        """Продолжительность пребывания в резерве в полных месяцах."""
+        return self.months_in_reserve_on()
+
+    def months_in_reserve_on(self, on_date: dt.date | None = None) -> int:
+        """Полных месяцев в резерве на дату: по умолчанию — на дату исключения или сегодня.
+
+        Считаются полные месяцы, а не пересечённые границы: включённый 29 сентября и назначенный
+        3 ноября провёл в резерве один месяц, а не два.
+        """
+        end = on_date or self.exclusion_date or timezone.localdate()
+        return calculate_tenure_months(self.inclusion_date, end)
 
     @property
     def is_overdue_for_review(self) -> bool:
