@@ -310,9 +310,6 @@ class Command(BaseCommand):
             if appointed_on < entry.inclusion_date:
                 continue
 
-            months = (appointed_on.year - entry.inclusion_date.year) * 12 + (
-                appointed_on.month - entry.inclusion_date.month
-            )
             Appointment.objects.create(
                 employee=entry.employee,
                 position=entry.target_position,
@@ -324,7 +321,7 @@ class Command(BaseCommand):
                 appointment_date=appointed_on,
                 order_number=f"{self.random.randint(100, 999)}-к",
                 readiness_index_at_appointment=entry.readiness_index,
-                months_in_reserve=max(months, 0),
+                months_in_reserve=entry.months_in_reserve_on(appointed_on),
                 created_by=self.actor,
             )
             created += 1
