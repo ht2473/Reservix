@@ -192,7 +192,7 @@ services:
 
   # --- Выпуск и продление сертификатов ---------------------------------------
   certbot:
-    image: certbot/certbot:v5.8.0
+    image: certbot/certbot:v5.9.0
     restart: unless-stopped
     volumes:
       - certbot_certs:/etc/letsencrypt
